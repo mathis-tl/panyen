@@ -3,10 +3,11 @@ version: 2
 models:
   - name: stg_ipc
     description: >
-      Observations mensuelles des indices alimentaires Insee (France et
-      Martinique), issues des XML SDMX bruts. Grain : une observation par
-      (fichier_source, idbank, periode). Cette table ne compare pas les
-      niveaux d'indice entre territoires.
+      Observations mensuelles des indices alimentaires Insee (Martinique et
+      France métropolitaine, plus le lot historique France entière), issues
+      des XML SDMX bruts. Grain : une observation par (fichier_source, idbank,
+      periode). Cette table ne compare pas les niveaux d'indice entre
+      territoires.
     columns:
       - name: fichier_source
         description: Chemin relatif stable du XML brut dans le dépôt.
@@ -22,11 +23,26 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ["011813726", "011813717"]
+                values: ["011813726", "011813717", "011813720"]
       - name: code_territoire
-        description: Code SDMX REF_AREA de la série (territoire).
+        description: >
+          Code SDMX REF_AREA de la série. Correspondances exactes :
+          011813726/D972, 011813717/FE, 011813720/FM.
         data_tests:
           - not_null
+          - accepted_values:
+              arguments:
+                values: ["D972", "FE", "FM"]
+      - name: perimetre_reference
+        description: >
+          Périmètre déduit de la paire du fichier : france_metropolitaine
+          pour la collecte active {011813726, 011813720},
+          france_entiere_historique pour le lot {011813726, 011813717}.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["france_entiere_historique", "france_metropolitaine"]
       - name: frequence
         description: Fréquence SDMX de la série ; seule la fréquence mensuelle M est acceptée.
         data_tests:

@@ -38,7 +38,7 @@ def _obs(
 def _serie(
     idbank: str = "011813726",
     freq: str = "M",
-    ref_area: str = "MQ",
+    ref_area: str = "D972",
     titre: str = "IPC alimentation Martinique",
     maj: str = "27/08/2026",
     unite: str = "indice",
@@ -110,6 +110,27 @@ def ecrire_brut(racine: Path, nom: str, xml: str) -> Path:
     return cible
 
 
+def _serie_fm(
+    observations: list[str] | None = None,
+    *,
+    ref_area: str = "FM",
+) -> str:
+    return _serie(
+        idbank="011813720",
+        ref_area=ref_area,
+        titre="IPC alimentation France métropolitaine",
+        observations=observations
+        or [
+            _obs(valeur="101.8"),
+            _obs("2022-05", "102.0"),
+        ],
+    )
+
+
+def xml_alimentaire_metropole() -> str:
+    return xml_alimentaire([_serie(), _serie_fm()])
+
+
 def test_deux_series_et_plusieurs_observations(tmp_path: Path) -> None:
     brut = ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire())
 
@@ -142,7 +163,7 @@ def test_types_et_zero_initial(tmp_path: Path) -> None:
     assert type(obs.multiplicateur_unite) is int
     assert type(obs.decimales) is int
     assert obs.frequence == "M"
-    assert obs.code_territoire == "MQ"
+    assert obs.code_territoire == "D972"
 
 
 def test_provenance_issue_de_deux_noms_de_fichiers(tmp_path: Path) -> None:
@@ -256,7 +277,7 @@ def test_serie_inconnue(tmp_path: Path) -> None:
 def test_serie_manquante(tmp_path: Path) -> None:
     xml = xml_alimentaire([_serie()])
     brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
-    with pytest.raises(ErreurSdmx, match="série"):
+    with pytest.raises(ErreurSdmx, match="paire incomplète"):
         parser_fichier(brut, racine=tmp_path)
 
 
@@ -372,3 +393,124 @@ def test_xml_vide(tmp_path: Path) -> None:
     brut = ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire(series=[], dataset=True))
     with pytest.raises(ErreurSdmx, match="vide"):
         parser_fichier(brut, racine=tmp_path)
+
+
+def test_lot_historique_etiquette_france_entiere(tmp_path: Path) -> None:
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire())
+    observations = parser_fichier(brut, racine=tmp_path)
+    idbanks = {obs.idbank for obs in observations}
+    territoires = {(obs.idbank, obs.code_territoire) for obs in observations}
+
+    assert idbanks == {"011813726", "011813717"}
+    assert territoires == {("011813726", "D972"), ("011813717", "FE")}
+    assert {obs.perimetre_reference for obs in observations} == {
+        "france_entiere_historique"
+    }
+
+
+def test_lot_metropolitain_etiquette_france_metropolitaine(tmp_path: Path) -> None:
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire_metropole())
+    observations = parser_fichier(brut, racine=tmp_path)
+    idbanks = {obs.idbank for obs in observations}
+    territoires = {(obs.idbank, obs.code_territoire) for obs in observations}
+
+    assert idbanks == {"011813726", "011813720"}
+    assert territoires == {("011813726", "D972"), ("011813720", "FM")}
+    assert {obs.perimetre_reference for obs in observations} == {
+        "france_metropolitaine"
+    }
+
+
+def test_correspondances_idbank_territoire(tmp_path: Path) -> None:
+    historique = parser_fichier(
+        ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire()),
+        racine=tmp_path,
+    )
+    metro = parser_fichier(
+        ecrire_brut(tmp_path, NOM_BRUT_2, xml_alimentaire_metropole()),
+        racine=tmp_path,
+    )
+    correspondances = {(obs.idbank, obs.code_territoire) for obs in historique + metro}
+
+    assert correspondances == {
+        ("011813726", "D972"),
+        ("011813717", "FE"),
+        ("011813720", "FM"),
+    }
+
+
+def test_territoire_incoherent(tmp_path: Path) -> None:
+    xml = xml_alimentaire(
+        [
+            _serie(ref_area="FE"),
+            _serie(
+                idbank="011813717",
+                ref_area="FE",
+                titre="IPC alimentation France",
+            ),
+        ]
+    )
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
+    with pytest.raises(ErreurSdmx, match="territoire"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_paire_incomplete(tmp_path: Path) -> None:
+    xml = xml_alimentaire([_serie()])
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
+    with pytest.raises(ErreurSdmx, match="paire incomplète"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_paire_melangee(tmp_path: Path) -> None:
+    xml = xml_alimentaire(
+        [
+            _serie(
+                idbank="011813717",
+                ref_area="FE",
+                titre="IPC alimentation France",
+            ),
+            _serie_fm(),
+        ]
+    )
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
+    with pytest.raises(ErreurSdmx, match="paire mélangée"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_troisieme_idbank(tmp_path: Path) -> None:
+    xml = xml_alimentaire(
+        [
+            _serie(),
+            _serie(
+                idbank="011813717",
+                ref_area="FE",
+                titre="IPC alimentation France",
+            ),
+            _serie_fm(),
+        ]
+    )
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
+    with pytest.raises(ErreurSdmx, match="troisième idbank"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_repertoire_historique_et_metropolitain(tmp_path: Path) -> None:
+    ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire())
+    ecrire_brut(tmp_path, NOM_BRUT_2, xml_alimentaire_metropole())
+
+    observations = parser_repertoire(
+        tmp_path / "data" / "raw" / "insee",
+        racine=tmp_path,
+    )
+
+    par_fichier = {
+        obs.fichier_source: obs.perimetre_reference for obs in observations
+    }
+    assert par_fichier[f"data/raw/insee/{NOM_BRUT}"] == "france_entiere_historique"
+    assert par_fichier[f"data/raw/insee/{NOM_BRUT_2}"] == "france_metropolitaine"
+    assert {obs.idbank for obs in observations} == {
+        "011813726",
+        "011813717",
+        "011813720",
+    }

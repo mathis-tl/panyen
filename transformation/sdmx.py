@@ -1,7 +1,9 @@
 """Parse les XML SDMX-ML 2.1 bruts de l'IPC alimentaire Insee.
 
 Ce module ne télécharge rien et ne modifie jamais le brut : il lit, il structure,
-il échoue bruyamment. Il ne compare pas les niveaux d'indice entre territoires.
+il échoue bruyamment. Il accepte exactement deux paires par fichier
+({011813726, 011813717} historique, {011813726, 011813720} métropolitain)
+et ne compare pas les niveaux d'indice entre territoires.
 """
 
 from __future__ import annotations
@@ -12,7 +14,16 @@ from pathlib import Path
 import re
 from xml.etree import ElementTree as ET
 
-IDBANKS_AUTORISES = frozenset({"011813726", "011813717"})
+IDBANK_TERRITOIRE = {
+    "011813726": "D972",
+    "011813717": "FE",
+    "011813720": "FM",
+}
+PAIRES_PERIMETRE = {
+    frozenset({"011813726", "011813717"}): "france_entiere_historique",
+    frozenset({"011813726", "011813720"}): "france_metropolitaine",
+}
+IDBANKS_AUTORISES = frozenset(IDBANK_TERRITOIRE)
 MOTIF_NOM_BRUT = re.compile(r"^ipc_alimentation_(\d{4}-\d{2}-\d{2}T\d{6}Z)\.xml$")
 ATTRIBUTS_SERIE = (
     "IDBANK",
@@ -39,6 +50,7 @@ class Observation:
     collecte_utc: datetime
     idbank: str
     code_territoire: str
+    perimetre_reference: str
     frequence: str
     titre: str
     mise_a_jour_source: str
@@ -116,6 +128,16 @@ def _fichier_source(chemin: Path, racine: Path) -> str:
     return chemin.resolve().relative_to(racine.resolve()).as_posix()
 
 
+def _erreur_paire(nom: str, idbanks: set[str]) -> ErreurSdmx:
+    if len(idbanks) < 2:
+        return ErreurSdmx(f"paire incomplète dans {nom}")
+    if len(idbanks) > 2:
+        return ErreurSdmx(f"troisième idbank dans {nom}")
+    return ErreurSdmx(
+        f"paire mélangée dans {nom} : {', '.join(sorted(idbanks))}"
+    )
+
+
 def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
     collecte_utc = collecte_utc_depuis_nom(chemin.name)
     fichier_source = _fichier_source(chemin, racine)
@@ -128,7 +150,6 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
     if not series:
         raise ErreurSdmx(f"XML vide : {chemin.name}")
 
-    observations: list[Observation] = []
     idbanks_vus: set[str] = set()
     for serie in series:
         for nom in ATTRIBUTS_SERIE:
@@ -139,16 +160,30 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
         frequence = _attr(serie, "FREQ")
         if frequence != "M":
             raise ErreurSdmx(f"fréquence autre que M : {frequence}")
+        code_territoire = _attr(serie, "REF_AREA")
+        attendu = IDBANK_TERRITOIRE[idbank]
+        if code_territoire != attendu:
+            raise ErreurSdmx(
+                f"territoire incohérent pour {idbank} : {code_territoire} "
+                f"(attendu {attendu})"
+            )
         if idbank in idbanks_vus:
             raise ErreurSdmx(f"doublon du grain dans {chemin.name}")
         idbanks_vus.add(idbank)
-
-        obs_elements = _enfants(serie, "Obs")
-        if not obs_elements:
+        if not _enfants(serie, "Obs"):
             raise ErreurSdmx(f"XML vide : {chemin.name}")
 
+    perimetre = PAIRES_PERIMETRE.get(frozenset(idbanks_vus))
+    if perimetre is None:
+        raise _erreur_paire(chemin.name, idbanks_vus)
+
+    observations: list[Observation] = []
+    for serie in series:
+        idbank = _attr(serie, "IDBANK")
+        frequence = _attr(serie, "FREQ")
+        code_territoire = _attr(serie, "REF_AREA")
         vus_periode: set[date] = set()
-        for obs in obs_elements:
+        for obs in _enfants(serie, "Obs"):
             for nom in ATTRIBUTS_OBS:
                 _attr(obs, nom)
             periode = _periode(_attr(obs, "TIME_PERIOD"))
@@ -161,7 +196,8 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
                     fichier_source=fichier_source,
                     collecte_utc=collecte_utc,
                     idbank=idbank,
-                    code_territoire=_attr(serie, "REF_AREA"),
+                    code_territoire=code_territoire,
+                    perimetre_reference=perimetre,
                     frequence=frequence,
                     titre=_titre(serie),
                     mise_a_jour_source=_attr(serie, "LAST_UPDATE"),
@@ -175,12 +211,6 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
                     type_observation=_attr(obs, "OBS_TYPE"),
                 )
             )
-
-    manquantes = IDBANKS_AUTORISES - idbanks_vus
-    if manquantes:
-        raise ErreurSdmx(
-            f"série absente dans {chemin.name} : {', '.join(sorted(manquantes))}"
-        )
     return observations
 
 

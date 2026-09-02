@@ -39,11 +39,14 @@ question d'architecture ouverte.
 ## Incrément 1 — Tranche verticale alimentation
 
 **But utilisateur** : voir si le différentiel d'évolution des prix alimentaires
-entre la Martinique et la France se creuse ou se resserre depuis avril 2022.
+entre la Martinique et la France métropolitaine se creuse ou se resserre depuis
+avril 2022.
 
 - [x] **1.1 — Socle reproductible** : Git, uv/Python, dbt-duckdb, Vite et commandes.
 - [x] **1.2 — Collecte IPC alimentaire** : deux séries, brut horodaté, dry-run, tests.
-- [ ] **1.3 — Staging SDMX** : parsing aval, provenance et tests de structure.
+- [x] **1.3 — Staging SDMX** : parsing aval, provenance et tests de structure.
+- [x] **1.3b — Périmètre géographique** : passer la référence active de France
+      entière à France métropolitaine, sans effacer le brut historique.
 - [ ] **1.4 — Différentiel alimentaire** : appariement, rebasage, calculs et tests dbt.
 - [ ] **1.5 — Publication sûre** : Parquet remplacé seulement après tests verts.
 - [ ] **1.6 — Écran alimentaire minimal** : DuckDB-WASM, Plot et limite méthodologique.

@@ -17,7 +17,7 @@ _spec.loader.exec_module(insee_ipc)
 XML_MINUSCULE = b"<message>ipc-alimentation-brut</message>"
 URL_ATTENDUE = (
     "https://bdm.insee.fr/series/sdmx/data/SERIES_BDM/"
-    "011813726+011813717?startPeriod=2022-04"
+    "011813726+011813720?startPeriod=2022-04"
 )
 ACCEPT = "application/vnd.sdmx.structurespecificdata+xml;version=2.1"
 INSTANT = datetime(2026, 9, 2, 15, 1, 2, tzinfo=timezone.utc)
@@ -77,6 +77,8 @@ def test_un_seul_appel_deux_series_alimentaires_depuis_avril_2022(
     assert len(appels) == 1
     appel = appels[0]
     assert appel["url"] == URL_ATTENDUE
+    assert "011813720" in appel["url"]
+    assert "011813717" not in appel["url"]
     assert "011813873" not in appel["url"]
     assert appel["headers"].get("Accept") == ACCEPT
     assert appel["timeout"] == 60
@@ -95,7 +97,8 @@ def test_depuis_personnalise_dans_l_url(monkeypatch, brut, horloge):
     insee_ipc.collecter(depuis="2023-01")
     assert len(appels) == 1
     assert appels[0]["url"].endswith("?startPeriod=2023-01")
-    assert "011813726+011813717" in appels[0]["url"]
+    assert "011813726+011813720" in appels[0]["url"]
+    assert "011813717" not in appels[0]["url"]
 
 
 def test_ecriture_octet_pour_octet(monkeypatch, brut, horloge):
@@ -119,7 +122,8 @@ def test_dry_run_n_ecrit_rien(monkeypatch, brut, horloge, capsys):
     assert resultat is None
     assert not brut.exists()
     assert "011813726" in sortie
-    assert "011813717" in sortie
+    assert "011813720" in sortie
+    assert "011813717" not in sortie
     assert f"{len(XML_MINUSCULE)}" in sortie.replace(",", "")
     assert "aucune écriture" in sortie
 

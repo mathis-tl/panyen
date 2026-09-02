@@ -3,7 +3,7 @@
 > *panyen* — « panier », en créole martiniquais.
 
 En 2022, l'Insee a mesuré que les produits alimentaires coûtaient **40 % plus
-cher** en Martinique qu'en France hexagonale. Ce site répond à la question qui
+cher** en Martinique qu'en France métropolitaine. Ce site répond à la question qui
 vient juste après, et à laquelle personne ne répond publiquement : **depuis, cet
 écart se creuse-t-il ou se resserre-t-il ?**
 
@@ -60,6 +60,9 @@ make verify
 
 ## Décisions
 
+- **La série IPC alimentaire de référence est la France métropolitaine**
+  (`011813720`), alignée sur l'ECSP 2022. Un lot historique France entière
+  (`011813717`) reste au brut, étiqueté comme tel, et n'est plus collecté.
 - **DuckDB + dbt + Parquet + DuckDB-WASM**, pas de serveur : le site interroge un
   fichier dans le navigateur du visiteur. Zéro coût d'hébergement, et le visiteur
   peut filtrer sans aller-retour réseau.

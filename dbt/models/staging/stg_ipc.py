@@ -2,7 +2,8 @@
 
 Grain : (fichier_source, idbank, periode).
 Cette table décrit les observations SDMX ; elle ne compare jamais les niveaux
-d'indice France et Martinique.
+d'indice entre territoires. perimetre_reference distingue le lot historique
+France entière du lot actif France métropolitaine.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ CREATE TEMP TABLE _stg_ipc (
     collecte_utc TIMESTAMPTZ,
     idbank VARCHAR,
     code_territoire VARCHAR,
+    perimetre_reference VARCHAR,
     frequence VARCHAR,
     titre VARCHAR,
     mise_a_jour_source VARCHAR,
@@ -35,7 +37,7 @@ CREATE TEMP TABLE _stg_ipc (
 def _relation(session, observations):
     session.execute(DDL)
     session.executemany(
-        f"INSERT INTO _stg_ipc VALUES ({', '.join(['?'] * 15)})",
+        f"INSERT INTO _stg_ipc VALUES ({', '.join(['?'] * 16)})",
         [astuple(obs) for obs in observations],
     )
     return session.table("_stg_ipc")

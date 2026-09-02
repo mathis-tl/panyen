@@ -14,11 +14,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 import urllib.request
 
-# Base 2025, ensemble des ménages. Ordre déterministe : Martinique puis France.
-# Voir docs/SOURCES.md. L'énergie est hors périmètre de cette tranche.
+# Base 2025, ensemble des ménages. Ordre déterministe : Martinique puis
+# France métropolitaine — aligné sur l'ECSP 2022. Voir docs/SOURCES.md.
+# L'idbank France entière 011813717 n'est plus collecté ; le XML historique
+# le conserve. L'énergie est hors périmètre de cette tranche.
 SERIES = {
-    "011813726": "MQ · alimentation · indice",
-    "011813717": "FR · alimentation · indice",
+    "011813726": "D972 · alimentation · indice",
+    "011813720": "FM · alimentation · indice",
 }
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -72,7 +74,10 @@ def collecter(depuis: str = DEPUIS_DEFAUT, *, dry_run: bool = False) -> Path | N
 
 def principal(argv: list[str] | None = None) -> None:
     parseur = argparse.ArgumentParser(
-        description="Collecte brute des indices alimentaires Insee (France et Martinique)."
+        description=(
+            "Collecte brute des indices alimentaires Insee "
+            "(France métropolitaine et Martinique)."
+        )
     )
     parseur.add_argument(
         "--depuis",

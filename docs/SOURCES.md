@@ -27,15 +27,23 @@ Accept: application/vnd.sdmx.structurespecificdata+xml;version=2.1
 
 | idbank | territoire | poste | nature |
 |---|---|---|---|
-| `011813726` | Martinique | Alimentation | indice |
+| `011813726` | Martinique (`D972`) | Alimentation | indice |
 | `011813727` | Martinique | Alimentation | variation mensuelle |
 | `011813728` | Martinique | Alimentation | glissement annuel |
-| `011813717` | France | Alimentation | indice |
-| `011813718` | France | Alimentation | variation mensuelle |
-| `011813719` | France | Alimentation | glissement annuel |
+| `011813720` | France métropolitaine (`FM`) | Alimentation | indice — **référence active** |
+| `011813717` | France entière (`FE`) | Alimentation | indice — lot historique, plus collecté |
+| `011813718` | France entière | Alimentation | variation mensuelle |
+| `011813719` | France entière | Alimentation | glissement annuel |
 | `011813873` | Martinique | Énergie | indice |
 | `011813874` | Martinique | Énergie | variation mensuelle |
 | `011813875` | Martinique | Énergie | glissement annuel |
+
+La collecte active de l'IPC alimentaire demande exactement
+`011813726+011813720` depuis `2022-04`, pour rester alignée sur l'ECSP 2022
+(Martinique contre France métropolitaine). Le brut
+`ipc_alimentation_2026-09-02T163321Z.xml` conserve la paire historique
+`{011813726, 011813717}` ; le parseur l'étiquette `france_entiere_historique`
+et n'accepte, par fichier, que cette paire ou `{011813726, 011813720}`.
 
 ### Comment trouver les autres
 

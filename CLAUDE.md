@@ -56,11 +56,15 @@ bloquant, pas un détail de présentation.
   Paramètres : `startPeriod`, `endPeriod`, `firstNObservations`, `lastNObservations`.
   En-tête recommandé : `Accept: application/vnd.sdmx.structurespecificdata+xml;version=2.1`.
 - idbanks confirmés (base 2025, ensemble des ménages) :
-  - `011813726` Martinique · Alimentation · indice
-  - `011813717` France · Alimentation · indice
+  - `011813726` Martinique (`D972`) · Alimentation · indice
+  - `011813720` France métropolitaine (`FM`) · Alimentation · indice — référence active
+  - `011813717` France entière (`FE`) · Alimentation · indice — lot historique, plus collecté
   - `011813873` Martinique · Énergie · indice
   - `011813728` Martinique · Alimentation · glissement annuel
   - `011813719` France · Alimentation · glissement annuel
+- Collecte IPC alimentaire active : un seul appel `011813726+011813720` depuis
+  `2022-04`. Le XML historique `{011813726, 011813717}` reste au brut, étiqueté
+  `france_entiere_historique`.
 - **Règle des neuf rangs** : dans un poste donné, les territoires se suivent
   (France, France métropolitaine, Guadeloupe, Martinique, Guyane, La Réunion) avec
   trois séries chacun (indice, variation mensuelle, glissement annuel). L'indice
