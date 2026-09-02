@@ -1,0 +1,29 @@
+# brut volumineux — les XML Insee sont petits et restent versionnés
+data/raw/carburants/
+data/staging/
+dist/
+*.duckdb
+*.duckdb.wal
+build/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ruff_cache/
+.pytest_cache/
+
+# dbt
+target/
+dbt_packages/
+logs/
+.user.yml
+
+# node / vite
+node_modules/
+
+# secrets et système
+.env
+.DS_Store
+.claude/

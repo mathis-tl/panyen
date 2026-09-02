@@ -1,0 +1,3 @@
+interface:
+  display_name: "Claude Stack Panyen"
+  short_description: "Adapt prompts and answers to Mathis's Claude stack and `panyen`"

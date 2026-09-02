@@ -1,0 +1,10 @@
+panyen:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: build/panyen.duckdb
+      threads: 4
+      module_paths: ["."]
+      settings:
+        TimeZone: UTC

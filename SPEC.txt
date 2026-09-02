@@ -1,0 +1,113 @@
+SPEC ACTIVE — 1.3 : STAGING SDMX TRAÇABLE
+DESTINATAIRE — Cursor Agent
+
+POURQUOI
+Transformer les XML alimentaires bruts en une table DuckDB structurée et testée,
+afin que l'étape suivante puisse calculer des évolutions sans perdre l'idbank, le
+fichier source ni l'heure de collecte. Cette étape décrit les observations ; elle ne
+compare jamais les niveaux d'indice France/Martinique.
+
+ÉTAT CONNU — DÉCISION DE RÉEMPLOI
+- Les specs 1.1 et 1.2 sont validées ; `make verify` passe avec 10 tests.
+- Le collecteur produit `data/raw/insee/ipc_alimentation_YYYY-MM-DDTHHMMSSZ.xml`.
+- La réponse réelle est du SDMX-ML 2.1 StructureSpecificData : deux éléments `Series`
+  portant notamment `IDBANK`, `FREQ`, `REF_AREA`, `LAST_UPDATE`, puis des `Obs`
+  portant `TIME_PERIOD`, `OBS_VALUE`, `OBS_STATUS`, `OBS_QUAL` et `OBS_TYPE`.
+- dbt-duckdb prend officiellement en charge les modèles Python locaux, exécutés dans
+  le processus DuckDB, et peut matérialiser une relation DuckDB retournée :
+  https://github.com/duckdb/dbt-duckdb#python-support
+- Choix fait : `xml.etree.ElementTree` + modèle Python dbt + relation DuckDB. Ne pas
+  ajouter pandas, Polars, PyArrow, plugin dbt ou extension XML DuckDB.
+
+AVANT TOUTE MODIFICATION
+1. Lire `CLAUDE.md`, `ROADMAP.md`, `SPEC.txt`, `ingest/insee_ipc.py`, les lignes SDMX
+   de `docs/SOURCES.md`, `dbt/dbt_project.yml`, `dbt/profiles.yml` et `Makefile`.
+2. Lire et appliquer `~/.claude/skills/tdd-adaptive/SKILL.md` pour le parseur.
+3. Reformuler en cinq lignes maximum le but, le grain et les non-objectifs.
+4. Cette spec valide l'architecture. Ne la rouvrir que si un obstacle prouvé rend le
+   modèle Python dbt-duckdb impossible dans les versions verrouillées.
+
+TRAVAIL AUTORISÉ
+1. Créer un petit module pur, par exemple `transformation/sdmx.py`, qui parse les XML
+   avec la bibliothèque standard. Il ne télécharge rien et ne modifie jamais le brut.
+2. Créer `dbt/models/staging/stg_ipc.py`, matérialisé en table, qui lit tous les
+   `ipc_alimentation_*.xml` triés, utilise ce module et retourne une relation DuckDB.
+   Configurer `module_paths` seulement si nécessaire à cet import.
+3. Créer `dbt/models/staging/schema.yml` avec description, grain et tests, plus les
+   rares tests SQL singuliers nécessaires sans installer `dbt-utils`.
+4. Ajouter des tests pytest et une fixture SDMX minimale fidèle à la structure réelle.
+5. Effectuer une seule collecte normale avec le collecteur existant afin d'obtenir le
+   premier XML brut réel. Ce fichier Insee est petit, traçable et reste versionnable.
+6. Faire exécuter le modèle et ses tests par `make verify`, hors réseau après cette
+   collecte initiale. Documenter en quelques lignes les commandes utiles dans README.
+
+GRAIN ET COLONNES DE `stg_ipc`
+- Grain obligatoire : une observation par `(fichier_source, idbank, periode)`.
+- Conserver au minimum : `fichier_source`, `collecte_utc`, `idbank`, `code_territoire`
+  (`REF_AREA`), `frequence`, `titre`, `mise_a_jour_source`, `unite_mesure`,
+  `multiplicateur_unite`, `decimales`, `periode`, `valeur_indice`,
+  `statut_observation`, `qualite_observation` et `type_observation`.
+- `idbank` reste une chaîne pour préserver le zéro initial ; `periode` représente le
+  premier jour du mois ; `valeur_indice` est numérique et peut être nulle uniquement
+  pour une observation explicitement indisponible (`OBS_STATUS=ND`).
+- `collecte_utc` vient exclusivement de l'horodatage UTC du nom du fichier brut.
+  `fichier_source` est un chemin relatif stable, jamais un chemin absolu local.
+- Chaque table et chaque colonne sont décrites en français ; le grain apparaît dans
+  le commentaire d'en-tête du modèle et dans `schema.yml`.
+
+ÉCHECS OBLIGATOIREMENT BRUYANTS
+- Aucun fichier brut trouvé, XML invalide, nom de fichier non conforme ou XML vide.
+- Série absente, idbank autre que `011813726`/`011813717`, fréquence autre que `M`,
+  attribut structurel obligatoire manquant ou période/valeur mal formée.
+- Doublon du grain dans un même fichier.
+- Une valeur absente sans statut `ND`. Ne supprimer, compléter ou corriger aucune
+  observation ; conserver les statuts source.
+- Ne pas exiger que France et Martinique aient le même dernier mois : leur bord de
+  publication peut être différent et sera traité à l'étape suivante.
+
+TESTS OBLIGATOIRES
+- Commencer par un test rouge du parseur avant son implémentation et montrer l'échec.
+- Les tests pytest utilisent uniquement `tmp_path` et des fixtures locales ; aucun
+  appel réseau et aucune écriture dans `data/raw/`.
+- Couvrir au minimum : deux séries et plusieurs observations ; types et zéro initial ;
+  provenance issue de deux noms de fichiers ; statuts conservés ; valeur `ND` nulle ;
+  XML invalide ; série inconnue/manquante ; attribut requis absent ; doublon ; période
+  ou valeur invalide ; absence de fichier.
+- Les tests dbt couvrent au minimum : unicité du grain, clés/provenance non nulles,
+  deux idbanks autorisés, fréquence mensuelle, deux séries par fichier et valeur nulle
+  seulement si `ND` ou comprise entre 50 et 200.
+- Ne créer aucun test imposant une égalité des dernières périodes entre territoires.
+
+NON-OBJECTIFS
+- Ne pas modifier `ingest/insee_ipc.py` ni transformer le XML dans `ingest/`.
+- Ne pas choisir le dernier snapshot, apparier les territoires, rebaser, calculer
+  une évolution, un différentiel ou un écart de prix : ce sera la spec 1.4.
+- Ne créer ni modèle `int_`/`fct_`, Parquet, publication, API ou interface.
+- Ne comparer sous aucune forme les valeurs d'indice France et Martinique en niveau.
+- Ne pas ajouter de dépendance, plugin, règle, skill, hook, MCP, commit, remote ou PR.
+- Ne pas utiliser Graphify, frontend-design, Context7 ou subagent de review.
+
+VÉRIFICATION OBLIGATOIRE
+1. Après le cycle TDD, lire et appliquer
+   `~/.claude/skills/verification-loop/SKILL.md`, sans `/verify`.
+2. Lancer une seule collecte réelle : `uv run python ingest/insee_ipc.py`.
+3. Exécuter `make verify`; il doit lancer Ruff, pytest, `dbt build` pour `stg_ipc` et
+   ses tests, puis le build Vite. Aucun appel réseau dans `make verify`.
+4. Interroger uniquement la structure/provenance : par idbank, afficher le nombre de
+   lignes et les périodes min/max. Ne pas afficher ni comparer les niveaux d'indice.
+5. Vérifier que le XML brut est inchangé, puis inspecter `git status --short` et le
+   diff final. Toute erreur doit être corrigée dans ce périmètre puis rejouée.
+
+FINI QUAND
+- Une collecte brute peut être reconstruite en `stg_ipc` sans dépendance nouvelle.
+- Chaque observation est typée, testée et reliée à son idbank, son fichier brut et
+  son heure de collecte ; aucun statut ou mois n'est réparé silencieusement.
+- `make verify` est entièrement vert hors réseau après la collecte initiale.
+
+RAPPORT FINAL
+- Résultat : terminé ou bloqué ; fichiers touchés et raison.
+- Preuve du test rouge, puis résultats pytest/dbt/build exacts.
+- Nom et empreinte SHA-256 du XML collecté, sans recopier son contenu.
+- Schéma, grain, volumétrie et périodes min/max par idbank, sans niveaux d'indice.
+- Chemins des deux `SKILL.md` lus ; écarts et risques restants.
+- Puis STOP : ne pas commencer la spec 1.4.

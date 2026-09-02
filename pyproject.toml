@@ -1,0 +1,23 @@
+[project]
+name = "panyen"
+version = "0.1.0"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "dbt-duckdb>=1.11,<1.12",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.5",
+]
+
+# Jeu stable (E4/E7/E9 + F) : le collecteur existant n'est pas modifié en 1.1.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]

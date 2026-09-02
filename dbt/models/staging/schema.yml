@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: stg_ipc
+    description: >
+      Observations mensuelles des indices alimentaires Insee (France et
+      Martinique), issues des XML SDMX bruts. Grain : une observation par
+      (fichier_source, idbank, periode). Cette table ne compare pas les
+      niveaux d'indice entre territoires.
+    columns:
+      - name: fichier_source
+        description: Chemin relatif stable du XML brut dans le dépôt.
+        data_tests:
+          - not_null
+      - name: collecte_utc
+        description: Horodatage UTC lu exclusivement dans le nom du fichier brut.
+        data_tests:
+          - not_null
+      - name: idbank
+        description: Identifiant Insee de la série, conservé en chaîne avec son zéro initial.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["011813726", "011813717"]
+      - name: code_territoire
+        description: Code SDMX REF_AREA de la série (territoire).
+        data_tests:
+          - not_null
+      - name: frequence
+        description: Fréquence SDMX de la série ; seule la fréquence mensuelle M est acceptée.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["M"]
+      - name: titre
+        description: Titre de la série tel que publié par l'Insee.
+        data_tests:
+          - not_null
+      - name: mise_a_jour_source
+        description: Attribut LAST_UPDATE de la série, conservé tel quel.
+        data_tests:
+          - not_null
+      - name: unite_mesure
+        description: Unité de mesure SDMX de la série.
+        data_tests:
+          - not_null
+      - name: multiplicateur_unite
+        description: Multiplicateur d'unité SDMX (UNIT_MULT), entier.
+        data_tests:
+          - not_null
+      - name: decimales
+        description: Nombre de décimales déclaré par la source.
+        data_tests:
+          - not_null
+      - name: periode
+        description: Premier jour du mois d'observation (TIME_PERIOD).
+        data_tests:
+          - not_null
+      - name: valeur_indice
+        description: >
+          Valeur numérique de l'indice. Nulle uniquement si l'observation est
+          explicitement indisponible (OBS_STATUS = ND).
+      - name: statut_observation
+        description: Statut SDMX OBS_STATUS, conservé sans correction.
+        data_tests:
+          - not_null
+      - name: qualite_observation
+        description: Qualité SDMX OBS_QUAL, conservée sans correction.
+        data_tests:
+          - not_null
+      - name: type_observation
+        description: Type SDMX OBS_TYPE, conservé sans correction.
+        data_tests:
+          - not_null
