@@ -27,3 +27,7 @@ node_modules/
 .env
 .DS_Store
 .claude/
+
+# outils locaux d'agents
+graphify-out/
+.codex-handoff.md
