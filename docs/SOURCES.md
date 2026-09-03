@@ -82,6 +82,11 @@ Enquête de mars-avril 2022, indice de Fisher, ~5 000 relevés en Martinique et
 
 Source : Insee Analyses Martinique n° 63 — <https://www.insee.fr/fr/statistiques/7649202>
 
+Cette mesure alimentaire (+40 %, Fisher, mars-avril 2022) est versionnée dans
+`dbt/seeds/ecsp_alimentation_2022.csv`. Ce n'est pas une constante SQL : toute
+extrapolation après avril 2022 est une estimation, calculée avec le coefficient
+d'évolution `facteur_martinique / facteur_france_metropolitaine`.
+
 Périodicité : environ quinquennale. Pas de date publique pour la prochaine.
 
 ---

@@ -36,6 +36,34 @@ qui le reproduit.)*
   outre-mer — parce que l'obligation de déclarer ses prix n'existe pas dans les
   DOM, où le prix est fixé par arrêté préfectoral.
 
+## Différentiel alimentaire depuis 2022
+
+Reconstruction, hors réseau, à partir du brut déjà collecté :
+
+```bash
+uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
+```
+
+La commande retient le fichier métropolitain le plus récent en entier, rebase
+chaque série sur avril 2022 **dans son propre territoire**, puis apparie les
+facteurs d'évolution. Le dernier mois commun actuellement calculé est
+**juillet 2026** : la France publie souvent un mois de plus, ce mois-là n'entre
+pas dans le calcul.
+
+En mots simples :
+
+- Pour un territoire, le facteur d'un mois est « l'indice de ce mois divisé par
+  l'indice d'avril 2022 **du même territoire** ».
+- L'évolution en % est ce facteur, moins 1, fois 100.
+- Le différentiel compare ces deux évolutions, jamais les niveaux d'indice.
+- L'estimation de l'écart de prix part du +40 % mesuré en 2022, multiplié par le
+  rapport exact des deux facteurs — pas par la simple différence des pourcentages.
+
+À avril 2022, le +40 % est une **mesure** ECSP (`mesure_ecsp_2022`). Chaque mois
+suivant, `ecart_prix_estime_pct` est une **estimation**
+(`estimation_a_partir_ecsp_2022`). La mesure sourcée vit dans
+`dbt/seeds/ecsp_alimentation_2022.csv`.
+
 ## Essayer
 
 ```bash
@@ -43,11 +71,11 @@ git clone <url> && cd panyen
 make install
 uv run python ingest/insee_ipc.py --depuis 2022-04 --dry-run
 uv run python ingest/insee_ipc.py --depuis 2022-04
-uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+
+uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
 make verify
 ```
 
-`make verify` (Ruff, pytest, `dbt build` de `stg_ipc`, build Vite) n'appelle pas le réseau. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
+`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, build Vite) n'appelle pas le réseau. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
 
 ## Limites connues
 

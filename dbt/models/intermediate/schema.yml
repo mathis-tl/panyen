@@ -1,0 +1,597 @@
+version: 2
+
+models:
+  - name: int_ipc_alimentation_rebase
+    description: >
+      Rebasage intra-territoire des indices alimentaires du dernier lot
+      métropolitain. Grain : une ligne par (fichier_source, idbank, periode)
+      de l'ancre 2022-04-01 au dernier mois commun inclus. Les niveaux d'indice
+      ne sont jamais comparés entre territoires ; un mois interne absent ou ND
+      reste visible avec un calcul nul.
+    columns:
+      - name: fichier_source
+        description: Fichier brut métropolitain retenu, comme unité indivisible.
+        data_tests:
+          - not_null
+      - name: collecte_utc
+        description: Horodatage UTC de collecte lu dans le nom du fichier retenu.
+        data_tests:
+          - not_null
+      - name: idbank
+        description: Identifiant Insee de la série, 011813726 ou 011813720.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["011813726", "011813720"]
+      - name: code_territoire
+        description: Territoire de la série, D972 ou FM, jamais apparié en niveau.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["D972", "FM"]
+      - name: perimetre_reference
+        description: Périmètre du lot actif, exclusivement france_metropolitaine.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["france_metropolitaine"]
+      - name: periode
+        description: Premier jour du mois d'observation, dans le calendrier fermé.
+        data_tests:
+          - not_null
+      - name: dernier_mois_commun
+        description: Plus ancien des derniers mois valides de D972 et de FM.
+        data_tests:
+          - not_null
+      - name: valeur_indice
+        description: >
+          Niveau brut intra-territoire, conservé pour la traçabilité. Nul si le
+          mois est absent ou ND : le test not_null échoue alors volontairement,
+          sans interpolation. Ne jamais le comparer à l'autre territoire.
+        data_tests:
+          - not_null
+      - name: statut_observation
+        description: >
+          Statut SDMX conservé. ND reste ND ; un mois absent reste nul et fait
+          échouer le test not_null.
+        data_tests:
+          - not_null
+      - name: facteur
+        description: >
+          indice(t) / indice(2022-04) calculé uniquement dans le même territoire.
+          Nul si l'ancre ou le mois est invalide ; le test not_null échoue alors.
+        data_tests:
+          - not_null
+      - name: evolution_pct
+        description: >
+          (facteur - 1) * 100, toujours intra-territoire. Nul si le facteur l'est,
+          et le test not_null échoue alors.
+        data_tests:
+          - not_null
+
+# Les valeurs des unit tests sont explicitement synthétiques.
+# Elles ne sont pas des données Insee et ne doivent jamais être
+# présentées comme telles.
+
+unit_tests:
+  - name: selectionne_le_fichier_metropolitain_le_plus_recent_en_entier
+    description: >
+      Deux snapshots métropolitains et un lot historique : seul le fichier
+      actif le plus récent est retenu, en entier. Données synthétiques,
+      pas des observations Insee.
+    model: int_ipc_alimentation_rebase
+    given:
+      - input: ref("stg_ipc")
+        format: sql
+        rows: |
+          select
+            'data/raw/insee/ipc_historique.xml' as fichier_source,
+            timestamptz '2026-01-01 00:00:00+00' as collecte_utc,
+            '011813726' as idbank,
+            'D972' as code_territoire,
+            'france_entiere_historique' as perimetre_reference,
+            date '2022-04-01' as periode,
+            90.0 as valeur_indice,
+            'A' as statut_observation
+          union all
+          select
+            'data/raw/insee/ipc_historique.xml',
+            timestamptz '2026-01-01 00:00:00+00',
+            '011813717',
+            'FE',
+            'france_entiere_historique',
+            date '2022-04-01',
+            90.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_ancien.xml',
+            timestamptz '2026-08-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-04-01',
+            50.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_ancien.xml',
+            timestamptz '2026-08-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-05-01',
+            200.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_ancien.xml',
+            timestamptz '2026-08-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-04-01',
+            50.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_ancien.xml',
+            timestamptz '2026-08-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-05-01',
+            200.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_recent.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-04-01',
+            100.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_recent.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-05-01',
+            125.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_recent.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-04-01',
+            80.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_metro_recent.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-05-01',
+            100.0,
+            'A'
+    expect:
+      format: sql
+      rows: |
+        select
+          'data/raw/insee/ipc_metro_recent.xml' as fichier_source,
+          timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+          '011813726' as idbank,
+          'D972' as code_territoire,
+          'france_metropolitaine' as perimetre_reference,
+          date '2022-04-01' as periode,
+          date '2022-05-01' as dernier_mois_commun,
+          100.0 as valeur_indice,
+          'A' as statut_observation,
+          1.0 as facteur,
+          0.0 as evolution_pct
+        union all
+        select
+          'data/raw/insee/ipc_metro_recent.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813726',
+          'D972',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-05-01',
+          125.0,
+          'A',
+          1.25,
+          25.0
+        union all
+        select
+          'data/raw/insee/ipc_metro_recent.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-04-01',
+          date '2022-05-01',
+          80.0,
+          'A',
+          1.0,
+          0.0
+        union all
+        select
+          'data/raw/insee/ipc_metro_recent.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-05-01',
+          100.0,
+          'A',
+          1.25,
+          25.0
+
+  - name: exclut_le_mois_terminal_non_commun
+    description: >
+      Bord irrégulier synthétique : un mois terminal présent pour un seul
+      territoire est exclu et dernier_mois_commun reste explicite.
+    model: int_ipc_alimentation_rebase
+    given:
+      - input: ref("stg_ipc")
+        format: sql
+        rows: |
+          select
+            'data/raw/insee/ipc_synth.xml' as fichier_source,
+            timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            '011813726' as idbank,
+            'D972' as code_territoire,
+            'france_metropolitaine' as perimetre_reference,
+            date '2022-04-01' as periode,
+            100.0 as valeur_indice,
+            'A' as statut_observation
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-05-01',
+            100.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-04-01',
+            80.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-05-01',
+            80.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-06-01',
+            110.0,
+            'A'
+    expect:
+      format: sql
+      rows: |
+        select
+          'data/raw/insee/ipc_synth.xml' as fichier_source,
+          timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+          '011813726' as idbank,
+          'D972' as code_territoire,
+          'france_metropolitaine' as perimetre_reference,
+          date '2022-04-01' as periode,
+          date '2022-05-01' as dernier_mois_commun,
+          100.0 as valeur_indice,
+          'A' as statut_observation,
+          1.0 as facteur,
+          0.0 as evolution_pct
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813726',
+          'D972',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-05-01',
+          100.0,
+          'A',
+          1.0,
+          0.0
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-04-01',
+          date '2022-05-01',
+          80.0,
+          'A',
+          1.0,
+          0.0
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-05-01',
+          80.0,
+          'A',
+          1.0,
+          0.0
+
+  - name: conserve_le_mois_interne_absent_et_nd
+    description: >
+      Mois interne absent et observation ND synthétiques : la ligne calendaire
+      subsiste avec un calcul nul, sans interpolation.
+    model: int_ipc_alimentation_rebase
+    given:
+      - input: ref("stg_ipc")
+        format: sql
+        rows: |
+          select
+            'data/raw/insee/ipc_synth.xml' as fichier_source,
+            timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            '011813726' as idbank,
+            'D972' as code_territoire,
+            'france_metropolitaine' as perimetre_reference,
+            date '2022-04-01' as periode,
+            100.0 as valeur_indice,
+            'A' as statut_observation
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-06-01',
+            125.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-04-01',
+            80.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-05-01',
+            cast(null as double),
+            'ND'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-06-01',
+            80.0,
+            'A'
+    expect:
+      format: sql
+      rows: |
+        select
+          'data/raw/insee/ipc_synth.xml' as fichier_source,
+          timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+          '011813726' as idbank,
+          'D972' as code_territoire,
+          'france_metropolitaine' as perimetre_reference,
+          date '2022-04-01' as periode,
+          date '2022-06-01' as dernier_mois_commun,
+          100.0 as valeur_indice,
+          'A' as statut_observation,
+          1.0 as facteur,
+          0.0 as evolution_pct
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813726',
+          'D972',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-06-01',
+          cast(null as double),
+          cast(null as varchar),
+          cast(null as double),
+          cast(null as double)
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813726',
+          'D972',
+          'france_metropolitaine',
+          date '2022-06-01',
+          date '2022-06-01',
+          125.0,
+          'A',
+          1.25,
+          25.0
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-04-01',
+          date '2022-06-01',
+          80.0,
+          'A',
+          1.0,
+          0.0
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-06-01',
+          cast(null as double),
+          'ND',
+          cast(null as double),
+          cast(null as double)
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-06-01',
+          date '2022-06-01',
+          80.0,
+          'A',
+          1.0,
+          0.0
+
+  - name: ancre_absente_ou_nulle_sans_facteur
+    description: >
+      Ancre synthétique ND : aucun facteur valide n'est fabriqué pour ce
+      territoire. Données synthétiques, pas des observations Insee.
+    model: int_ipc_alimentation_rebase
+    given:
+      - input: ref("stg_ipc")
+        format: sql
+        rows: |
+          select
+            'data/raw/insee/ipc_synth.xml' as fichier_source,
+            timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            '011813726' as idbank,
+            'D972' as code_territoire,
+            'france_metropolitaine' as perimetre_reference,
+            date '2022-04-01' as periode,
+            cast(null as double) as valeur_indice,
+            'ND' as statut_observation
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813726',
+            'D972',
+            'france_metropolitaine',
+            date '2022-05-01',
+            125.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-04-01',
+            80.0,
+            'A'
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            'france_metropolitaine',
+            date '2022-05-01',
+            100.0,
+            'A'
+    expect:
+      format: sql
+      rows: |
+        select
+          'data/raw/insee/ipc_synth.xml' as fichier_source,
+          timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+          '011813726' as idbank,
+          'D972' as code_territoire,
+          'france_metropolitaine' as perimetre_reference,
+          date '2022-04-01' as periode,
+          date '2022-05-01' as dernier_mois_commun,
+          cast(null as double) as valeur_indice,
+          'ND' as statut_observation,
+          cast(null as double) as facteur,
+          cast(null as double) as evolution_pct
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813726',
+          'D972',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-05-01',
+          125.0,
+          'A',
+          cast(null as double),
+          cast(null as double)
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-04-01',
+          date '2022-05-01',
+          80.0,
+          'A',
+          1.0,
+          0.0
+        union all
+        select
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813720',
+          'FM',
+          'france_metropolitaine',
+          date '2022-05-01',
+          date '2022-05-01',
+          100.0,
+          'A',
+          1.25,
+          25.0

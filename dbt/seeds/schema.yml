@@ -1,0 +1,65 @@
+version: 2
+
+seeds:
+  - name: ecsp_alimentation_2022
+    description: >
+      Mesure ECSP alimentaire de mars-avril 2022, grain
+      (poste, territoire_compare, territoire_reference, periode_ancrage).
+      Une seule ligne : écart de Fisher +40 % entre la Martinique (D972) et
+      la France métropolitaine (FM). Cette valeur est une mesure sourcée,
+      pas une estimation ni une constante SQL.
+    config:
+      column_types:
+        periode_ancrage: date
+        ecart_fisher_pct: double
+    columns:
+      - name: poste
+        description: Poste de dépense comparé, alimentation.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["alimentation"]
+      - name: territoire_compare
+        description: Territoire comparé, Martinique (D972).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["D972"]
+      - name: territoire_reference
+        description: Territoire de référence, France métropolitaine (FM).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["FM"]
+      - name: periode_ancrage
+        description: Ancre commune du calcul, 2022-04-01.
+        data_tests:
+          - not_null
+      - name: ecart_fisher_pct
+        description: Écart de Fisher alimentaire mesuré par l'ECSP, +40 %.
+        data_tests:
+          - not_null
+      - name: methode
+        description: Indice de Fisher, moyenne géométrique des deux paniers.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["Fisher"]
+      - name: periode_enquete
+        description: Période d'enquête Insee, mars-avril 2022.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["mars-avril 2022"]
+      - name: source_ecsp
+        description: URL exacte de la publication Insee Analyses Martinique n° 63.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["https://www.insee.fr/fr/statistiques/7649202"]

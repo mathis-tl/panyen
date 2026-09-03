@@ -1,0 +1,223 @@
+version: 2
+
+models:
+  - name: fct_differentiel_alimentation
+    description: >
+      Différentiel alimentaire Martinique–France métropolitaine, une ligne par
+      mois commun. Joint les facteurs déjà rebasés intra-territoire et la
+      mesure ECSP 2022. L'écart de niveau n'est une mesure qu'à l'ancre ;
+      après, ecart_prix_estime_pct est une estimation. Aucun niveau d'indice
+      brut n'est exposé.
+    columns:
+      - name: periode
+        description: Premier jour du mois commun.
+        data_tests:
+          - not_null
+          - unique
+      - name: dernier_mois_commun
+        description: Dernier mois commun recopié depuis le rebasage.
+        data_tests:
+          - not_null
+      - name: poste
+        description: Poste de dépense, uniquement alimentation dans ce modèle.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["alimentation"]
+      - name: fichier_source
+        description: Fichier brut du lot métropolitain retenu.
+        data_tests:
+          - not_null
+      - name: collecte_utc
+        description: Horodatage UTC de collecte du fichier retenu.
+        data_tests:
+          - not_null
+      - name: idbank_martinique
+        description: Série martiniquaise 011813726.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["011813726"]
+      - name: idbank_france_metropolitaine
+        description: Série métropolitaine 011813720.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["011813720"]
+      - name: facteur_martinique
+        description: Facteur d'évolution martiniquais depuis avril 2022.
+        data_tests:
+          - not_null
+      - name: facteur_france_metropolitaine
+        description: Facteur d'évolution métropolitain depuis avril 2022.
+        data_tests:
+          - not_null
+      - name: evolution_martinique_pct
+        description: Évolution martiniquaise en %, intra-territoire.
+        data_tests:
+          - not_null
+      - name: evolution_france_metropolitaine_pct
+        description: Évolution métropolitaine en %, intra-territoire.
+        data_tests:
+          - not_null
+      - name: differentiel_evolution_points
+        description: >
+          Différence des évolutions en points, pas une comparaison de niveaux.
+        data_tests:
+          - not_null
+      - name: coefficient_ecart
+        description: Rapport exact des deux facteurs, pas la différence des %.
+        data_tests:
+          - not_null
+      - name: ecart_ecsp_2022_pct
+        description: Mesure Fisher ECSP 2022 (+40 %), lue dans le seed sourcé.
+        data_tests:
+          - not_null
+      - name: ecart_prix_estime_pct
+        description: >
+          Écart de prix. Mesure à l'ancre, estimation ensuite, via le
+          coefficient exact.
+        data_tests:
+          - not_null
+      - name: source_ecsp
+        description: URL Insee de l'ECSP 2022, transmise depuis le seed.
+        data_tests:
+          - not_null
+      - name: nature_ecart
+        description: >
+          mesure_ecsp_2022 uniquement à l'ancre, sinon
+          estimation_a_partir_ecsp_2022.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - mesure_ecsp_2022
+                  - estimation_a_partir_ecsp_2022
+
+# Les indices des unit tests sont synthétiques, pas des données Insee.
+# Le 40 % du seed mocké est la mesure ECSP sourcée, pas un indice.
+
+unit_tests:
+  - name: calcul_synthetique_coefficient_et_estimation
+    description: >
+      Calcul synthétique : facteurs, évolutions, différentiel, coefficient
+      exact et estimation ECSP. Les indices sous-jacents sont fictifs.
+    model: fct_differentiel_alimentation
+    given:
+      - input: ref("int_ipc_alimentation_rebase")
+        format: sql
+        rows: |
+          select
+            'data/raw/insee/ipc_synth.xml' as fichier_source,
+            timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            '011813726' as idbank,
+            'D972' as code_territoire,
+            date '2022-05-01' as periode,
+            date '2022-05-01' as dernier_mois_commun,
+            1.25 as facteur,
+            25.0 as evolution_pct
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            date '2022-05-01',
+            date '2022-05-01',
+            1.0,
+            0.0
+      - input: ref("ecsp_alimentation_2022")
+        format: sql
+        rows: |
+          select
+            'alimentation' as poste,
+            'D972' as territoire_compare,
+            'FM' as territoire_reference,
+            date '2022-04-01' as periode_ancrage,
+            40.0 as ecart_fisher_pct,
+            'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp
+    expect:
+      format: sql
+      rows: |
+        select
+          date '2022-05-01' as periode,
+          date '2022-05-01' as dernier_mois_commun,
+          'alimentation' as poste,
+          'data/raw/insee/ipc_synth.xml' as fichier_source,
+          timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+          '011813726' as idbank_martinique,
+          '011813720' as idbank_france_metropolitaine,
+          1.25 as facteur_martinique,
+          1.0 as facteur_france_metropolitaine,
+          25.0 as evolution_martinique_pct,
+          0.0 as evolution_france_metropolitaine_pct,
+          25.0 as differentiel_evolution_points,
+          1.25 as coefficient_ecart,
+          40.0 as ecart_ecsp_2022_pct,
+          ((1 + 40.0 / 100) * 1.25 - 1) * 100 as ecart_prix_estime_pct,
+          'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp,
+          'estimation_a_partir_ecsp_2022' as nature_ecart
+
+  - name: identites_de_l_ancre
+    description: >
+      Ligne d'ancre synthétique : facteurs 1, évolutions 0, différentiel 0,
+      coefficient 1, écart 40, nature mesure_ecsp_2022.
+    model: fct_differentiel_alimentation
+    given:
+      - input: ref("int_ipc_alimentation_rebase")
+        format: sql
+        rows: |
+          select
+            'data/raw/insee/ipc_synth.xml' as fichier_source,
+            timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            '011813726' as idbank,
+            'D972' as code_territoire,
+            date '2022-04-01' as periode,
+            date '2022-04-01' as dernier_mois_commun,
+            1.0 as facteur,
+            0.0 as evolution_pct
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            '011813720',
+            'FM',
+            date '2022-04-01',
+            date '2022-04-01',
+            1.0,
+            0.0
+      - input: ref("ecsp_alimentation_2022")
+        format: sql
+        rows: |
+          select
+            'alimentation' as poste,
+            'D972' as territoire_compare,
+            'FM' as territoire_reference,
+            date '2022-04-01' as periode_ancrage,
+            40.0 as ecart_fisher_pct,
+            'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp
+    expect:
+      format: sql
+      rows: |
+        select
+          date '2022-04-01' as periode,
+          date '2022-04-01' as dernier_mois_commun,
+          'alimentation' as poste,
+          'data/raw/insee/ipc_synth.xml' as fichier_source,
+          timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+          '011813726' as idbank_martinique,
+          '011813720' as idbank_france_metropolitaine,
+          1.0 as facteur_martinique,
+          1.0 as facteur_france_metropolitaine,
+          0.0 as evolution_martinique_pct,
+          0.0 as evolution_france_metropolitaine_pct,
+          0.0 as differentiel_evolution_points,
+          1.0 as coefficient_ecart,
+          40.0 as ecart_ecsp_2022_pct,
+          ((1 + 40.0 / 100) * 1.0 - 1) * 100 as ecart_prix_estime_pct,
+          'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp,
+          'mesure_ecsp_2022' as nature_ecart

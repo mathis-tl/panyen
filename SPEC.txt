@@ -1,99 +1,213 @@
-SPEC ACTIVE — 1.3b : CORRIGER LE PÉRIMÈTRE GÉOGRAPHIQUE
+SPEC ACTIVE — 1.4 : DIFFÉRENTIEL ALIMENTAIRE DEPUIS L'ECSP 2022
 DESTINATAIRE — Cursor Agent
 
 OBJECTIF UTILISATEUR
-Aligner la série mensuelle de référence sur l'ECSP 2022 : Martinique contre France
-métropolitaine. Sans cette correction, la future estimation combinerait un écart
-ECSP Martinique–métropole avec une évolution IPC Martinique–France entière.
+Calculer, mois par mois depuis avril 2022, si l'écart alimentaire mesuré entre la
+Martinique et la France métropolitaine se creuse ou se resserre. Le calcul doit
+partir du dernier lot IPC métropolitain complet, comparer uniquement des évolutions
+intra-territoire et nommer explicitement toute extrapolation de l'ECSP "estimation".
 
-ÉTAT ET DÉCISION VALIDÉE
-- La spec 1.3 est terminée et le commit de référence est `e1d96ad`.
-- L'ECSP alimentaire (+40 %, Fisher) compare la Martinique à la France
-  métropolitaine : https://www.insee.fr/fr/statistiques/7649202
-- Idbanks vérifiés, base 2025, ensemble des ménages :
-  `011813726` = Martinique (`D972`), `011813717` = France entière (`FE`, historique),
-  `011813720` = France métropolitaine (`FM`, nouvelle référence active).
-- La collecte active devient exactement `{011813726, 011813720}`.
-- Le XML déjà versionné reste immuable à son emplacement. Son ancienne paire
-  `{011813726, 011813717}` est conservée et explicitement étiquetée comme historique.
+ÉTAT ET DÉCISIONS VALIDÉES
+- La spec 1.3b est terminée au commit `8319055`.
+- `stg_ipc` contient le lot historique France entière et le lot actif France
+  métropolitaine, distingués par `perimetre_reference`.
+- Le calcul utilise exclusivement le fichier entier le plus récent dont le
+  périmètre est `france_metropolitaine`. Ne jamais choisir un snapshot différent
+  par territoire, idbank ou mois.
+- Avril 2022 (`2022-04-01`) est l'ancre commune, alignée sur l'ECSP menée en
+  mars-avril 2022.
+- L'ECSP alimentaire mesure un écart de Fisher de +40 % entre la Martinique et la
+  France métropolitaine. Cette mesure est saisie dans un seed dbt sourcé.
+- Architecture retenue : SQL DuckDB, seed dbt, unit tests dbt natifs et data tests
+  dbt. Les versions verrouillées suffisent ; aucune dépendance ni macro maison.
+- Rebaser d'abord en format long à l'intérieur de chaque territoire, puis apparier
+  les facteurs d'évolution. Ne jamais placer deux niveaux d'indice territoriaux
+  dans une soustraction, un ratio ou une comparaison.
+
+SOURCES DE LA DÉCISION DE RÉEMPLOI
+- Unit tests SQL dbt, disponibles depuis dbt 1.8 :
+  https://docs.getdbt.com/docs/build/unit-tests
+- Seeds dbt pour les petits référentiels versionnés :
+  https://docs.getdbt.com/docs/build/seeds
+- Fonctions de dates et fenêtres DuckDB :
+  https://duckdb.org/docs/stable/sql/functions/date
+  https://duckdb.org/docs/stable/sql/functions/window_functions
+- Valeur ECSP et provenance : `docs/SOURCES.md`, section 2, et
+  https://www.insee.fr/fr/statistiques/7649202
 
 AVANT DE MODIFIER
-1. Lire `CLAUDE.md`, `ROADMAP.md`, `SPEC.txt`, `docs/SOURCES.md`, le collecteur,
-   le parseur SDMX, `stg_ipc`, ses tests pytest/dbt et le XML uniquement via ses
-   métadonnées/structure utiles. Ne pas utiliser Graphify.
-2. Lire et appliquer `~/.claude/skills/tdd-adaptive/SKILL.md`.
-3. Reformuler en cinq lignes maximum : erreur corrigée, paire active, traitement du
-   lot historique, non-objectifs et critère de réussite.
-4. L'architecture est décidée. Ne proposer une alternative que si un obstacle
-   prouvé empêche de préserver et distinguer les deux types de lots.
+1. Lire `AGENTS.md`, `CLAUDE.md`, `ROADMAP.md`, `SPEC.txt`, `docs/CONTEXTE.md`,
+   `docs/SOURCES.md`, `Makefile`, `dbt/dbt_project.yml`, `dbt/profiles.yml`,
+   `dbt/models/staging/stg_ipc.py`, son `schema.yml` et ses tests SQL.
+2. Utiliser d'abord Graphify avec la commande réelle :
+   `graphify query "Comment construire le différentiel alimentaire 1.4 depuis stg_ipc sans comparer les niveaux d'indice territoriaux ?" --budget 1800`
+   Confirmer ensuite chaque conclusion importante dans les fichiers source. Employer
+   au besoin `graphify path`, `graphify explain` ou `graphify affected` ; le graphe
+   n'est jamais une preuve unique.
+3. Lire et appliquer `~/.claude/skills/tdd-adaptive/SKILL.md`.
+4. Reformuler en cinq lignes maximum : lot choisi, ancre, dernier mois commun,
+   formules autorisées, non-objectifs et critère de réussite.
+5. L'architecture est décidée. Ne proposer une alternative que si un obstacle
+   reproduit dans les versions verrouillées empêche les unit tests dbt ou le SQL.
+
+FORMULES OBLIGATOIRES
+Pour chaque territoire `x` et chaque mois `t`, calculer d'abord uniquement dans la
+série de ce territoire :
+
+`facteur_x(t) = indice_x(t) / indice_x(2022-04)`
+
+`evolution_x_pct(t) = (facteur_x(t) - 1) * 100`
+
+Après ce rebasage intra-territoire seulement, apparier les mois et calculer :
+
+`differentiel_evolution_points(t) = evolution_martinique_pct(t) - evolution_france_metropolitaine_pct(t)`
+
+`coefficient_ecart(t) = facteur_martinique(t) / facteur_france_metropolitaine(t)`
+
+`ecart_prix_estime_pct(t) = ((1 + 40 / 100) * coefficient_ecart(t) - 1) * 100`
+
+À l'ancre : les deux facteurs valent 1, les deux évolutions et le différentiel
+valent 0, le coefficient vaut 1 et l'écart vaut la mesure ECSP de 40 %. Pour les
+mois postérieurs, `ecart_prix_estime_pct` est toujours une estimation. Ne pas
+remplacer le coefficient exact par la seule différence des pourcentages d'évolution.
 
 TRAVAIL AUTORISÉ
-1. Mettre à jour le collecteur pour demander, dans un seul appel, uniquement
-   `011813726+011813720` depuis `2022-04`. Adapter ses tests et libellés.
-2. Faire accepter au parseur exactement deux paires par fichier :
-   - `{011813726, 011813717}` → `france_entiere_historique` ;
-   - `{011813726, 011813720}` → `france_metropolitaine`.
-   Rejeter toute paire incomplète, tout troisième idbank et toute autre combinaison.
-3. Vérifier la correspondance exacte idbank/`REF_AREA` : `726/D972`, `717/FE`,
-   `720/FM`. Un désaccord doit échouer bruyamment.
-4. Ajouter à chaque observation `perimetre_reference`, dérivé de la paire du fichier,
-   puis propager et documenter cette colonne dans `stg_ipc`.
-5. Adapter les tests dbt : trois idbanks historiques autorisés au total, mais une
-   seule des deux paires exactes par fichier ; cohérence du périmètre et du code
-   territoire ; conserver tous les garde-fous de 1.3.
-6. Corriger les faits et formulations concernés dans `CLAUDE.md`, `docs/SOURCES.md`
-   et le README. France métropolitaine est la référence active ; France entière
-   n'est mentionnée que comme lot historique.
-7. Après les tests locaux, effectuer une seule collecte normale afin de créer le
-   premier XML brut de la paire active.
+1. Créer `dbt/seeds/ecsp_alimentation_2022.csv` avec exactement une ligne au grain
+   `(poste, territoire_compare, territoire_reference, periode_ancrage)`, contenant
+   au minimum : alimentation, `D972`, `FM`, `2022-04-01`, `40.0`, la méthode Fisher,
+   la période d'enquête mars-avril 2022 et l'URL Insee exacte.
+2. Documenter et tester ce seed dans un fichier YAML sous `dbt/seeds/`. La valeur
+   `40.0` est une mesure ECSP sourcée, pas une estimation ni une constante SQL.
+3. Créer `dbt/models/intermediate/int_ipc_alimentation_rebase.sql`, en format long.
+   Grain : une ligne par `(fichier_source, idbank, periode)` pour le dernier lot
+   actif, entre l'ancre et le dernier mois commun inclus.
+4. Dans ce modèle intermediate :
+   - filtrer d'abord `perimetre_reference = 'france_metropolitaine'` ;
+   - déterminer le maximum de `collecte_utc`, puis sélectionner toutes les lignes du
+     fichier correspondant ; ne jamais maximiser séparément par série ;
+   - calculer le dernier mois valide de `011813726/D972` et de `011813720/FM`, puis
+     prendre le plus ancien des deux comme `dernier_mois_commun` ;
+   - générer le calendrier mensuel fermé de `2022-04-01` à ce dernier mois commun,
+     le croiser avec les deux territoires attendus et faire une jointure gauche sur
+     le lot. Un mois interne absent ou `ND` doit donc rester visible par une valeur
+     nulle et faire échouer les tests ; ne jamais le supprimer ni le combler ;
+   - calculer les facteurs et évolutions par partition territoriale seulement ;
+   - conserver `fichier_source`, `collecte_utc`, `idbank`, `code_territoire`,
+     `periode`, `dernier_mois_commun` et la provenance utile ;
+   - le niveau brut peut rester dans ce modèle long pour la traçabilité, mais ne doit
+     jamais être apparié, soustrait ou divisé avec le niveau de l'autre territoire.
+5. Créer `dbt/models/marts/fct_differentiel_alimentation.sql`.
+   Grain : une ligne par mois commun. Apparier les deux lignes intermediate sur
+   `periode`, joindre le seed ECSP et exposer au minimum :
+   - `periode`, `dernier_mois_commun`, `poste`, `fichier_source`, `collecte_utc` ;
+   - les deux idbanks et les deux facteurs d'évolution ;
+   - `evolution_martinique_pct`, `evolution_france_metropolitaine_pct` ;
+   - `differentiel_evolution_points`, `coefficient_ecart` ;
+   - `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`, `source_ecsp` ;
+   - `nature_ecart`, valant `mesure_ecsp_2022` à l'ancre et
+     `estimation_a_partir_ecsp_2022` après l'ancre.
+   Ne pas exposer les deux niveaux d'indice bruts dans cette table finale.
+6. Documenter en français les deux modèles, chaque colonne et chaque grain dans des
+   fichiers YAML placés avec les modèles.
+7. Adapter `Makefile` pour que `make verify` construise le seed, toute la lignée
+   `stg_ipc -> int_ipc_alimentation_rebase -> fct_differentiel_alimentation`, les
+   unit tests et les data tests, sans réseau.
+8. Documenter dans `README.md` la commande de reconstruction, le dernier mois commun,
+   les formules en mots simples et la distinction mesure 2022 / estimation. Mettre à
+   jour `docs/CONTEXTE.md` ou `docs/SOURCES.md` seulement si nécessaire pour rendre la
+   formule ou la provenance du seed non ambiguë.
 
-TDD ET CAS OBLIGATOIRES
-- Commencer par un test rouge prouvant que le collecteur utilise `011813720` au lieu
-  de `011813717`, puis implémenter le changement.
-- Couvrir le parsing d'un lot historique et d'un lot métropolitain, leur étiquette,
-  les trois correspondances idbank/territoire, une paire incomplète, une paire
-  mélangée et un troisième idbank.
-- Les tests utilisent des fixtures locales et `tmp_path` : aucun réseau, aucune
-  écriture dans `data/raw/`.
-- Mettre à jour le test SQL « deux séries par fichier » pour contrôler les paires
-  exactes, pas seulement `count(distinct idbank) = 2`.
+TDD ET UNIT TESTS OBLIGATOIRES
+- Commencer par un unit test dbt rouge sur
+  `int_ipc_alimentation_rebase` avec des lignes synthétiques minimales ; montrer
+  l'échec avant de créer le modèle.
+- Utiliser les unit tests natifs dans un YAML sous `dbt/models/`, avec des entrées
+  `ref()` explicites et des alias de tables dans le SQL lorsque dbt l'exige.
+- Couvrir au minimum :
+  1. deux snapshots métropolitains et un lot historique : seul le fichier actif le
+     plus récent est pris, en entier ;
+  2. bord irrégulier : un mois terminal présent pour un seul territoire est exclu et
+     `dernier_mois_commun` reste explicite ;
+  3. mois interne absent et observation `ND` : la ligne calendaire subsiste avec un
+     calcul nul afin que les data tests échouent, sans interpolation ;
+  4. ancre absente ou nulle : aucun facteur valide n'est fabriqué ;
+  5. calcul synthétique simple : facteurs, deux évolutions, différentiel,
+     coefficient exact et estimation ECSP attendue ;
+  6. ligne d'ancre : facteurs 1, évolutions 0, différentiel 0, coefficient 1,
+     `ecart_prix_estime_pct = 40` et `nature_ecart = mesure_ecsp_2022`.
+- Les valeurs de fixtures sont explicitement synthétiques. Elles ne doivent jamais
+  être documentées ou présentées comme des données Insee.
 
-INVARIANTS
-- Ne jamais modifier, renommer ou supprimer
-  `data/raw/insee/ipc_alimentation_2026-09-02T163321Z.xml` ; son SHA-256 attendu reste
-  `96e9b84a449d1ff3a94729344758e4786bc0752dccb9c7c533532cd25d2d8606`.
-- Le brut reste un journal : pas de parsing, correction ou filtrage dans `ingest/`.
-- Grain de `stg_ipc` inchangé : `(fichier_source, idbank, periode)`.
-- Ne comparer ni afficher aucun niveau d'indice entre territoires.
-- Le bord de publication peut différer ; ne pas imposer le même dernier mois.
+DATA TESTS OBLIGATOIRES
+- Unicité et non-nullité des grains, périodes, identifiants et provenances.
+- Le lot sélectionné est unique, métropolitain, le plus récent et contient seulement
+  `011813726/D972` et `011813720/FM` ; aucun `011813717/FE` en aval.
+- Une observation valide existe pour chaque territoire et chaque mois de l'ancre au
+  dernier mois commun ; aucun trou interne ni `ND` dans cette fenêtre.
+- L'ancre existe exactement une fois par territoire, avec une valeur strictement
+  positive ; les facteurs et calculs finaux sont non nuls.
+- Le dernier mois de la fact table est exactement `dernier_mois_commun`. Ne pas
+  exiger que les deux séries source aient le même dernier mois.
+- Les identités de l'ancre et les formules finales sont revérifiées en SQL avec une
+  tolérance numérique explicite et serrée, jamais par arrondi précoce.
+- `nature_ecart` n'accepte que `mesure_ecsp_2022` et
+  `estimation_a_partir_ecsp_2022`, avec la première valeur uniquement à l'ancre.
+
+INVARIANTS MÉTHODOLOGIQUES
+- Toute comparaison en niveau entre l'indice D972 et l'indice FM est un bug bloquant.
+- Chaque ratio d'indice est calculé à l'intérieur d'un seul territoire avant toute
+  jointure territoriale.
+- Seul le +40 % de l'ECSP 2022 est une mesure de niveau. Chaque valeur extrapolée
+  après l'ancre est nommée `ecart_prix_estime_pct` et étiquetée estimation.
+- Le fichier actif est sélectionné comme une unité indivisible ; aucun mélange de
+  snapshots n'est autorisé.
+- La provenance survit jusqu'à la fact table : idbanks, fichier brut, collecte UTC et
+  source ECSP.
+- Aucun mois absent ou `ND` interne n'est filtré, interpolé, reporté ou réparé.
 
 NON-OBJECTIFS
-- Ne pas sélectionner le dernier snapshot actif, apparier les mois, rebaser,
-  calculer une évolution, un différentiel ou extrapoler l'écart ECSP : spec 1.4.
-- Ne créer aucun modèle `int_`/`fct_`, seed ECSP, Parquet, UI ou infrastructure.
-- Ne pas ajouter de dépendance, plugin, skill, hook, MCP, commit, remote ou PR.
+- Ne modifier ni `ingest/`, ni `transformation/sdmx.py`, ni les XML bruts, ni la
+  logique ou le grain de `stg_ipc`, sauf obstacle prouvé et STOP préalable.
+- Ne lancer aucune collecte réseau.
+- Ne traiter ni autre poste IPC, ni carburants, ni BQP.
+- Ne publier aucun Parquet : spec 1.5.
+- Ne modifier aucune interface ou dépendance web : spec 1.6.
+- Ne créer ni macro générique, package dbt, dépendance Python, extension DuckDB,
+  API, serveur, plugin, skill, hook, MCP ou infrastructure.
+- Ne cocher ni commencer 1.5, ne pas committer, pousser, créer de remote ou de PR.
+- Ne pas inclure `AGENTS.md` ou `.gitignore` dans les changements 1.4 existants.
 
 VÉRIFICATION
-1. Exécuter les tests ciblés pendant le TDD, puis lire et appliquer
-   `~/.claude/skills/verification-loop/SKILL.md` sans utiliser `/verify`.
-2. Vérifier avant et après la collecte le SHA-256 du XML historique.
-3. Lancer une seule collecte réelle : `uv run python ingest/insee_ipc.py`.
-4. Exécuter `make verify`, entièrement hors réseau après cette collecte.
-5. Interroger uniquement la structure et la provenance : par fichier, afficher
-   `perimetre_reference`, idbanks, codes territoire, volumes et périodes min/max.
-   Ne jamais afficher les valeurs d'indice.
-6. Inspecter `git status --short`, le diff final et confirmer qu'il n'existe aucun
-   fichier brut réécrit ou supprimé.
+1. Pendant le TDD, exécuter les unit tests ciblés et conserver la preuve RED puis
+   GREEN. Confirmer que les unit tests sont réellement découverts par dbt.
+2. Lire et appliquer `~/.claude/skills/verification-loop/SKILL.md`, sans `/verify`.
+3. Exécuter `make verify`, entièrement hors réseau.
+4. Interroger la fact table pour montrer uniquement : fichier sélectionné, collecte,
+   grain, nombre de mois, ancre, dernier mois commun, provenance ECSP et résultats
+   calculés. Ne pas afficher côte à côte les niveaux d'indice bruts.
+5. Recalculer indépendamment les identités de l'ancre et une ligne synthétique de
+   test ; vérifier que l'estimation utilise le coefficient exact.
+6. Inspecter `git status --short`, `git diff --check` et le diff complet. Confirmer
+   qu'aucun XML, fichier d'ingestion ou fichier hors périmètre n'a changé.
+7. Rendre le rapport à Codex pour l'audit indépendant `panyen_verifier` avant tout
+   commit.
 
 FINI QUAND
-- Le collecteur actif produit un nouveau lot `726+720` depuis avril 2022.
-- Le staging reconstruit ensemble l'ancien lot historique et le nouveau lot actif en les
-  distinguant sans ambiguïté, et rejette toute combinaison territoriale invalide.
-- Le XML historique est inchangé et `make verify` est vert hors réseau.
+- Une commande construit, depuis `stg_ipc`, le seed ECSP, le rebasage long et une
+  fact table d'un mois commun par ligne, sans dépendance nouvelle.
+- Le dernier lot actif est choisi en entier, le lot historique est absent des
+  calculs, les mois internes manquants échouent et le bord irrégulier est explicite.
+- Chaque résultat est traçable et dérive uniquement de ratios intra-territoire ;
+  aucun niveau d'indice territorial n'est comparé.
+- La mesure ECSP 2022 et les estimations postérieures sont distinguées sans ambiguïté.
+- Les unit tests ciblés et `make verify` sont verts hors réseau.
 
 RAPPORT FINAL
-- Résultat, fichiers touchés et raison ; preuve RED puis tests exacts.
-- Noms et SHA-256 des deux XML, sans recopier leur contenu.
-- Provenance/volumétrie/périodes par fichier et idbank, sans niveaux d'indice.
-- Chemins des deux skills lus, écarts et risques.
-- Puis STOP : ne pas commencer la spec 1.4 et ne pas committer.
+- Verdict terminé ou bloqué ; fichiers touchés et raison pour chacun.
+- Preuve RED, puis commandes et résultats exacts des unit tests et de `make verify`.
+- Grains, lignée, lot actif choisi, volumétrie, ancre et dernier mois commun.
+- Formules implémentées, provenance ECSP et preuve des libellés mesure/estimation.
+- Confirmation explicite : aucun niveau d'indice territorial comparé ou affiché,
+  aucun mois réparé, aucune collecte ni modification du brut.
+- Chemins des deux skills lus, écarts et risques restants.
+- Puis STOP : ne pas commencer 1.5 et ne pas committer.

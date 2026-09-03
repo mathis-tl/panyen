@@ -19,3 +19,7 @@ models:
   panyen:
     staging:
       +materialized: table
+    intermediate:
+      +materialized: table
+    marts:
+      +materialized: table

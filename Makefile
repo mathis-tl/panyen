@@ -10,7 +10,7 @@ verify:
 	uv run pytest
 	mkdir -p build
 	uv run dbt debug --project-dir dbt --profiles-dir dbt
-	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+
+	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
 	npm --prefix web run build
 
 dev:
