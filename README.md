@@ -73,9 +73,18 @@ uv run python ingest/insee_ipc.py --depuis 2022-04 --dry-run
 uv run python ingest/insee_ipc.py --depuis 2022-04
 uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
 make verify
+make publier
 ```
 
-`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, build Vite) n'appelle pas le réseau. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
+`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, build Vite) n'appelle pas le réseau et ne publie jamais le Parquet. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
+
+`make publier` exécute d'abord `make verify`, puis exporte `fct_differentiel_alimentation` vers un candidat Parquet Zstandard voisin, le valide contre la fact, et remplace atomiquement `web/public/data/differentiel_alimentation.parquet` avec `os.replace`. Si la vérification, l'export ou la validation échoue, la dernière version saine est conservée telle quelle. Le fichier généré n'est pas versionné.
+
+Lire le Parquet publié :
+
+```bash
+uv run python -c "import duckdb; print(duckdb.sql(\"select count(*), min(periode), max(periode) from 'web/public/data/differentiel_alimentation.parquet'\").fetchall())"
+```
 
 ## Limites connues
 
