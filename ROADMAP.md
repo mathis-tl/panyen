@@ -48,8 +48,9 @@ avril 2022.
 - [x] **1.3b — Périmètre géographique** : passer la référence active de France
       entière à France métropolitaine, sans effacer le brut historique.
 - [x] **1.4 — Différentiel alimentaire** : appariement, rebasage, calculs et tests dbt.
-- [ ] **1.5 — Publication sûre** : Parquet remplacé seulement après tests verts.
-- [ ] **1.6 — Écran alimentaire minimal** : DuckDB-WASM, Plot et limite méthodologique.
+- [x] **1.5 — Publication sûre** : Parquet remplacé seulement après tests verts.
+- [ ] **1.6 — Écran alimentaire minimal** : lecture Parquet navigateur, Plot et
+      limite méthodologique.
 - [ ] **1.7 — CI de la tranche** : lint, tests, build et dry-run reproductibles.
 
 **Fini quand** : une commande reconstruit la tranche depuis le brut, un test cassé

@@ -521,6 +521,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "dbt-duckdb" },
+    { name = "duckdb" },
 ]
 
 [package.dev-dependencies]
@@ -530,7 +531,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dbt-duckdb", specifier = ">=1.11,<1.12" }]
+requires-dist = [
+    { name = "dbt-duckdb", specifier = ">=1.11,<1.12" },
+    { name = "duckdb", specifier = ">=1.5,<1.6" },
+]
 
 [package.metadata.requires-dev]
 dev = [
