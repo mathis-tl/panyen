@@ -3,11 +3,10 @@ version: 2
 models:
   - name: stg_ipc
     description: >
-      Observations mensuelles des indices alimentaires Insee (Martinique et
-      France métropolitaine, plus le lot historique France entière), issues
-      des XML SDMX bruts. Grain : une observation par (fichier_source, idbank,
-      periode). Cette table ne compare pas les niveaux d'indice entre
-      territoires.
+      Observations mensuelles des indices IPC Insee (quatre postes actifs,
+      plus les lots alimentaires historiques), issues des XML SDMX bruts.
+      Grain : une observation par (fichier_source, idbank, periode). Cette
+      table ne compare pas les niveaux d'indice entre territoires.
     columns:
       - name: fichier_source
         description: Chemin relatif stable du XML brut dans le dépôt.
@@ -23,21 +22,50 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ["011813726", "011813717", "011813720"]
+                values:
+                  - "011813726"
+                  - "011813717"
+                  - "011813720"
+                  - "011813873"
+                  - "011813867"
+                  - "011813789"
+                  - "011813783"
+                  - "011813915"
+                  - "011813909"
+      - name: poste
+        description: Poste de dépense snake_case déduit de l'idbank.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - alimentation
+                  - energie
+                  - produits_manufactures
+                  - services
       - name: code_territoire
         description: >
-          Code SDMX REF_AREA de la série. Correspondances exactes :
-          011813726/D972, 011813717/FE, 011813720/FM.
+          Code SDMX REF_AREA de la série. Correspondances exactes du
+          référentiel idbank → territoire.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
                 values: ["D972", "FE", "FM"]
+      - name: lot_collecte
+        description: >
+          Lot déduit du préfixe et de l'ensemble d'idbanks du fichier.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - alimentation_france_entiere
+                  - alimentation_france_metropolitaine
+                  - quatre_postes_france_metropolitaine
       - name: perimetre_reference
         description: >
-          Périmètre déduit de la paire du fichier : france_metropolitaine
-          pour la collecte active {011813726, 011813720},
-          france_entiere_historique pour le lot {011813726, 011813717}.
+          Périmètre géographique de référence du lot.
         data_tests:
           - not_null
           - accepted_values:

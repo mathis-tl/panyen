@@ -19,7 +19,7 @@ ci:
 	UV_LOCKED=1 $(MAKE) verify
 
 publier:
-	uv run python publication/publier_differentiel_alimentation.py
+	uv run python publication/publier_differentiel_ipc.py
 
 dev:
 	npm --prefix web run dev

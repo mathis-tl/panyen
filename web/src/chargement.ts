@@ -3,12 +3,17 @@
  */
 import { asyncBufferFromUrl, parquetReadObjects } from "hyparquet";
 import { compressors } from "hyparquet-compressors";
-import { type LigneDifferentiel, type NatureEcart } from "./types.ts";
+import {
+  type CodePoste,
+  type LigneDifferentiel,
+  type NatureEcart,
+  POSTES_ATTENDUS,
+} from "./types.ts";
 import { validerColonnes, validerLignes } from "./validation.ts";
 
 function urlParquet(): string {
   const base = import.meta.env.BASE_URL;
-  return `${base}data/differentiel_alimentation.parquet`;
+  return `${base}data/differentiel_ipc.parquet`;
 }
 
 /**
@@ -30,31 +35,33 @@ export async function chargerDonnees(): Promise<LigneDifferentiel[]> {
     throw new Error("Le fichier Parquet est vide.");
   }
 
-  // Valider les colonnes à partir du premier objet
   const colonnes = Object.keys(objets[0] as Record<string, unknown>);
   validerColonnes(colonnes);
 
-  // Typer les lignes
   const lignes: LigneDifferentiel[] = objets.map((obj) => {
     const r = obj as Record<string, unknown>;
     return {
       periode: asDate(r["periode"]),
       dernier_mois_commun: asDate(r["dernier_mois_commun"]),
-      poste: String(r["poste"]),
-      fichier_source: String(r["fichier_source"]),
+      poste: asPoste(r["poste"]),
+      libelle_poste: asString(r["libelle_poste"]),
+      fichier_source: asString(r["fichier_source"]),
       collecte_utc: asDate(r["collecte_utc"]),
-      idbank_martinique: String(r["idbank_martinique"]),
-      idbank_france_metropolitaine: String(r["idbank_france_metropolitaine"]),
-      facteur_martinique: Number(r["facteur_martinique"]),
-      facteur_france_metropolitaine: Number(r["facteur_france_metropolitaine"]),
-      evolution_martinique_pct: Number(r["evolution_martinique_pct"]),
-      evolution_france_metropolitaine_pct: Number(r["evolution_france_metropolitaine_pct"]),
-      differentiel_evolution_points: Number(r["differentiel_evolution_points"]),
-      coefficient_ecart: Number(r["coefficient_ecart"]),
-      ecart_ecsp_2022_pct: Number(r["ecart_ecsp_2022_pct"]),
-      ecart_prix_estime_pct: Number(r["ecart_prix_estime_pct"]),
-      source_ecsp: String(r["source_ecsp"]),
-      nature_ecart: String(r["nature_ecart"]) as NatureEcart,
+      idbank_martinique: asString(r["idbank_martinique"]),
+      idbank_france_metropolitaine: asString(r["idbank_france_metropolitaine"]),
+      facteur_martinique: asNumber(r["facteur_martinique"]),
+      facteur_france_metropolitaine: asNumber(r["facteur_france_metropolitaine"]),
+      evolution_martinique_pct: asNumber(r["evolution_martinique_pct"]),
+      evolution_france_metropolitaine_pct: asNumber(
+        r["evolution_france_metropolitaine_pct"],
+      ),
+      differentiel_evolution_points: asNumber(r["differentiel_evolution_points"]),
+      coefficient_ecart: asNumber(r["coefficient_ecart"]),
+      ancre_ecsp_disponible: asBoolean(r["ancre_ecsp_disponible"]),
+      ecart_ecsp_2022_pct: asNumberOrNull(r["ecart_ecsp_2022_pct"]),
+      ecart_prix_estime_pct: asNumberOrNull(r["ecart_prix_estime_pct"]),
+      source_ecsp: asStringOrNull(r["source_ecsp"]),
+      nature_ecart: asNatureOrNull(r["nature_ecart"]),
     };
   });
 
@@ -62,7 +69,6 @@ export async function chargerDonnees(): Promise<LigneDifferentiel[]> {
   return lignes;
 }
 
-/** Convertit une valeur Parquet (Date, number-timestamp, string) en Date UTC. */
 function asDate(v: unknown): Date {
   if (v instanceof Date) return v;
   if (typeof v === "number") return new Date(v);
@@ -70,5 +76,58 @@ function asDate(v: unknown): Date {
   throw new Error(`Impossible de convertir en date : ${String(v)}`);
 }
 
-/** Type partiel pour asyncBufferFromUrl retour. */
+function asString(v: unknown): string {
+  if (v === null || v === undefined) {
+    throw new Error("Chaîne attendue, reçu null.");
+  }
+  return String(v);
+}
+
+function asStringOrNull(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  return String(v);
+}
+
+function asNumber(v: unknown): number {
+  if (v === null || v === undefined) {
+    throw new Error("Nombre attendu, reçu null.");
+  }
+  const n = Number(v);
+  if (!Number.isFinite(n)) {
+    throw new Error(`Nombre invalide : ${String(v)}`);
+  }
+  return n;
+}
+
+function asNumberOrNull(v: unknown): number | null {
+  if (v === null || v === undefined) return null;
+  const n = Number(v);
+  if (!Number.isFinite(n)) {
+    throw new Error(`Nombre invalide : ${String(v)}`);
+  }
+  return n;
+}
+
+function asBoolean(v: unknown): boolean {
+  if (typeof v === "boolean") return v;
+  throw new Error(`Booléen attendu : ${String(v)}`);
+}
+
+function asPoste(v: unknown): CodePoste {
+  const texte = asString(v);
+  if ((POSTES_ATTENDUS as readonly string[]).includes(texte)) {
+    return texte as CodePoste;
+  }
+  throw new Error(`Poste inconnu : ${texte}`);
+}
+
+function asNatureOrNull(v: unknown): NatureEcart | null {
+  if (v === null || v === undefined) return null;
+  const texte = String(v);
+  if (texte === "mesure_ecsp_2022" || texte === "estimation_a_partir_ecsp_2022") {
+    return texte;
+  }
+  throw new Error(`nature_ecart inconnue : ${texte}`);
+}
+
 type AsyncBuffer = Awaited<ReturnType<typeof asyncBufferFromUrl>>;

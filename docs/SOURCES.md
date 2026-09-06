@@ -1,4 +1,4 @@
-# Sources — état vérifié au 29 août 2026
+# Sources — état vérifié au 6 septembre 2026
 
 « Vérifié » signifie que la source a été appelée et la réponse regardée, pas
 qu'une page prétend qu'elle existe. Toute source ajoutée plus tard suit le même
@@ -23,27 +23,27 @@ Accept: application/vnd.sdmx.structurespecificdata+xml;version=2.1
 - Testé sur `011813873` : valeurs mensuelles de janvier 1998 à juillet 2026,
   métadonnées mises à jour le 27 août 2026.
 
-### idbanks confirmés (base 2025, ensemble des ménages)
+### idbanks actifs (base 2025, ensemble des ménages) — vérifiés le 2026-09-06
+
+Collecte active : un seul appel des huit séries ci-dessous depuis `2022-04`.
+Mesuré le 2026-09-06 : **52 observations par série**, 2022-04 → 2026-07, aucun
+statut autre que `A`, indices entre 84 et 112. Le brut s'appelle
+`ipc_postes_<horodatage>.xml`.
+
+| poste | `poste` | France métropolitaine (`FM`) | Martinique (`D972`) |
+|---|---|---|---|
+| Alimentation | `alimentation` | `011813720` | `011813726` |
+| Énergie | `energie` | `011813867` | `011813873` |
+| Produits manufacturés | `produits_manufactures` | `011813783` | `011813789` |
+| Services | `services` | `011813909` | `011813915` |
+
+Lot historique conservé au brut (plus collecté) :
 
 | idbank | territoire | poste | nature |
 |---|---|---|---|
-| `011813726` | Martinique (`D972`) | Alimentation | indice |
-| `011813727` | Martinique | Alimentation | variation mensuelle |
-| `011813728` | Martinique | Alimentation | glissement annuel |
-| `011813720` | France métropolitaine (`FM`) | Alimentation | indice — **référence active** |
-| `011813717` | France entière (`FE`) | Alimentation | indice — lot historique, plus collecté |
-| `011813718` | France entière | Alimentation | variation mensuelle |
-| `011813719` | France entière | Alimentation | glissement annuel |
-| `011813873` | Martinique | Énergie | indice |
-| `011813874` | Martinique | Énergie | variation mensuelle |
-| `011813875` | Martinique | Énergie | glissement annuel |
+| `011813717` | France entière (`FE`) | Alimentation | indice — `france_entiere_historique` |
 
-La collecte active de l'IPC alimentaire demande exactement
-`011813726+011813720` depuis `2022-04`, pour rester alignée sur l'ECSP 2022
-(Martinique contre France métropolitaine). Le brut
-`ipc_alimentation_2026-09-02T163321Z.xml` conserve la paire historique
-`{011813726, 011813717}` ; le parseur l'étiquette `france_entiere_historique`
-et n'accepte, par fichier, que cette paire ou `{011813726, 011813720}`.
+Les XML `ipc_alimentation_*.xml` restent lus, jamais renommés ni réécrits.
 
 ### Comment trouver les autres
 
@@ -55,11 +55,12 @@ la réponse reste minuscule, et lire les titres.
 GET …/SERIES_BDM/011813725+011813726+011813727+011813728?lastNObservations=1
 ```
 
-**Règle des neuf rangs** (vérifiée sur alimentation et énergie) : dans un poste
-donné, les territoires se suivent — France, France métropolitaine, Guadeloupe,
-Martinique, Guyane, La Réunion — avec trois séries chacun, dans l'ordre indice,
-variation mensuelle, glissement annuel. L'indice martiniquais tombe donc **neuf
-rangs après** l'indice France. Restent à trouver : produits manufacturés, services.
+**Règle des rangs** (vérifiée sur les quatre postes) : dans un poste donné, les
+territoires se suivent — France entière (`FE`), France métropolitaine (`FM`),
+Guadeloupe, Martinique, Guyane, La Réunion — avec trois séries chacun, dans
+l'ordre indice, variation mensuelle, glissement annuel. L'indice martiniquais
+tombe donc **neuf rangs après** l'indice France entière (`FE`), et **six rangs
+après** l'indice France métropolitaine (`FM`).
 
 ### Ce que cette source ne donne pas
 
@@ -86,6 +87,21 @@ Cette mesure alimentaire (+40 %, Fisher, mars-avril 2022) est versionnée dans
 `dbt/seeds/ecsp_alimentation_2022.csv`. Ce n'est pas une constante SQL : toute
 extrapolation après avril 2022 est une estimation, calculée avec le coefficient
 d'évolution `facteur_martinique / facteur_france_metropolitaine`.
+
+### ECSP et postes IPC : aucune ancre hors alimentation
+
+L'ECSP 2022 publie ses écarts de niveau **par grandes fonctions COICOP** :
+produits alimentaires +40 %, communications +37 %, loisirs et culture +14 %,
+santé +13 %, hôtellerie et restauration +8 %, boissons alcoolisées et tabac
++23 %. Ce n'est **pas** la nomenclature des quatre postes de l'IPC.
+
+Les postes « produits manufacturés » et « services » de l'IPC traversent
+plusieurs fonctions COICOP (habillement et biens de santé d'un côté ;
+communications et services de santé de l'autre). Aucune correspondance n'est
+publiée par l'Insee. **Seul le poste `alimentation` possède une ancre ECSP
+sourcée.** Pour l'énergie, les produits manufacturés et les services, l'écart
+de niveau 2022 est inconnu : aucune valeur n'est inventée, interpolée ni
+empruntée.
 
 Périodicité : environ quinquennale. Pas de date publique pour la prochaine.
 

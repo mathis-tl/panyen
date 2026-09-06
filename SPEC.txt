@@ -1,168 +1,331 @@
-SPEC ACTIVE — 1.7 : CI REPRODUCTIBLE DE LA TRANCHE ALIMENTAIRE
+SPEC ACTIVE — INCRÉMENT 2 : ÉTENDRE L'IPC AUX QUATRE POSTES
 DESTINATAIRE — nouveau Cursor Agent
 
 OBJECTIF UTILISATEUR
-À chaque push sur `main` et chaque pull request, prouver automatiquement qu’un
-clone propre peut installer les dépendances verrouillées puis vérifier toute la
-tranche alimentaire : lint Python, tests Python, modèles/tests dbt, tests web et
-build statique. Une erreur doit bloquer la CI avec une sortie lisible.
+Comparer le différentiel d'évolution des prix entre la Martinique et la France
+métropolitaine selon le poste de dépense : alimentation, énergie, produits
+manufacturés, services. Depuis avril 2022, quel poste creuse l'écart, lequel le
+resserre ? Le changement de poste sur le site ne déclenche aucun appel serveur.
 
-ÉTAT VALIDÉ
-- 1.6 est GREEN et cochée dans `ROADMAP.md` : récit, méthodologie, graphe
-  responsive et cycle `ResizeObserver` validés.
-- `make verify` passe localement : Ruff, 44 pytest, dbt PASS=91, 36 Vitest et
-  build Vite.
-- `make install` utilise déjà `uv sync --locked` et
-  `npm --prefix web ci`.
-- Python est déclaré `>=3.13,<3.14` et `.python-version` contient `3.13`.
-- `uv.lock` et `web/package-lock.json` sont versionnés ; aucun workflow GitHub
-  Actions n’existe encore.
-- Il n’existe encore ni remote ni exécution GitHub possible depuis ce dépôt local.
-  La première exécution distante reste donc une preuve ultérieure, après
-  autorisation explicite de Mathis pour créer/pousser un remote.
+ÉTAT VALIDÉ AU DÉPART
+- L'incrément 1 est GREEN et coché : collecte brute horodatée, parseur SDMX,
+  `stg_ipc` → `int_ipc_alimentation_rebase` → `fct_differentiel_alimentation`,
+  publication Parquet atomique, écran alimentaire, CI GitHub Actions.
+- `make ci` PASS : Ruff, 44 pytest, dbt 91/91, 36 Vitest, build Vite.
+- `data/raw/insee/` contient deux XML de deux séries chacun :
+  `ipc_alimentation_2026-09-02T163321Z.xml` (paire historique {011813726,
+  011813717}) et `ipc_alimentation_2026-09-02T205447Z.xml` (paire active
+  {011813726, 011813720}). Ces deux fichiers sont immuables.
+- `web/public/data/*.parquet` est ignoré par Git : renommer la destination
+  n'implique aucune suppression versionnée.
 
-DÉCISION SUR LE « DRY-RUN REPRODUCTIBLE »
-La CI de pull request ne contacte pas l’API Insee. Le collecteur
-`ingest/insee_ipc.py --dry-run` réalise une vraie requête réseau avant de ne rien
-écrire : l’exécuter dans le job bloquant rendrait les PR dépendantes d’un service
-externe.
+FAITS VÉRIFIÉS LE 2026-09-06 — NE PAS RE-VÉRIFIER, MAIS RECONTRÔLER À LA COLLECTE
 
-Le contrat reproductible est le test existant
-`tests/test_insee_ipc.py::test_dry_run_n_ecrit_rien`, avec réponse synthétique :
-le chemin dry-run est exécuté sans réseau et prouve qu’il n’écrit aucun brut. Le
-smoke test live et la collecte planifiée restent en incrément 5.
+Les huit idbanks des quatre postes ont été appelés réellement sur l'API SDMX
+ouverte, en un seul appel, `startPeriod=2022-04`. Résultat mesuré : 41 296 octets,
+**52 observations par série, 2022-04 → 2026-07, aucun statut autre que `A`**,
+base 2025, ensemble des ménages, indices tous entre 84 et 112.
 
-SOLUTION MAINTENUE RETENUE
-Un seul workflow GitHub Actions et les actions officielles/maintenues, sans
-infrastructure maison :
-- `actions/checkout`, `actions/setup-python`, `actions/setup-node` ;
-- `astral-sh/setup-uv`, recommandé par la documentation officielle uv ;
-- toutes les actions tierces épinglées sur un SHA complet de 40 caractères, avec
-  le tag stable correspondant en commentaire.
+| poste                 | valeur `poste`          | France métropolitaine (`FM`) | Martinique (`D972`) |
+|-----------------------|-------------------------|------------------------------|---------------------|
+| Alimentation          | `alimentation`          | `011813720`                  | `011813726`         |
+| Énergie               | `energie`               | `011813867`                  | `011813873`         |
+| Produits manufacturés | `produits_manufactures` | `011813783`                  | `011813789`         |
+| Services              | `services`              | `011813909`                  | `011813915`         |
 
-Références vérifiées le 2026-09-06 :
-- https://docs.astral.sh/uv/guides/integration/github/
-- https://github.com/actions/checkout
-- https://github.com/actions/setup-python
-- https://github.com/actions/setup-node
-- https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching
+Correctif à la règle des rangs : dans un poste, l'indice martiniquais tombe
+**neuf rangs après l'indice France entière** (`FE`), donc **six rangs après
+l'indice France métropolitaine** (`FM`). Vérifié sur les quatre postes.
 
-Avant d’écrire le workflow, recontrôler dans ces sources officielles que les tags
-et SHA stables indiqués ci-dessous sont encore valides. STOP si un SHA ne
-correspond pas exactement au tag annoncé :
-- `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` — v7.0.1 ;
-- `actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97` — v7.0.0 ;
-- `actions/setup-node@820762786026740c76f36085b0efc47a31fe5020` — v7.0.0 ;
-- `astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9` — v9.0.0.
+`LAST_UPDATE` mesurés : 2026-08-14 pour les quatre séries `FM`, 2026-08-27 pour
+les quatre séries `D972`. Un territoire est publié en bloc, tous postes ensemble.
 
-NAVIGATION AVANT MODIFICATION
-1. Lire `AGENTS.md`, cette spec, la règle méthodologique de `CLAUDE.md` et la
-   section Incrément 1 de `ROADMAP.md`.
-2. Utiliser d’abord Graphify avec la commande réelle :
-   `graphify query "Quelles commandes installent et vérifient aujourd’hui la tranche alimentaire, quels lockfiles les rendent reproductibles et quel dry-run est couvert sans réseau ?" --budget 1800`
-3. Confirmer dans `Makefile`, `pyproject.toml`, `.python-version`,
-   `web/package.json`, les deux lockfiles, `tests/test_insee_ipc.py` et
-   `README.md`. Employer au besoin `graphify path`, `graphify explain` ou
-   `graphify affected`, jamais le graphe comme preuve unique.
-4. Rechercher les solutions maintenues dans les documentations officielles
-   ci-dessus avant toute modification. Ne créer aucune action maison.
-5. Lire et appliquer `~/.claude/skills/verification-loop/SKILL.md` avant le
-   rapport final.
+DÉCISION STRUCTURANTE VALIDÉE PAR MATHIS — ANCRE ECSP
 
-CONTRAT DE LA COMMANDE LOCALE
-- Ajouter une cible `make ci` qui appelle l’installation verrouillée existante,
-  puis `make verify`, sans dupliquer les commandes de vérification.
-- `make ci` est le contrat unique appelé par GitHub Actions et reproductible
-  localement.
-- Ajouter `ci` à `.PHONY`.
-- Ne pas affaiblir `make verify`, `make publier` ni leurs ordres d’exécution.
-- La cible `ci` exécute la vérification avec `UV_LOCKED=1` afin que ses `uv run`
-  refusent de modifier `uv.lock`, localement comme dans GitHub Actions.
+L'enquête ECSP 2022 (Insee Analyses Martinique n° 63, figure 3) publie ses écarts
+de niveau **par grandes fonctions COICOP** : produits alimentaires +40 %,
+communications +37 %, loisirs et culture +14 %, santé +13 %, hôtellerie et
+restauration +8 %, boissons alcoolisées et tabac +23 %.
 
-CONTRAT DU WORKFLOW
-- Créer uniquement `.github/workflows/ci.yml`, avec un nom explicite.
-- Déclencheurs : `pull_request`, push sur `main` et `workflow_dispatch`.
-- Permissions minimales au niveau workflow : `contents: read`.
-- Un seul job `verification`, sur `ubuntu-24.04`, avec
-  `timeout-minutes: 15`.
-- Ajouter une concurrence par workflow et référence, avec annulation de l’ancienne
-  exécution pour une même branche/PR.
-- Étapes, dans cet ordre :
-  1. checkout ;
-  2. Python depuis `.python-version` ;
-  3. uv maintenu, version binaire explicitement fixée à `0.12.7`, cache uv fondé
-     sur `uv.lock` ;
-  4. Node `24.9.0`, cache npm fondé sur `web/package-lock.json` ;
-  5. `make ci`.
-- Utiliser les SHA complets ci-dessus et garder le tag en commentaire.
-- Ne transmettre aucun secret et ne demander aucune permission d’écriture.
-- Ne lancer ni collecte live, ni `make publier`, ni déploiement.
+Ce n'est **pas** la nomenclature des quatre postes de l'IPC. Les postes
+« produits manufacturés » et « services » de l'IPC traversent plusieurs fonctions
+COICOP : l'habillement, les biens de santé et les biens de loisir sont tous des
+produits manufacturés ; les communications et les services de santé sont tous des
+services. Aucune correspondance n'est publiée.
 
-CONTRAT DE REPRODUCTIBILITÉ
-- Ajouter `.node-version` contenant exactement `24.9.0` et demander à
-  `setup-node` de le lire ; ne dupliquer la version dans le YAML que si l’action
-  ne sait pas lire ce fichier.
-- `uv sync --locked` et `npm ci` restent les seules installations.
-- Aucun lockfile ne doit changer pendant `make ci`.
-- Le workflow doit utiliser le brut Insee déjà versionné ; il ne télécharge aucune
-  donnée métier.
-- Après `make ci`, vérifier que `data/raw/insee/` n’a subi aucune modification.
-- Les caches ne contiennent aucun secret ni résultat métier. Ils sont des
-  optimisations : une absence de cache ne doit pas changer le résultat.
+Conséquence, contraignante :
+- **Seul le poste `alimentation` possède une ancre ECSP sourcée** (+40 %).
+- Pour `energie`, `produits_manufactures` et `services`, l'écart de niveau 2022
+  est **inconnu** : `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`,
+  `source_ecsp` et `nature_ecart` sont **NULL**, et le site ne dit rien sur le
+  niveau de prix de ces postes.
+- Fabriquer, interpoler ou approcher une ancre pour ces trois postes est un
+  **bug bloquant**, pas un arrondi. C'est la règle « aucune valeur inventée ».
+
+DÉCISION STRUCTURANTE VALIDÉE PAR MATHIS — BRUT
+
+Le collecteur écrit désormais `ipc_postes_<horodatage>.xml`, contenant les huit
+séries en un seul appel. Le préfixe `ipc_alimentation_` reste **lu** par le
+parseur pour les deux fichiers historiques, qui ne sont ni renommés, ni réécrits,
+ni supprimés. Le brut est un journal.
+
+DERNIER MOIS COMMUN — RÈGLE UNIQUE
+
+`dernier_mois_commun` est le **minimum des derniers mois renseignés des huit
+séries du lot actif**, donc une seule valeur pour toute la table. Les quatre
+postes partagent exactement la même fenêtre : c'est ce qui rend le graphe
+comparable et la phrase du site vraie. Un poste publié en retard raccourcit la
+fenêtre de tous les autres, visiblement, jamais silencieusement.
+
+CONTRAT DE COLLECTE — `ingest/insee_ipc.py`
+
+- Remplacer `SERIES` par un référentiel des huit idbanks actifs, portant pour
+  chacun le poste, le code territoire et le libellé. Ordre déterministe : par
+  poste dans l'ordre du tableau ci-dessus, Martinique puis France métropolitaine.
+- Un seul appel HTTP, les huit idbanks joints par `+`, `startPeriod` inchangé à
+  `2022-04`.
+- `nom_brut` produit `ipc_postes_<AAAA-MM-JJTHHMMSSZ>.xml`.
+- `--dry-run` conserve son contrat exact : requête réelle, aucune écriture,
+  aucun `mkdir`.
+- Ouverture en `"xb"` conservée : jamais d'écrasement.
+- Le collecteur ne parse toujours rien et ne corrige rien.
+
+CONTRAT DE PARSING — `transformation/sdmx.py`
+
+- Le référentiel devient `idbank → (poste, code_territoire)` sur neuf entrées :
+  les huit actives plus `011813717` (`FE`, `alimentation`, lot historique).
+- `Observation` gagne le champ `poste`.
+- Le contrat de lot par fichier est vérifié à partir du **préfixe du nom** :
+  - `ipc_alimentation_` : l'ensemble des idbanks du fichier doit valoir
+    exactement `{011813726, 011813717}` → `lot_collecte =
+    'alimentation_france_entiere'`, `perimetre_reference =
+    'france_entiere_historique'` ; ou exactement `{011813726, 011813720}` →
+    `lot_collecte = 'alimentation_france_metropolitaine'`,
+    `perimetre_reference = 'france_metropolitaine'`.
+  - `ipc_postes_` : l'ensemble doit valoir exactement les huit idbanks actifs →
+    `lot_collecte = 'quatre_postes_france_metropolitaine'`,
+    `perimetre_reference = 'france_metropolitaine'`.
+  - Tout autre ensemble lève `ErreurSdmx` avec un message nommant le fichier et
+    les idbanks fautifs : manquant, surnuméraire, mélangé.
+- Conserver sans affaiblissement : `FREQ` obligatoirement `M`, cohérence
+  `idbank → REF_AREA`, refus des doublons `(idbank, periode)`, attributs de série
+  et d'observation obligatoires, `OBS_VALUE` absent toléré uniquement si
+  `OBS_STATUS = 'ND'`, horodatage lu exclusivement dans le nom du fichier.
+- `parser_repertoire` lit les deux préfixes, en ordre déterministe.
+
+CONTRAT DBT
+
+Renommages, sans conserver d'alias ni de vue de compatibilité :
+- `int_ipc_alimentation_rebase` → `int_ipc_rebase`
+- `fct_differentiel_alimentation` → `fct_differentiel_ipc`
+
+`stg_ipc` — grain inchangé `(fichier_source, idbank, periode)`
+- Nouvelles colonnes : `poste`, `lot_collecte`.
+- `schema.yml` : `idbank` accepte les neuf valeurs ; `code_territoire` accepte
+  `D972`, `FE`, `FM` ; `poste` accepte les quatre valeurs snake case ;
+  `lot_collecte` accepte les trois valeurs ci-dessus.
+- Conserver le garde-fou « indice nul avec statut `ND`, sinon entre 50 et 200 ».
+- Le test `stg_ipc_deux_series_par_fichier` est remplacé par
+  `stg_ipc_lot_conforme` : chaque `fichier_source` porte exactement l'ensemble
+  d'idbanks imposé par son `lot_collecte`, ni plus, ni moins.
+- Nouveau test `stg_ipc_coherence_idbank_poste_territoire` : le triplet
+  `(idbank, poste, code_territoire)` ne prend que les neuf combinaisons du
+  référentiel.
+
+`int_ipc_rebase` — grain : une ligne par `(poste, idbank, periode)`
+- Lot actif : le fichier de `lot_collecte = 'quatre_postes_france_metropolitaine'`
+  au `collecte_utc` le plus récent. **Aucun lot actif ⇒ échec bruyant**, jamais
+  un repli silencieux sur l'ancien lot alimentaire.
+- `dernier_mois_commun` : minimum, sur les huit séries du lot actif, du dernier
+  mois à valeur non nulle. Une seule valeur pour tout le modèle.
+- Calendrier mensuel complet de `2022-04-01` au `dernier_mois_commun`, croisé
+  avec les huit couples `(poste, idbank, code_territoire)` attendus. Un mois
+  absent laisse une ligne à `valeur_indice` nulle, que le test fait échouer.
+- `facteur` et `evolution_pct` calculés **à l'intérieur d'un seul territoire et
+  d'un seul poste**, ancrés sur `2022-04-01`. Aucun appariement de niveaux entre
+  territoires à cette étape ni ailleurs.
+- Tests conservés et généralisés par poste : ancre présente et égale à 1,0 ;
+  calendrier complet ; grain unique ; lot actif unique.
+
+`fct_differentiel_ipc` — grain : **une ligne par `(poste, periode)`**
+- Colonnes, dans cet ordre exact :
+  `periode`, `dernier_mois_commun`, `poste`, `libelle_poste`,
+  `fichier_source`, `collecte_utc`,
+  `idbank_martinique`, `idbank_france_metropolitaine`,
+  `facteur_martinique`, `facteur_france_metropolitaine`,
+  `evolution_martinique_pct`, `evolution_france_metropolitaine_pct`,
+  `differentiel_evolution_points`, `coefficient_ecart`,
+  `ancre_ecsp_disponible`,
+  `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`, `source_ecsp`, `nature_ecart`.
+- `libelle_poste` porte l'accentuation d'affichage : `Alimentation`, `Énergie`,
+  `Produits manufacturés`, `Services`.
+- Jointure `left join` sur le seed `ecsp_alimentation_2022`, sur
+  `poste = 'alimentation'`, `territoire_compare = 'D972'`,
+  `territoire_reference = 'FM'`, `periode_ancrage = date '2022-04-01'`.
+  Le seed n'est pas modifié.
+- `ancre_ecsp_disponible` vaut vrai si et seulement si le seed a apparié.
+- Quand l'ancre manque : `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`,
+  `source_ecsp` et `nature_ecart` sont NULL. Aucune valeur de repli, aucun zéro,
+  aucune chaîne vide.
+- Formules inchangées pour l'alimentation :
+  `differentiel_evolution_points = evolution_martinique_pct
+   - evolution_france_metropolitaine_pct` ;
+  `coefficient_ecart = facteur_martinique / facteur_france_metropolitaine` ;
+  `ecart_prix_estime_pct = ((1 + ecart_ecsp_2022_pct / 100) * coefficient_ecart
+   - 1) * 100`.
+- `differentiel_evolution_points` et `coefficient_ecart` sont renseignés pour les
+  quatre postes : ce sont des comparaisons d'évolutions, toujours licites.
+
+Tests dbt nouveaux ou repris sur `fct_differentiel_ipc`
+1. Grain unique `(poste, periode)`.
+2. Exactement quatre postes distincts, chacun couvrant le **même ensemble de
+   périodes**, de `2022-04-01` au `dernier_mois_commun`.
+3. `dernier_mois_commun` prend une valeur unique dans toute la table, et vaut le
+   `max(periode)` de chaque poste.
+4. **Garde-fou d'ancre** : `ancre_ecsp_disponible` est vrai exactement pour
+   `poste = 'alimentation'` ; les quatre colonnes ECSP sont toutes non nulles
+   quand il est vrai et toutes nulles quand il est faux. Aucun état mixte.
+5. Identités arithmétiques recalculées en SQL avec tolérance `1e-9`, dont
+   `ecart_prix_estime_pct` seulement là où l'ancre existe.
+6. `nature_ecart` limité à `mesure_ecsp_2022` sur `2022-04-01` et
+   `estimation_a_partir_ecsp_2022` après, uniquement pour l'alimentation.
+7. Aucune colonne de niveau d'indice ne sort de `int_ipc_rebase`.
+
+Volumétrie attendue avec le brut du jour, à confirmer et non à présumer :
+416 observations dans le lot actif, 52 mois, **208 lignes** dans
+`fct_differentiel_ipc`.
+
+CONTRAT DE PUBLICATION
+
+- `publication/publier_differentiel_alimentation.py` →
+  `publication/publier_differentiel_ipc.py`.
+- Table source `fct_differentiel_ipc`, destination
+  `web/public/data/differentiel_ipc.parquet`.
+- Requête et empreinte de validation ordonnées par `poste, periode`.
+- Ordre strict conservé, sans exception : vérifier (`make verify`) → exporter un
+  candidat temporaire → relire et comparer ligne à ligne → `os.replace` en
+  dernière mutation. Nettoyage du candidat sur toute erreur.
+- Conserver le refus explicite de publier une colonne `valeur_indice`.
+- Le résumé imprimé indique en plus le nombre de postes publiés.
+- `make publier` pointe la nouvelle cible. Supprimer localement l'ancien
+  `differentiel_alimentation.parquet`, qui n'est pas versionné.
+
+CONTRAT DU FRONT
+
+- `types.ts` : `COLONNES_ATTENDUES` reflète l'ordre exact ci-dessus ;
+  `LigneDifferentiel` gagne `poste`, `libelle_poste`, `ancre_ecsp_disponible` ;
+  `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`, `source_ecsp` et
+  `nature_ecart` deviennent nullables.
+- `chargement.ts` : lit `differentiel_ipc.parquet`, convertit les valeurs nulles
+  en `null` sans les transformer en `0`, `NaN` ni `"null"`.
+- `validation.ts` : les quatre postes attendus sont présents ; chaque poste a des
+  périodes strictement croissantes, sans trou ni doublon ; les quatre postes
+  partagent le même ensemble de périodes ; `dernier_mois_commun` est unique ;
+  l'alimentation contient exactement une ligne `mesure_ecsp_2022` ; les trois
+  autres postes ont leurs quatre champs ECSP nuls. Chaque échec lève une
+  `ErreurValidation` nommant le poste fautif.
+- `calculs.ts` : introduire un regroupement par poste, puis deux récits.
+  - Poste **avec** ancre : récit actuel intact — jalons, panier illustratif,
+    écart estimé, conclusion, explication points contre pourcentages.
+  - Poste **sans** ancre : récit réduit à l'évolution — évolution de chaque
+    territoire depuis avril 2022, différentiel en points, mois du minimum et du
+    maximum du différentiel, conclusion formulée en points, **jamais** en écart
+    de prix, jamais de panier illustratif.
+  - Les fonctions de calcul restent pures : aucun DOM, aucun réseau.
+- `rendu.ts` : ajouter un sélecteur des quatre postes, accessible au clavier
+  (`role="tablist"` avec `aria-selected`, ou un groupe de boutons radio étiqueté),
+  `alimentation` sélectionné par défaut. Le changement de poste **redessine
+  depuis les lignes déjà en mémoire**, sans aucune requête.
+  Pour un poste sans ancre, remplacer les sections ECSP par une note visible et
+  explicite : l'ECSP 2022 mesure ses écarts par fonction de consommation, ce
+  découpage ne correspond pas à ce poste de l'IPC, donc aucun écart de niveau
+  n'est publiable ici et seule l'évolution est comparable.
+- `graphe.ts` : le graphe reste deux courbes d'évolution pour le poste
+  sélectionné. Le cycle `ResizeObserver` validé en 1.6 ne doit pas régresser.
+- La limite méthodologique de 1.6 reste affichée pour tous les postes.
 
 PÉRIMÈTRE ET FICHIERS TOUCHABLES
-- Nouveau : `.github/workflows/ci.yml`, `.node-version`.
-- Modification : `Makefile`, `README.md`.
-- Tests seulement si une petite preuve utile manque réellement ; aucune nouvelle
-  dépendance pour tester le YAML.
-
-DOCUMENTATION
-Mettre à jour `README.md` sans chiffre daté :
-- `make ci` reproduit localement le job après installation verrouillée ;
-- la CI est déclenchée sur pull request, push `main` et manuellement ;
-- elle reste hors réseau métier : le dry-run sans écriture est testé avec une
-  réponse synthétique, pas avec l’API Insee live ;
-- elle ne publie ni Parquet, ni site.
+- Nouveau : `data/raw/insee/ipc_postes_<horodatage>.xml` (une seule collecte
+  réelle), `dbt/models/intermediate/int_ipc_rebase.sql`,
+  `dbt/models/marts/fct_differentiel_ipc.sql`, les tests dbt correspondants,
+  `publication/publier_differentiel_ipc.py`, les fixtures XML de test.
+- Modification : `ingest/insee_ipc.py`, `transformation/sdmx.py`,
+  `dbt/models/staging/stg_ipc.py`, les trois `schema.yml`, `Makefile`,
+  `web/src/*.ts`, `tests/*.py`, `docs/SOURCES.md`, `README.md`.
+- Suppression : les modèles et tests dbt renommés, l'ancien script de
+  publication, leurs tests obsolètes.
+- Aucun autre fichier.
 
 NON-OBJECTIFS
-- Ne modifier aucun code Python/TypeScript/SQL, test métier, graphe, style, donnée,
-  Parquet, seed, modèle dbt, schéma ou dépendance.
-- Ne lancer aucune collecte réelle et ne modifier aucun brut horodaté.
-- Ne créer ni matrice multi-OS/multi-version, Dockerfile, action composite,
-  Dependabot, badge, artifact, couverture, déploiement ou publication.
-- Ne créer ni remote, branche, commit, push ou PR.
-- Ne cocher 1.7 dans `ROADMAP.md` : aucune exécution GitHub réelle n’est encore
-  possible. Ne commencer ni l’incrément 2 ni le design de l’incrément 4.
+- Ne pas inventer, estimer, interpoler ni emprunter une ancre ECSP pour
+  l'énergie, les produits manufacturés ou les services.
+- Ne comparer aucun niveau d'indice entre territoires, nulle part.
+- Ne pas ajouter de sous-postes (produits frais, produits pétroliers, habillement,
+  santé, loyers), ni de territoire (Guadeloupe, Guyane, Réunion), ni la série
+  « Ensemble ».
+- Ne pas toucher aux carburants, ni au Bouclier Qualité Prix.
+- Ne pas refondre le design : c'est l'incrément 4. Le sélecteur doit être sobre
+  et fonctionnel, pas une nouvelle direction visuelle.
+- Ne pas superposer les quatre postes sur un même graphe.
+- Ne pas modifier le seed ECSP, `CLAUDE.md`, `AGENTS.md`, `SPEC.txt`, le workflow
+  CI, les lockfiles ni les dépendances.
+- Ne pas cocher l'incrément 2 dans `ROADMAP.md` : Mathis coche après revue.
+- Ne pas planifier la collecte, ni déployer : c'est l'incrément 5.
+- Ne pas committer, pousser, créer de branche ou de PR.
 
 TESTS ET VÉRIFICATION
-1. Capturer l’état initial des lockfiles et de `data/raw/insee/`.
-2. Exécuter `make ci` : installation verrouillée puis tous les contrôles verts.
-3. Confirmer explicitement Ruff, 44 pytest dont le dry-run synthétique, dbt 91/91,
-   36 Vitest et build Vite.
-4. Confirmer que `uv.lock`, `web/package-lock.json` et `data/raw/insee/` sont
-   inchangés après `make ci`.
-5. Valider que le YAML se parse localement avec un parseur déjà disponible ; ne pas
-   ajouter une dépendance au projet pour cela.
-6. Revoir manuellement les déclencheurs, permissions, SHA complets, versions,
-   caches, ordre des étapes, timeout et absence de secret/publication/collecte.
-7. `git diff --check`, diff complet et `git status --short --branch`.
-8. Exécuter `graphify update .`, puis rejouer la requête Graphify de départ.
-9. Faire relire le changement par `panyen_verifier` avant toute proposition de
-   commit.
+1. Lancer **une seule fois** la collecte réelle
+   `uv run python ingest/insee_ipc.py`. Vérifier avant/après que les deux XML
+   historiques ont le même SHA256. Rendre le nom, la taille et le SHA256 du
+   nouveau brut, et le nombre d'observations par série.
+2. Étendre les tests Python : parsing d'une fixture huit séries ; refus d'un
+   fichier `ipc_postes_` à sept séries ; refus d'un idbank surnuméraire ; refus
+   d'une paire mélangée ; lecture inchangée des deux fixtures alimentaires ;
+   `--dry-run` sans écriture, avec réponse synthétique et sans réseau.
+3. Étendre les tests de publication : renommage, tri `poste, periode`, échec si
+   la table est vide ou absente, nettoyage du candidat, refus d'une colonne de
+   niveau.
+4. Étendre les tests Vitest : validation des quatre postes, rejet d'un poste
+   manquant, rejet de périodes désalignées entre postes, rejet d'un champ ECSP
+   non nul sur un poste sans ancre, récit réduit correct, bascule de poste sans
+   appel réseau.
+5. Exécuter `make ci` et rendre les compteurs **réellement obtenus** — Ruff,
+   pytest, dbt, Vitest, build Vite. Ne prédire aucun compteur ; les 44 pytest,
+   91 dbt et 36 Vitest de l'incrément 1 sont un plancher, pas une cible.
+6. Exécuter `make publier` et rendre chemin, taille, SHA256, nombre de lignes,
+   nombre de postes et bornes de période.
+7. Contrôler à la main dans le Parquet publié : 4 postes, 52 mois chacun,
+   `ecart_prix_estime_pct` non nul uniquement sur l'alimentation, aucune colonne
+   de niveau d'indice.
+8. `git status --short --branch`, `git diff --check` et diff complet relu.
+9. Exécuter `graphify update .`, puis rejouer la requête Graphify de départ.
+10. Faire relire le changement par `panyen_verifier` avant toute proposition de
+    commit.
+
+DOCUMENTATION
+- `docs/SOURCES.md` : tableau des huit idbanks actifs avec territoire et poste ;
+  correctif de la règle des rangs (neuf rangs après `FE`, six après `FM`) ; la
+  volumétrie mesurée le 2026-09-06 ; et une section explicite disant que l'ECSP
+  2022 publie ses écarts par fonction COICOP, que ce découpage ne recouvre pas
+  les postes IPC, et qu'aucune ancre n'existe donc hors alimentation.
+- `README.md` : la question à quatre postes, la commande de reconstruction, le
+  nouveau nom du Parquet, et la phrase qui dit que l'écart de niveau n'est publié
+  que pour l'alimentation.
 
 FINI QUAND
-- `make ci` réussit depuis l’environnement local avec les deux lockfiles intacts.
-- Le workflow minimal reflète exactement cette commande et respecte les contrats
-  de sécurité/reproductibilité.
-- Le dry-run sans écriture est couvert sans réseau métier.
-- Les contrôles locaux et `panyen_verifier` sont verts.
-- Le rapport distingue clairement « workflow prêt localement » de
-  « exécution GitHub distante non encore prouvée ».
+- Une seule commande reconstruit les quatre postes depuis le brut versionné.
+- Les quatre postes traversent la même chaîne, sans logique dupliquée par poste.
+- Le dernier mois commun est unique, explicite et affiché.
+- Un test cassé empêche toujours la publication du Parquet.
+- Aucun écart de niveau n'apparaît hors alimentation, et le site dit pourquoi.
+- Le changement de poste ne déclenche aucun appel serveur.
+- `make ci` et `panyen_verifier` sont verts.
 
 RAPPORT FINAL ET STOP
-Rendre : verdict local ; fichiers touchés ; versions et SHA des actions ; sortie
-de `make ci` ; preuve des lockfiles/bruts inchangés ; audit du YAML ; état de la
-preuve GitHub distante ; risques restants.
+Rendre : verdict ; fichiers touchés ; brut collecté avec son empreinte ; preuve
+d'immutabilité des deux XML historiques ; sortie de `make ci` avec compteurs
+réels ; sortie de `make publier` ; contrôle manuel du Parquet ; extrait du diff
+sur le garde-fou d'ancre ; risques restants.
 
-Puis STOP. Ne pas cocher 1.7, créer de remote, committer, pousser, déployer ou
-commencer l’incrément suivant.
+Puis STOP. Ne pas cocher l'incrément 2, ne pas committer, ne pas pousser, ne pas
+commencer l'incrément 3.

@@ -51,7 +51,7 @@ avril 2022.
 - [x] **1.5 — Publication sûre** : Parquet remplacé seulement après tests verts.
 - [x] **1.6 — Écran alimentaire minimal** : lecture Parquet navigateur, Plot et
       limite méthodologique.
-- [ ] **1.7 — CI de la tranche** : lint, tests, build et dry-run reproductibles.
+- [x] **1.7 — CI de la tranche** : lint, tests, build et dry-run reproductibles.
 
 **Fini quand** : une commande reconstruit la tranche depuis le brut, un test cassé
 empêche la publication, chaque chiffre est traçable et aucun niveau d'indice
@@ -64,11 +64,11 @@ territorial n'est comparé.
 **But utilisateur** : comparer le différentiel d'évolution selon le poste de
 dépense.
 
-- [ ] Identifier et vérifier les idbanks France/Martinique pour énergie,
+- [x] Identifier et vérifier les idbanks France/Martinique pour énergie,
       produits manufacturés et services.
-- [ ] Documenter les huit séries d'indice dans `docs/SOURCES.md`.
-- [ ] Étendre les modèles et tests sans dupliquer la logique alimentation.
-- [ ] Ajouter le sélecteur de poste au front.
+- [x] Documenter les huit séries d'indice dans `docs/SOURCES.md`.
+- [x] Étendre les modèles et tests sans dupliquer la logique alimentation.
+- [x] Ajouter le sélecteur de poste au front.
 
 **Fini quand** : les quatre postes passent par la même chaîne vérifiée, le dernier
 mois commun est explicite et le changement de poste ne déclenche aucun appel serveur.
