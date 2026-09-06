@@ -1,32 +1,39 @@
 version: 2
 
 models:
-  - name: fct_differentiel_alimentation
+  - name: fct_differentiel_ipc
     description: >
-      Différentiel alimentaire Martinique–France métropolitaine, une ligne par
-      mois commun. Joint les facteurs déjà rebasés intra-territoire et la
-      mesure ECSP 2022. L'écart de niveau n'est une mesure qu'à l'ancre ;
-      après, ecart_prix_estime_pct est une estimation. Aucun niveau d'indice
-      brut n'est exposé.
+      Différentiel d'évolution Martinique–France métropolitaine par poste,
+      une ligne par (poste, periode). Joint les facteurs déjà rebasés
+      intra-territoire et la mesure ECSP 2022 pour l'alimentation seulement.
+      Aucun niveau d'indice brut n'est exposé. Aucune ancre ECSP hors
+      alimentation.
     columns:
       - name: periode
         description: Premier jour du mois commun.
         data_tests:
           - not_null
-          - unique
       - name: dernier_mois_commun
-        description: Dernier mois commun recopié depuis le rebasage.
+        description: Dernier mois commun unique, partagé par les quatre postes.
         data_tests:
           - not_null
       - name: poste
-        description: Poste de dépense, uniquement alimentation dans ce modèle.
+        description: Poste de dépense snake_case.
         data_tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ["alimentation"]
+                values:
+                  - alimentation
+                  - energie
+                  - produits_manufactures
+                  - services
+      - name: libelle_poste
+        description: Libellé d'affichage accentué du poste.
+        data_tests:
+          - not_null
       - name: fichier_source
-        description: Fichier brut du lot métropolitain retenu.
+        description: Fichier brut du lot quatre postes retenu.
         data_tests:
           - not_null
       - name: collecte_utc
@@ -34,19 +41,13 @@ models:
         data_tests:
           - not_null
       - name: idbank_martinique
-        description: Série martiniquaise 011813726.
+        description: Série martiniquaise du poste.
         data_tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: ["011813726"]
       - name: idbank_france_metropolitaine
-        description: Série métropolitaine 011813720.
+        description: Série métropolitaine du poste.
         data_tests:
           - not_null
-          - accepted_values:
-              arguments:
-                values: ["011813720"]
       - name: facteur_martinique
         description: Facteur d'évolution martiniquais depuis avril 2022.
         data_tests:
@@ -72,26 +73,23 @@ models:
         description: Rapport exact des deux facteurs, pas la différence des %.
         data_tests:
           - not_null
-      - name: ecart_ecsp_2022_pct
-        description: Mesure Fisher ECSP 2022 (+40 %), lue dans le seed sourcé.
+      - name: ancre_ecsp_disponible
+        description: Vrai seulement si le seed ECSP a apparié (alimentation).
         data_tests:
           - not_null
+      - name: ecart_ecsp_2022_pct
+        description: >
+          Mesure Fisher ECSP 2022 pour l'alimentation ; NULL sinon.
       - name: ecart_prix_estime_pct
         description: >
-          Écart de prix. Mesure à l'ancre, estimation ensuite, via le
-          coefficient exact.
-        data_tests:
-          - not_null
+          Écart de prix estimé pour l'alimentation ; NULL hors ancre.
       - name: source_ecsp
-        description: URL Insee de l'ECSP 2022, transmise depuis le seed.
-        data_tests:
-          - not_null
+        description: URL Insee de l'ECSP 2022 ; NULL hors alimentation.
       - name: nature_ecart
         description: >
-          mesure_ecsp_2022 uniquement à l'ancre, sinon
-          estimation_a_partir_ecsp_2022.
+          mesure_ecsp_2022 ou estimation_a_partir_ecsp_2022 pour
+          l'alimentation ; NULL sinon.
         data_tests:
-          - not_null
           - accepted_values:
               arguments:
                 values:
@@ -99,21 +97,21 @@ models:
                   - estimation_a_partir_ecsp_2022
 
 # Les indices des unit tests sont synthétiques, pas des données Insee.
-# Le 40 % du seed mocké est la mesure ECSP sourcée, pas un indice.
 
 unit_tests:
   - name: calcul_synthetique_coefficient_et_estimation
     description: >
-      Calcul synthétique : facteurs, évolutions, différentiel, coefficient
-      exact et estimation ECSP. Les indices sous-jacents sont fictifs.
-    model: fct_differentiel_alimentation
+      Calcul synthétique alimentation : facteurs, évolutions, différentiel,
+      coefficient exact et estimation ECSP. Les indices sous-jacents sont fictifs.
+    model: fct_differentiel_ipc
     given:
-      - input: ref("int_ipc_alimentation_rebase")
+      - input: ref("int_ipc_rebase")
         format: sql
         rows: |
           select
             'data/raw/insee/ipc_synth.xml' as fichier_source,
             timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            'alimentation' as poste,
             '011813726' as idbank,
             'D972' as code_territoire,
             date '2022-05-01' as periode,
@@ -124,12 +122,35 @@ unit_tests:
           select
             'data/raw/insee/ipc_synth.xml',
             timestamptz '2026-09-01 00:00:00+00',
+            'alimentation',
             '011813720',
             'FM',
             date '2022-05-01',
             date '2022-05-01',
             1.0,
             0.0
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            'energie',
+            '011813873',
+            'D972',
+            date '2022-05-01',
+            date '2022-05-01',
+            1.1,
+            10.0
+          union all
+          select
+            'data/raw/insee/ipc_synth.xml',
+            timestamptz '2026-09-01 00:00:00+00',
+            'energie',
+            '011813867',
+            'FM',
+            date '2022-05-01',
+            date '2022-05-01',
+            1.05,
+            5.0
       - input: ref("ecsp_alimentation_2022")
         format: sql
         rows: |
@@ -147,6 +168,7 @@ unit_tests:
           date '2022-05-01' as periode,
           date '2022-05-01' as dernier_mois_commun,
           'alimentation' as poste,
+          'Alimentation' as libelle_poste,
           'data/raw/insee/ipc_synth.xml' as fichier_source,
           timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
           '011813726' as idbank_martinique,
@@ -157,23 +179,46 @@ unit_tests:
           0.0 as evolution_france_metropolitaine_pct,
           25.0 as differentiel_evolution_points,
           1.25 as coefficient_ecart,
+          true as ancre_ecsp_disponible,
           40.0 as ecart_ecsp_2022_pct,
           ((1 + 40.0 / 100) * 1.25 - 1) * 100 as ecart_prix_estime_pct,
           'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp,
           'estimation_a_partir_ecsp_2022' as nature_ecart
+        union all
+        select
+          date '2022-05-01',
+          date '2022-05-01',
+          'energie',
+          'Énergie',
+          'data/raw/insee/ipc_synth.xml',
+          timestamptz '2026-09-01 00:00:00+00',
+          '011813873',
+          '011813867',
+          1.1,
+          1.05,
+          10.0,
+          5.0,
+          5.0,
+          1.1 / 1.05,
+          false,
+          cast(null as double),
+          cast(null as double),
+          cast(null as varchar),
+          cast(null as varchar)
 
   - name: identites_de_l_ancre
     description: >
-      Ligne d'ancre synthétique : facteurs 1, évolutions 0, différentiel 0,
-      coefficient 1, écart 40, nature mesure_ecsp_2022.
-    model: fct_differentiel_alimentation
+      Ligne d'ancre synthétique alimentation : facteurs 1, écart 40, nature
+      mesure_ecsp_2022.
+    model: fct_differentiel_ipc
     given:
-      - input: ref("int_ipc_alimentation_rebase")
+      - input: ref("int_ipc_rebase")
         format: sql
         rows: |
           select
             'data/raw/insee/ipc_synth.xml' as fichier_source,
             timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
+            'alimentation' as poste,
             '011813726' as idbank,
             'D972' as code_territoire,
             date '2022-04-01' as periode,
@@ -184,6 +229,7 @@ unit_tests:
           select
             'data/raw/insee/ipc_synth.xml',
             timestamptz '2026-09-01 00:00:00+00',
+            'alimentation',
             '011813720',
             'FM',
             date '2022-04-01',
@@ -207,6 +253,7 @@ unit_tests:
           date '2022-04-01' as periode,
           date '2022-04-01' as dernier_mois_commun,
           'alimentation' as poste,
+          'Alimentation' as libelle_poste,
           'data/raw/insee/ipc_synth.xml' as fichier_source,
           timestamptz '2026-09-01 00:00:00+00' as collecte_utc,
           '011813726' as idbank_martinique,
@@ -217,6 +264,7 @@ unit_tests:
           0.0 as evolution_france_metropolitaine_pct,
           0.0 as differentiel_evolution_points,
           1.0 as coefficient_ecart,
+          true as ancre_ecsp_disponible,
           40.0 as ecart_ecsp_2022_pct,
           ((1 + 40.0 / 100) * 1.0 - 1) * 100 as ecart_prix_estime_pct,
           'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp,

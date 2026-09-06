@@ -1,4 +1,4 @@
-"""Orchestrateur de publication Parquet du différentiel alimentaire.
+"""Orchestrateur de publication Parquet du différentiel IPC (quatre postes).
 
 Ordre strict : vérifier → exporter → valider → remplacer (os.replace en dernier).
 """
@@ -18,14 +18,15 @@ import duckdb
 RACINE = Path(__file__).resolve().parents[1]
 CHEMIN_BASE_DEFAUT = RACINE / "build" / "panyen.duckdb"
 CHEMIN_DESTINATION_DEFAUT = (
-    RACINE / "web" / "public" / "data" / "differentiel_alimentation.parquet"
+    RACINE / "web" / "public" / "data" / "differentiel_ipc.parquet"
 )
-NOM_TABLE = "fct_differentiel_alimentation"
+NOM_TABLE = "fct_differentiel_ipc"
 
 COLONNES_EXPORT = (
     "periode",
     "dernier_mois_commun",
     "poste",
+    "libelle_poste",
     "fichier_source",
     "collecte_utc",
     "idbank_martinique",
@@ -36,6 +37,7 @@ COLONNES_EXPORT = (
     "evolution_france_metropolitaine_pct",
     "differentiel_evolution_points",
     "coefficient_ecart",
+    "ancre_ecsp_disponible",
     "ecart_ecsp_2022_pct",
     "ecart_prix_estime_pct",
     "source_ecsp",
@@ -63,7 +65,7 @@ def _requete_source() -> str:
     return (
         f"select {LISTE_COLONNES_SQL} "
         f"from {NOM_TABLE} "
-        "order by periode"
+        "order by poste, periode"
     )
 
 
@@ -115,7 +117,7 @@ def exporter_candidat(
         raise PublicationErreur(f"base absente : {chemin_base}")
 
     dossier_destination.mkdir(parents=True, exist_ok=True)
-    candidat = dossier_destination / f".differentiel_alimentation.{uuid.uuid4().hex}.parquet.tmp"
+    candidat = dossier_destination / f".differentiel_ipc.{uuid.uuid4().hex}.parquet.tmp"
 
     connexion = duckdb.connect(str(chemin_base), read_only=True)
     try:
@@ -154,7 +156,7 @@ def valider_candidat(*, chemin_base: Path, chemin_candidat: Path) -> dict:
         empreinte_candidat = _lire_empreinte(
             connexion_parquet,
             f"select {LISTE_COLONNES_SQL} from read_parquet('{chemin_sql}') "
-            "order by periode",
+            "order by poste, periode",
         )
     except PublicationErreur:
         raise
@@ -168,7 +170,7 @@ def valider_candidat(*, chemin_base: Path, chemin_candidat: Path) -> dict:
             "validation échouée : le candidat Parquet ne correspond pas à la fact"
         )
 
-    colonnes, n_lignes, periode_min, periode_max, _ = empreinte_candidat
+    colonnes, n_lignes, periode_min, periode_max, lignes = empreinte_candidat
     if colonnes != COLONNES_EXPORT:
         raise PublicationErreur(
             f"schéma invalide : attendu {COLONNES_EXPORT}, reçu {colonnes}"
@@ -176,9 +178,13 @@ def valider_candidat(*, chemin_base: Path, chemin_candidat: Path) -> dict:
     if "valeur_indice" in colonnes:
         raise PublicationErreur("niveau territorial interdit : valeur_indice présent")
 
+    idx_poste = colonnes.index("poste")
+    postes = {ligne[idx_poste] for ligne in lignes}
+
     return {
         "colonnes": colonnes,
         "n_lignes": n_lignes,
+        "n_postes": len(postes),
         "periode_min": periode_min,
         "periode_max": periode_max,
     }
@@ -221,7 +227,7 @@ def publier(
             raise PublicationErreur("export invalide : chemin candidat manquant")
         meta = valider_candidat(chemin_base=chemin_base, chemin_candidat=candidat)
         remplacer_effectif(candidat, chemin_destination)
-        candidat = None  # remplacé : plus de fichier temporaire à nettoyer
+        candidat = None
     except PublicationErreur:
         _supprimer_candidat(candidat)
         raise
@@ -239,6 +245,7 @@ def publier(
         "taille": taille,
         "sha256": empreinte,
         "n_lignes": meta["n_lignes"],
+        "n_postes": meta["n_postes"],
         "periode_min": meta["periode_min"],
         "periode_max": meta["periode_max"],
     }
@@ -251,12 +258,13 @@ def afficher_succes(resume: dict) -> None:
         f"taille : {resume['taille']} octets\n"
         f"sha256 : {resume['sha256']}\n"
         f"lignes : {resume['n_lignes']}\n"
+        f"postes : {resume['n_postes']}\n"
         f"période : {resume['periode_min']} → {resume['periode_max']}"
     )
 
 
 def main(argv: list[str] | None = None) -> int:
-    del argv  # aucune option de contournement acceptée
+    del argv
     try:
         resume = publier()
     except PublicationErreur as exc:

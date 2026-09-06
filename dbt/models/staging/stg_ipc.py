@@ -1,9 +1,9 @@
-"""stg_ipc — observations IPC alimentaires brutes, une par fichier, idbank et période.
+"""stg_ipc — observations IPC brutes, une par fichier, idbank et période.
 
 Grain : (fichier_source, idbank, periode).
 Cette table décrit les observations SDMX ; elle ne compare jamais les niveaux
-d'indice entre territoires. perimetre_reference distingue le lot historique
-France entière du lot actif France métropolitaine.
+d'indice entre territoires. poste et lot_collecte distinguent les lots
+alimentaires historiques du lot actif à quatre postes.
 """
 
 from __future__ import annotations
@@ -17,7 +17,9 @@ CREATE TEMP TABLE _stg_ipc (
     fichier_source VARCHAR,
     collecte_utc TIMESTAMPTZ,
     idbank VARCHAR,
+    poste VARCHAR,
     code_territoire VARCHAR,
+    lot_collecte VARCHAR,
     perimetre_reference VARCHAR,
     frequence VARCHAR,
     titre VARCHAR,
@@ -37,7 +39,7 @@ CREATE TEMP TABLE _stg_ipc (
 def _relation(session, observations):
     session.execute(DDL)
     session.executemany(
-        f"INSERT INTO _stg_ipc VALUES ({', '.join(['?'] * 16)})",
+        f"INSERT INTO _stg_ipc VALUES ({', '.join(['?'] * 18)})",
         [astuple(obs) for obs in observations],
     )
     return session.table("_stg_ipc")

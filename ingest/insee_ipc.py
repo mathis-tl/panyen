@@ -1,4 +1,4 @@
-"""Collecte les séries IPC alimentaires de l'Insee et écrit la réponse brute.
+"""Collecte les indices IPC Insee (quatre postes) et écrit la réponse brute.
 
 Ce collecteur ne parse rien et ne corrige rien : il télécharge et il range. Le
 brut est un journal, pas un état — c'est ce qui permet de rejouer une exécution
@@ -14,13 +14,51 @@ from datetime import datetime, timezone
 from pathlib import Path
 import urllib.request
 
-# Base 2025, ensemble des ménages. Ordre déterministe : Martinique puis
-# France métropolitaine — aligné sur l'ECSP 2022. Voir docs/SOURCES.md.
-# L'idbank France entière 011813717 n'est plus collecté ; le XML historique
-# le conserve. L'énergie est hors périmètre de cette tranche.
+# Base 2025, ensemble des ménages. Ordre déterministe : par poste
+# (alimentation, énergie, produits manufacturés, services), Martinique puis
+# France métropolitaine. Voir docs/SOURCES.md. L'idbank France entière
+# 011813717 n'est plus collecté ; le XML historique le conserve.
 SERIES = {
-    "011813726": "D972 · alimentation · indice",
-    "011813720": "FM · alimentation · indice",
+    "011813726": {
+        "poste": "alimentation",
+        "code_territoire": "D972",
+        "libelle": "D972 · alimentation · indice",
+    },
+    "011813720": {
+        "poste": "alimentation",
+        "code_territoire": "FM",
+        "libelle": "FM · alimentation · indice",
+    },
+    "011813873": {
+        "poste": "energie",
+        "code_territoire": "D972",
+        "libelle": "D972 · énergie · indice",
+    },
+    "011813867": {
+        "poste": "energie",
+        "code_territoire": "FM",
+        "libelle": "FM · énergie · indice",
+    },
+    "011813789": {
+        "poste": "produits_manufactures",
+        "code_territoire": "D972",
+        "libelle": "D972 · produits manufacturés · indice",
+    },
+    "011813783": {
+        "poste": "produits_manufactures",
+        "code_territoire": "FM",
+        "libelle": "FM · produits manufacturés · indice",
+    },
+    "011813915": {
+        "poste": "services",
+        "code_territoire": "D972",
+        "libelle": "D972 · services · indice",
+    },
+    "011813909": {
+        "poste": "services",
+        "code_territoire": "FM",
+        "libelle": "FM · services · indice",
+    },
 }
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -43,11 +81,11 @@ def url_collecte(depuis: str) -> str:
 
 def nom_brut(instant: datetime) -> str:
     horodatage = instant.astimezone(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
-    return f"ipc_alimentation_{horodatage}.xml"
+    return f"ipc_postes_{horodatage}.xml"
 
 
 def collecter(depuis: str = DEPUIS_DEFAUT, *, dry_run: bool = False) -> Path | None:
-    """Télécharge les deux séries alimentaires. Écrit le brut, sauf en dry-run."""
+    """Télécharge les huit séries IPC. Écrit le brut, sauf en dry-run."""
     requete = urllib.request.Request(url_collecte(depuis), headers=ENTETES)
     contenu = urllib.request.urlopen(requete, timeout=TIMEOUT_S).read()
     if not contenu:
@@ -75,8 +113,8 @@ def collecter(depuis: str = DEPUIS_DEFAUT, *, dry_run: bool = False) -> Path | N
 def principal(argv: list[str] | None = None) -> None:
     parseur = argparse.ArgumentParser(
         description=(
-            "Collecte brute des indices alimentaires Insee "
-            "(France métropolitaine et Martinique)."
+            "Collecte brute des indices IPC Insee "
+            "(quatre postes, France métropolitaine et Martinique)."
         )
     )
     parseur.add_argument(

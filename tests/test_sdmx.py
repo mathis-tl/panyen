@@ -1,4 +1,4 @@
-"""Tests du parseur SDMX alimentaire : fixtures locales, aucun réseau."""
+"""Tests du parseur SDMX IPC : fixtures locales, aucun réseau."""
 
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -9,6 +9,18 @@ from transformation.sdmx import ErreurSdmx, parser_fichier, parser_repertoire
 
 NOM_BRUT = "ipc_alimentation_2026-09-02T150102Z.xml"
 NOM_BRUT_2 = "ipc_alimentation_2026-09-03T080000Z.xml"
+NOM_POSTES = "ipc_postes_2026-09-06T120000Z.xml"
+
+SERIES_ACTIVES = (
+    ("011813726", "D972", "alimentation", "IPC alimentation Martinique"),
+    ("011813720", "FM", "alimentation", "IPC alimentation France métropolitaine"),
+    ("011813873", "D972", "energie", "IPC énergie Martinique"),
+    ("011813867", "FM", "energie", "IPC énergie France métropolitaine"),
+    ("011813789", "D972", "produits_manufactures", "IPC produits manufacturés Martinique"),
+    ("011813783", "FM", "produits_manufactures", "IPC produits manufacturés FM"),
+    ("011813915", "D972", "services", "IPC services Martinique"),
+    ("011813909", "FM", "services", "IPC services France métropolitaine"),
+)
 
 
 def _obs(
@@ -131,6 +143,21 @@ def xml_alimentaire_metropole() -> str:
     return xml_alimentaire([_serie(), _serie_fm()])
 
 
+def xml_huit_postes(exclure: frozenset[str] | None = None) -> str:
+    exclus = exclure or frozenset()
+    series = [
+        _serie(
+            idbank=idbank,
+            ref_area=ref_area,
+            titre=titre,
+            observations=[_obs(valeur="100.0"), _obs("2022-05", "101.0")],
+        )
+        for idbank, ref_area, _poste, titre in SERIES_ACTIVES
+        if idbank not in exclus
+    ]
+    return xml_alimentaire(series)
+
+
 def test_deux_series_et_plusieurs_observations(tmp_path: Path) -> None:
     brut = ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire())
 
@@ -140,6 +167,7 @@ def test_deux_series_et_plusieurs_observations(tmp_path: Path) -> None:
     idbanks = {obs.idbank for obs in observations}
     assert idbanks == {"011813726", "011813717"}
     assert all(obs.idbank.startswith("0") for obs in observations)
+    assert {obs.poste for obs in observations} == {"alimentation"}
     periodes = {(obs.idbank, obs.periode.isoformat()) for obs in observations}
     assert periodes == {
         ("011813726", "2022-04-01"),
@@ -155,6 +183,7 @@ def test_types_et_zero_initial(tmp_path: Path) -> None:
 
     assert type(obs.idbank) is str
     assert obs.idbank == "011813726"
+    assert obs.poste == "alimentation"
     assert type(obs.periode) is date
     assert obs.periode == date(2022, 4, 1)
     assert type(obs.valeur_indice) is float
@@ -164,6 +193,7 @@ def test_types_et_zero_initial(tmp_path: Path) -> None:
     assert type(obs.decimales) is int
     assert obs.frequence == "M"
     assert obs.code_territoire == "D972"
+    assert obs.lot_collecte == "alimentation_france_entiere"
 
 
 def test_provenance_issue_de_deux_noms_de_fichiers(tmp_path: Path) -> None:
@@ -203,17 +233,12 @@ def test_statuts_conserves(tmp_path: Path) -> None:
                 idbank="011813717",
                 ref_area="FE",
                 titre="IPC alimentation France",
-                observations=[
-                    _obs(valeur="101.8", statut="A", qualite="D", type_obs="A"),
-                    _obs("2022-05", "102.0", statut="A", qualite="D", type_obs="A"),
-                ],
             ),
         ]
     )
     brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
     observations = parser_fichier(brut, racine=tmp_path)
     mq = [obs for obs in observations if obs.idbank == "011813726"]
-
     assert mq[0].statut_observation == "A"
     assert mq[0].qualite_observation == "P"
     assert mq[0].type_observation == "A"
@@ -234,10 +259,6 @@ def test_valeur_nd_nulle(tmp_path: Path) -> None:
                 idbank="011813717",
                 ref_area="FE",
                 titre="IPC alimentation France",
-                observations=[
-                    _obs(valeur="101.8"),
-                    _obs("2022-05", "102.0"),
-                ],
             ),
         ]
     )
@@ -245,7 +266,7 @@ def test_valeur_nd_nulle(tmp_path: Path) -> None:
     nd = next(
         obs
         for obs in parser_fichier(brut, racine=tmp_path)
-        if obs.statut_observation == "ND"
+        if obs.idbank == "011813726" and obs.periode == date(2022, 4, 1)
     )
 
     assert nd.valeur_indice is None
@@ -261,7 +282,7 @@ def test_xml_invalide(tmp_path: Path) -> None:
 def test_serie_inconnue(tmp_path: Path) -> None:
     xml = xml_alimentaire(
         [
-            _serie(idbank="011813873", titre="IPC énergie Martinique"),
+            _serie(idbank="011899999", titre="série inconnue"),
             _serie(
                 idbank="011813717",
                 ref_area="FE",
@@ -406,6 +427,9 @@ def test_lot_historique_etiquette_france_entiere(tmp_path: Path) -> None:
     assert {obs.perimetre_reference for obs in observations} == {
         "france_entiere_historique"
     }
+    assert {obs.lot_collecte for obs in observations} == {
+        "alimentation_france_entiere"
+    }
 
 
 def test_lot_metropolitain_etiquette_france_metropolitaine(tmp_path: Path) -> None:
@@ -418,6 +442,9 @@ def test_lot_metropolitain_etiquette_france_metropolitaine(tmp_path: Path) -> No
     assert territoires == {("011813726", "D972"), ("011813720", "FM")}
     assert {obs.perimetre_reference for obs in observations} == {
         "france_metropolitaine"
+    }
+    assert {obs.lot_collecte for obs in observations} == {
+        "alimentation_france_metropolitaine"
     }
 
 
@@ -514,3 +541,90 @@ def test_repertoire_historique_et_metropolitain(tmp_path: Path) -> None:
         "011813717",
         "011813720",
     }
+
+
+def test_huit_series_postes_acceptees(tmp_path: Path) -> None:
+    brut = ecrire_brut(tmp_path, NOM_POSTES, xml_huit_postes())
+    observations = parser_fichier(brut, racine=tmp_path)
+
+    assert len(observations) == 16
+    assert {obs.idbank for obs in observations} == {s[0] for s in SERIES_ACTIVES}
+    assert {obs.poste for obs in observations} == {
+        "alimentation",
+        "energie",
+        "produits_manufactures",
+        "services",
+    }
+    assert {obs.lot_collecte for obs in observations} == {
+        "quatre_postes_france_metropolitaine"
+    }
+    assert {obs.perimetre_reference for obs in observations} == {
+        "france_metropolitaine"
+    }
+    assert {(obs.idbank, obs.poste, obs.code_territoire) for obs in observations} == {
+        (idbank, poste, ref_area) for idbank, ref_area, poste, _titre in SERIES_ACTIVES
+    }
+
+
+def test_ipc_postes_sept_series_refuse(tmp_path: Path) -> None:
+    brut = ecrire_brut(
+        tmp_path, NOM_POSTES, xml_huit_postes(exclure=frozenset({"011813909"}))
+    )
+    with pytest.raises(ErreurSdmx, match="lot non conforme"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_ipc_postes_idbank_surnumeraire_refuse(tmp_path: Path) -> None:
+    series = [
+        _serie(
+            idbank=idbank,
+            ref_area=ref_area,
+            titre=titre,
+        )
+        for idbank, ref_area, _poste, titre in SERIES_ACTIVES
+    ]
+    series.append(
+        _serie(
+            idbank="011813717",
+            ref_area="FE",
+            titre="IPC alimentation France entière",
+        )
+    )
+    brut = ecrire_brut(tmp_path, NOM_POSTES, xml_alimentaire(series))
+    with pytest.raises(ErreurSdmx, match="lot non conforme"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_paire_melangee_alimentaires_toujours_refusee(tmp_path: Path) -> None:
+    xml = xml_alimentaire(
+        [
+            _serie(
+                idbank="011813717",
+                ref_area="FE",
+                titre="IPC alimentation France",
+            ),
+            _serie_fm(),
+        ]
+    )
+    brut = ecrire_brut(tmp_path, NOM_BRUT, xml)
+    with pytest.raises(ErreurSdmx, match="paire mélangée"):
+        parser_fichier(brut, racine=tmp_path)
+
+
+def test_repertoire_lit_alimentaires_et_postes(tmp_path: Path) -> None:
+    ecrire_brut(tmp_path, NOM_BRUT, xml_alimentaire())
+    ecrire_brut(tmp_path, NOM_BRUT_2, xml_alimentaire_metropole())
+    ecrire_brut(tmp_path, NOM_POSTES, xml_huit_postes())
+
+    observations = parser_repertoire(
+        tmp_path / "data" / "raw" / "insee",
+        racine=tmp_path,
+    )
+
+    lots = {obs.lot_collecte for obs in observations}
+    assert lots == {
+        "alimentation_france_entiere",
+        "alimentation_france_metropolitaine",
+        "quatre_postes_france_metropolitaine",
+    }
+    assert len(observations) == 4 + 4 + 16

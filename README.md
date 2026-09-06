@@ -3,9 +3,13 @@
 > *panyen* — « panier », en créole martiniquais.
 
 En 2022, l'Insee a mesuré que les produits alimentaires coûtaient **40 % plus
-cher** en Martinique qu'en France métropolitaine. Ce site répond à la question qui
-vient juste après, et à laquelle personne ne répond publiquement : **depuis, cet
-écart se creuse-t-il ou se resserre-t-il ?**
+cher** en Martinique qu'en France métropolitaine. Ce site répond à la question
+qui vient juste après, poste par poste — alimentation, énergie, produits
+manufacturés, services : **depuis, le différentiel d'évolution des prix se
+creuse-t-il ou se resserre-t-il ?**
+
+L'écart de niveau n'est publié que pour l'alimentation (mesure ECSP 2022). Pour
+les autres postes, seule l'évolution est comparable.
 
 *(Capture à venir.)*
 
@@ -23,9 +27,9 @@ vient juste après, et à laquelle personne ne répond publiquement : **depuis, 
 Il ne dit pas combien coûte un panier en Martinique aujourd'hui, et il ne peut pas
 le dire. Un indice des prix est en base 100 **sur son propre territoire** : deux
 indices ne se comparent pas en niveau, seulement en évolution. Le seul écart de
-niveau connu est celui de l'enquête de 2022 ; ce qui est tracé ici est un
-**différentiel d'évolution** depuis cette enquête, et toute estimation de l'écart
-actuel est étiquetée comme telle.
+niveau connu est celui de l'enquête de 2022 (alimentation) ; ce qui est tracé
+ici est un **différentiel d'évolution** depuis avril 2022, et toute estimation
+de l'écart alimentaire actuel est étiquetée comme telle.
 
 ## Les chiffres
 
@@ -36,7 +40,7 @@ qui le reproduit.)*
   outre-mer — parce que l'obligation de déclarer ses prix n'existe pas dans les
   DOM, où le prix est fixé par arrêté préfectoral.
 
-## Différentiel alimentaire depuis 2022
+## Différentiel IPC depuis 2022 (quatre postes)
 
 Reconstruction, hors réseau, à partir du brut déjà collecté :
 
@@ -44,25 +48,25 @@ Reconstruction, hors réseau, à partir du brut déjà collecté :
 uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
 ```
 
-La commande retient le fichier métropolitain le plus récent en entier, rebase
-chaque série sur avril 2022 **dans son propre territoire**, puis apparie les
-facteurs d'évolution. Le dernier mois commun actuellement calculé est
-**juillet 2026** : la France publie souvent un mois de plus, ce mois-là n'entre
-pas dans le calcul.
+La commande retient le fichier `quatre_postes_france_metropolitaine` le plus
+récent en entier, rebase chaque série sur avril 2022 **dans son propre
+territoire et son propre poste**, puis apparie les facteurs d'évolution. Le
+dernier mois commun est unique pour les quatre postes : la France publie souvent
+un mois de plus, ce mois-là n'entre pas dans le calcul.
 
 En mots simples :
 
-- Pour un territoire, le facteur d'un mois est « l'indice de ce mois divisé par
-  l'indice d'avril 2022 **du même territoire** ».
+- Pour un territoire et un poste, le facteur d'un mois est « l'indice de ce mois
+  divisé par l'indice d'avril 2022 **du même territoire et du même poste** ».
 - L'évolution en % est ce facteur, moins 1, fois 100.
 - Le différentiel compare ces deux évolutions, jamais les niveaux d'indice.
-- L'estimation de l'écart de prix part du +40 % mesuré en 2022, multiplié par le
-  rapport exact des deux facteurs — pas par la simple différence des pourcentages.
+- Pour l'alimentation seulement, l'estimation de l'écart de prix part du +40 %
+  mesuré en 2022, multiplié par le rapport exact des deux facteurs.
 
-À avril 2022, le +40 % est une **mesure** ECSP (`mesure_ecsp_2022`). Chaque mois
-suivant, `ecart_prix_estime_pct` est une **estimation**
-(`estimation_a_partir_ecsp_2022`). La mesure sourcée vit dans
-`dbt/seeds/ecsp_alimentation_2022.csv`.
+À avril 2022, le +40 % alimentaire est une **mesure** ECSP
+(`mesure_ecsp_2022`). Chaque mois suivant, `ecart_prix_estime_pct` est une
+**estimation** (`estimation_a_partir_ecsp_2022`). Hors alimentation, ces
+colonnes restent NULL : l'ECSP publie par fonction COICOP, pas par poste IPC.
 
 ## Essayer
 
@@ -76,7 +80,10 @@ make verify
 make publier
 ```
 
-`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, tests Vitest, build Vite) n'appelle pas le réseau et ne publie jamais le Parquet. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
+`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel IPC,
+tests Vitest, build Vite) n'appelle pas le réseau et ne publie jamais le
+Parquet. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir
+le XML brut `ipc_postes_*.xml`.
 
 ## CI
 
@@ -84,40 +91,50 @@ make publier
 make ci
 ```
 
-`make ci` reproduit localement le job GitHub Actions : installation verrouillée (`uv sync --locked`, `npm ci`), puis `make verify` avec `UV_LOCKED=1`. Le workflow se déclenche sur pull request, push sur `main` et manuellement. Il ne contacte pas l'API Insee : le dry-run sans écriture est couvert par un test à réponse synthétique. Il ne publie ni Parquet ni site.
+`make ci` reproduit localement le job GitHub Actions : installation verrouillée
+(`uv sync --locked`, `npm ci`), puis `make verify` avec `UV_LOCKED=1`. Le
+workflow se déclenche sur pull request, push sur `main` et manuellement. Il ne
+contacte pas l'API Insee : le dry-run sans écriture est couvert par un test à
+réponse synthétique. Il ne publie ni Parquet ni site.
 
 ## La page
 
-La page statique lit `web/public/data/differentiel_alimentation.parquet` dans le
-navigateur via `hyparquet`, sans serveur applicatif. Elle exige que `make publier`
-ait tourné au moins une fois pour produire le fichier Parquet.
+La page statique lit `web/public/data/differentiel_ipc.parquet` dans le
+navigateur via `hyparquet`, sans serveur applicatif. Le changement de poste
+redessine depuis les lignes déjà en mémoire, sans aucune requête. Elle exige que
+`make publier` ait tourné au moins une fois pour produire le fichier Parquet.
 
 ```bash
 make dev
 ```
 
-`make publier` exécute d'abord `make verify`, puis exporte `fct_differentiel_alimentation` vers un candidat Parquet Zstandard voisin, le valide contre la fact, et remplace atomiquement `web/public/data/differentiel_alimentation.parquet` avec `os.replace`. Si la vérification, l'export ou la validation échoue, la dernière version saine est conservée telle quelle. Le fichier généré n'est pas versionné.
+`make publier` exécute d'abord `make verify`, puis exporte `fct_differentiel_ipc`
+vers un candidat Parquet Zstandard voisin, le valide contre la fact, et remplace
+atomiquement `web/public/data/differentiel_ipc.parquet` avec `os.replace`. Si la
+vérification, l'export ou la validation échoue, la dernière version saine est
+conservée telle quelle. Le fichier généré n'est pas versionné.
 
 Lire le Parquet publié :
 
 ```bash
-uv run python -c "import duckdb; print(duckdb.sql(\"select count(*), min(periode), max(periode) from 'web/public/data/differentiel_alimentation.parquet'\").fetchall())"
+uv run python -c "import duckdb; print(duckdb.sql(\"select poste, count(*), min(periode), max(periode) from 'web/public/data/differentiel_ipc.parquet' group by 1 order by 1\").fetchall())"
 ```
 
 ## Limites connues
 
 - La France publie ses indices avant les DOM : le dernier mois affiché est le
-  dernier mois commun aux deux territoires.
+  dernier mois commun aux huit séries des quatre postes.
 - L'enquête de comparaison spatiale est quinquennale ; entre deux enquêtes,
-  l'écart de niveau ne peut être qu'estimé.
+  l'écart de niveau alimentaire ne peut être qu'estimé. Hors alimentation,
+  aucun écart de niveau n'est publiable.
 - Les prix des carburants ne sont disponibles au niveau de la station qu'en
   métropole.
 
 ## Décisions
 
-- **La série IPC alimentaire de référence est la France métropolitaine**
-  (`011813720`), alignée sur l'ECSP 2022. Un lot historique France entière
-  (`011813717`) reste au brut, étiqueté comme tel, et n'est plus collecté.
+- **La référence géographique active est la France métropolitaine**, alignée sur
+  l'ECSP 2022. Un lot historique France entière (`011813717`) reste au brut,
+  étiqueté comme tel, et n'est plus collecté.
 - **DuckDB + dbt + Parquet + hyparquet**, pas de serveur : le site lit le
   Parquet dans le navigateur via `hyparquet` (lecteur Parquet pur JavaScript,
   0,3 Mo) et affiche les graphiques avec Observable Plot. Zéro coût d'hébergement,

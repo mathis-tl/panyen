@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import duckdb
 import pytest
 
-from publication import publier_differentiel_alimentation as pub
+from publication import publier_differentiel_ipc as pub
 
 CONTENU_SAIN_SYNTHETIQUE = b"PARQUET-SAIN-SYNTHETIQUE-v1"
 
@@ -33,6 +33,7 @@ def creer_base_synthetique(
                 "periode": "2022-04-01",
                 "dernier_mois_commun": "2022-05-01",
                 "poste": "alimentation",
+                "libelle_poste": "Alimentation",
                 "fichier_source": "data/raw/insee/ipc_synth.xml",
                 "collecte_utc": "2026-09-01 00:00:00+00",
                 "idbank_martinique": "011813726",
@@ -43,6 +44,7 @@ def creer_base_synthetique(
                 "evolution_france_metropolitaine_pct": 0.0,
                 "differentiel_evolution_points": 0.0,
                 "coefficient_ecart": 1.0,
+                "ancre_ecsp_disponible": True,
                 "ecart_ecsp_2022_pct": 40.0,
                 "ecart_prix_estime_pct": 40.0,
                 "source_ecsp": "https://www.insee.fr/fr/statistiques/7649202",
@@ -52,6 +54,7 @@ def creer_base_synthetique(
                 "periode": "2022-05-01",
                 "dernier_mois_commun": "2022-05-01",
                 "poste": "alimentation",
+                "libelle_poste": "Alimentation",
                 "fichier_source": "data/raw/insee/ipc_synth.xml",
                 "collecte_utc": "2026-09-01 00:00:00+00",
                 "idbank_martinique": "011813726",
@@ -62,10 +65,53 @@ def creer_base_synthetique(
                 "evolution_france_metropolitaine_pct": 0.0,
                 "differentiel_evolution_points": 25.0,
                 "coefficient_ecart": 1.25,
+                "ancre_ecsp_disponible": True,
                 "ecart_ecsp_2022_pct": 40.0,
                 "ecart_prix_estime_pct": 75.0,
                 "source_ecsp": "https://www.insee.fr/fr/statistiques/7649202",
                 "nature_ecart": "estimation_a_partir_ecsp_2022",
+            },
+            {
+                "periode": "2022-04-01",
+                "dernier_mois_commun": "2022-05-01",
+                "poste": "energie",
+                "libelle_poste": "Énergie",
+                "fichier_source": "data/raw/insee/ipc_synth.xml",
+                "collecte_utc": "2026-09-01 00:00:00+00",
+                "idbank_martinique": "011813873",
+                "idbank_france_metropolitaine": "011813867",
+                "facteur_martinique": 1.0,
+                "facteur_france_metropolitaine": 1.0,
+                "evolution_martinique_pct": 0.0,
+                "evolution_france_metropolitaine_pct": 0.0,
+                "differentiel_evolution_points": 0.0,
+                "coefficient_ecart": 1.0,
+                "ancre_ecsp_disponible": False,
+                "ecart_ecsp_2022_pct": None,
+                "ecart_prix_estime_pct": None,
+                "source_ecsp": None,
+                "nature_ecart": None,
+            },
+            {
+                "periode": "2022-05-01",
+                "dernier_mois_commun": "2022-05-01",
+                "poste": "energie",
+                "libelle_poste": "Énergie",
+                "fichier_source": "data/raw/insee/ipc_synth.xml",
+                "collecte_utc": "2026-09-01 00:00:00+00",
+                "idbank_martinique": "011813873",
+                "idbank_france_metropolitaine": "011813867",
+                "facteur_martinique": 1.1,
+                "facteur_france_metropolitaine": 1.05,
+                "evolution_martinique_pct": 10.0,
+                "evolution_france_metropolitaine_pct": 5.0,
+                "differentiel_evolution_points": 5.0,
+                "coefficient_ecart": 1.1 / 1.05,
+                "ancre_ecsp_disponible": False,
+                "ecart_ecsp_2022_pct": None,
+                "ecart_prix_estime_pct": None,
+                "source_ecsp": None,
+                "nature_ecart": None,
             },
         ]
 
@@ -73,10 +119,11 @@ def creer_base_synthetique(
     if creer_table:
         con.execute(
             """
-            create table fct_differentiel_alimentation (
+            create table fct_differentiel_ipc (
                 periode date,
                 dernier_mois_commun date,
                 poste varchar,
+                libelle_poste varchar,
                 fichier_source varchar,
                 collecte_utc timestamptz,
                 idbank_martinique varchar,
@@ -87,6 +134,7 @@ def creer_base_synthetique(
                 evolution_france_metropolitaine_pct double,
                 differentiel_evolution_points double,
                 coefficient_ecart double,
+                ancre_ecsp_disponible boolean,
                 ecart_ecsp_2022_pct double,
                 ecart_prix_estime_pct double,
                 source_ecsp varchar,
@@ -98,15 +146,16 @@ def creer_base_synthetique(
         for ligne in lignes:
             con.execute(
                 """
-                insert into fct_differentiel_alimentation values (
-                    ?::date, ?::date, ?, ?, ?::timestamptz,
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 999.0
+                insert into fct_differentiel_ipc values (
+                    ?::date, ?::date, ?, ?, ?, ?::timestamptz,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 999.0
                 )
                 """,
                 [
                     ligne["periode"],
                     ligne["dernier_mois_commun"],
                     ligne["poste"],
+                    ligne["libelle_poste"],
                     ligne["fichier_source"],
                     ligne["collecte_utc"],
                     ligne["idbank_martinique"],
@@ -117,6 +166,7 @@ def creer_base_synthetique(
                     ligne["evolution_france_metropolitaine_pct"],
                     ligne["differentiel_evolution_points"],
                     ligne["coefficient_ecart"],
+                    ligne["ancre_ecsp_disponible"],
                     ligne["ecart_ecsp_2022_pct"],
                     ligne["ecart_prix_estime_pct"],
                     ligne["source_ecsp"],
@@ -131,7 +181,7 @@ def creer_base_synthetique(
 def environnement(tmp_path: Path):
     dossier_data = tmp_path / "web" / "public" / "data"
     dossier_data.mkdir(parents=True)
-    destination = dossier_data / "differentiel_alimentation.parquet"
+    destination = dossier_data / "differentiel_ipc.parquet"
     destination.write_bytes(CONTENU_SAIN_SYNTHETIQUE)
     base = creer_base_synthetique(tmp_path / "build" / "panyen.duckdb")
     return {
@@ -153,7 +203,6 @@ def _publier_succes(env, *, remplacer=None):
 
 
 def test_echec_verify_conserve_parquet_sain_et_ne_lance_pas_export(environnement):
-    """Échec de make verify → octets sains, aucun export ni remplacement."""
     env = environnement
     exporter = MagicMock()
     remplacer = MagicMock()
@@ -210,7 +259,7 @@ def test_table_vide_conserve_destination(environnement):
 def test_succes_sans_destination_anterieure(tmp_path: Path):
     dossier_data = tmp_path / "web" / "public" / "data"
     dossier_data.mkdir(parents=True)
-    destination = dossier_data / "differentiel_alimentation.parquet"
+    destination = dossier_data / "differentiel_ipc.parquet"
     base = creer_base_synthetique(tmp_path / "build" / "panyen.duckdb")
 
     resume = pub.publier(
@@ -220,7 +269,8 @@ def test_succes_sans_destination_anterieure(tmp_path: Path):
     )
 
     assert destination.is_file()
-    assert resume["n_lignes"] == 2
+    assert resume["n_lignes"] == 4
+    assert resume["n_postes"] == 2
     assert resume["sha256"] == sha256(destination)
     assert list(dossier_data.glob(".*.parquet.tmp")) == []
 
@@ -238,7 +288,6 @@ def test_succes_remplace_seulement_apres_validation(environnement):
 
     def remplacer(src: Path, dst: Path) -> None:
         ordre.append("remplacer")
-        # La validation a déjà eu lieu dans publier avant cet appel.
         assert src.is_file()
         assert dst.read_bytes() == CONTENU_SAIN_SYNTHETIQUE
         os.replace(src, dst)
@@ -253,7 +302,8 @@ def test_succes_remplace_seulement_apres_validation(environnement):
 
     assert ordre == ["exporter", "remplacer"]
     assert env["destination"].read_bytes() != CONTENU_SAIN_SYNTHETIQUE
-    assert resume["n_lignes"] == 2
+    assert resume["n_lignes"] == 4
+    assert resume["n_postes"] == 2
     assert sha256(env["destination"]) == resume["sha256"]
 
 
@@ -283,7 +333,7 @@ def test_erreur_validation_conserve_sha_et_nettoie_candidat(environnement):
     remplacer = MagicMock()
 
     def exporter_casse():
-        candidat = env["dossier_data"] / ".differentiel_alimentation.brut.parquet.tmp"
+        candidat = env["dossier_data"] / ".differentiel_ipc.brut.parquet.tmp"
         candidat.write_bytes(b"pas-un-parquet-valide")
         return candidat
 
@@ -302,21 +352,22 @@ def test_erreur_validation_conserve_sha_et_nettoie_candidat(environnement):
     assert list(env["dossier_data"].glob("*")) == [env["destination"]]
 
 
-def test_schema_ordre_periodes_et_contenu_identiques_a_la_fact(environnement):
+def test_schema_ordre_poste_periode_et_contenu_identiques_a_la_fact(environnement):
     env = environnement
     resume = _publier_succes(env)
 
     con = duckdb.connect(str(env["base"]), read_only=True)
     source = con.execute(
-        f"select {pub.LISTE_COLONNES_SQL} from fct_differentiel_alimentation "
-        "order by periode"
+        f"select {pub.LISTE_COLONNES_SQL} from fct_differentiel_ipc "
+        "order by poste, periode"
     ).fetchall()
     colonnes_source = [c[0] for c in con.description]
     con.close()
 
     con = duckdb.connect()
     parquet = con.execute(
-        f"select {pub.LISTE_COLONNES_SQL} from read_parquet(?) order by periode",
+        f"select {pub.LISTE_COLONNES_SQL} from read_parquet(?) "
+        "order by poste, periode",
         [str(env["destination"])],
     ).fetchall()
     colonnes_parquet = [c[0] for c in con.description]
@@ -327,9 +378,7 @@ def test_schema_ordre_periodes_et_contenu_identiques_a_la_fact(environnement):
     assert parquet == source
     assert resume["periode_min"] == source[0][0]
     assert resume["periode_max"] == source[-1][0]
-    # Périodes strictement croissantes.
-    periodes = [ligne[0] for ligne in parquet]
-    assert periodes == sorted(periodes)
+    assert resume["n_postes"] == 2
 
 
 def test_absence_valeur_indice_et_presence_provenance(environnement):
@@ -347,7 +396,8 @@ def test_absence_valeur_indice_et_presence_provenance(environnement):
     lignes = con.execute(
         "select dernier_mois_commun, fichier_source, collecte_utc, "
         "idbank_martinique, idbank_france_metropolitaine, source_ecsp, "
-        "nature_ecart from read_parquet(?) order by periode",
+        "nature_ecart, ancre_ecsp_disponible from read_parquet(?) "
+        "order by poste, periode",
         [str(env["destination"])],
     ).fetchall()
     con.close()
@@ -355,12 +405,13 @@ def test_absence_valeur_indice_et_presence_provenance(environnement):
     assert "valeur_indice" not in colonnes
     assert set(colonnes) == set(pub.COLONNES_EXPORT)
     assert all(ligne[0] is not None for ligne in lignes)
-    assert {ligne[6] for ligne in lignes} == {
-        "mesure_ecsp_2022",
-        "estimation_a_partir_ecsp_2022",
-    }
-    assert all(ligne[3] == "011813726" for ligne in lignes)
-    assert all(ligne[4] == "011813720" for ligne in lignes)
+    natures = {ligne[6] for ligne in lignes}
+    assert "mesure_ecsp_2022" in natures
+    assert None in natures
+
+
+def test_refus_colonne_niveau_dans_export():
+    assert "valeur_indice" not in pub.COLONNES_EXPORT
 
 
 def test_os_replace_une_fois_succes_jamais_echec(environnement):

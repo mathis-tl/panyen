@@ -101,7 +101,7 @@ export function grapheEvolutions(
   resume: ResumeEcran,
   largeurConteneur: number,
 ): SVGSVGElement | HTMLElement {
-  const { lignes, minimumEstime, maximumEstime, actuelle } = resume;
+  const { lignes, actuelle } = resume;
   const disposition = calculerDispositionGraphe(largeurConteneur);
 
   const derniere = lignes[lignes.length - 1];
@@ -136,11 +136,11 @@ export function grapheEvolutions(
     },
   ];
 
-  const jalonsDates = jalonsRepereGraphe(
-    minimumEstime.periode,
-    maximumEstime.periode,
-    actuelle.periode,
-  );
+  const jalonMin =
+    resume.minimumEstime?.periode ?? resume.extremumDifferentielMin.periode;
+  const jalonMax =
+    resume.maximumEstime?.periode ?? resume.extremumDifferentielMax.periode;
+  const jalonsDates = jalonsRepereGraphe(jalonMin, jalonMax, actuelle.periode);
   const jalonsLibelles = jalonsDates.filter((j) => j.label !== null);
 
   const ancrageFin = disposition.labelsALinterieur

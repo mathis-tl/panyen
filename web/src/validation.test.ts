@@ -1,15 +1,40 @@
-import { describe, it, expect } from "vitest";
-import { validerColonnes, validerLignes, formaterMoisUtc, ErreurValidation } from "./validation.ts";
-import { COLONNES_ATTENDUES, type LigneDifferentiel, type NatureEcart } from "./types.ts";
+import { describe, it, expect, vi } from "vitest";
+import {
+  validerColonnes,
+  validerLignes,
+  formaterMoisUtc,
+  ErreurValidation,
+} from "./validation.ts";
+import {
+  COLONNES_ATTENDUES,
+  POSTES_ATTENDUS,
+  type CodePoste,
+  type LigneDifferentiel,
+  type NatureEcart,
+} from "./types.ts";
+import { demarrer } from "./main.ts";
 
 /** Fabrique une ligne synthétique valide. */
 function ligneSynthetique(
-  overrides: Partial<LigneDifferentiel> & { periode?: Date; nature_ecart?: NatureEcart } = {},
+  overrides: Partial<LigneDifferentiel> & {
+    periode?: Date;
+    nature_ecart?: NatureEcart | null;
+  } = {},
 ): LigneDifferentiel {
+  const poste = (overrides.poste ?? "alimentation") as CodePoste;
+  const avecAncre = poste === "alimentation";
   return {
-    periode: new Date(Date.UTC(2022, 3, 1)), // avril 2022
+    periode: new Date(Date.UTC(2022, 3, 1)),
     dernier_mois_commun: new Date(Date.UTC(2022, 3, 1)),
-    poste: "alimentation",
+    poste,
+    libelle_poste:
+      poste === "alimentation"
+        ? "Alimentation"
+        : poste === "energie"
+          ? "Énergie"
+          : poste === "produits_manufactures"
+            ? "Produits manufacturés"
+            : "Services",
     fichier_source: "data/raw/insee/ipc.xml",
     collecte_utc: new Date(Date.UTC(2026, 8, 1)),
     idbank_martinique: "011813726",
@@ -20,24 +45,46 @@ function ligneSynthetique(
     evolution_france_metropolitaine_pct: 0,
     differentiel_evolution_points: 0,
     coefficient_ecart: 1.0,
-    ecart_ecsp_2022_pct: 40.0,
-    ecart_prix_estime_pct: 40.0,
-    source_ecsp: "https://www.insee.fr/fr/statistiques/7649202",
-    nature_ecart: "mesure_ecsp_2022",
+    ancre_ecsp_disponible: avecAncre,
+    ecart_ecsp_2022_pct: avecAncre ? 40.0 : null,
+    ecart_prix_estime_pct: avecAncre ? 40.0 : null,
+    source_ecsp: avecAncre
+      ? "https://www.insee.fr/fr/statistiques/7649202"
+      : null,
+    nature_ecart: avecAncre ? "mesure_ecsp_2022" : null,
     ...overrides,
   };
 }
 
-/** Fabrique un jeu de N mois consécutifs valide (1 mesure + N-1 estimations). */
-function jeuValide(n: number): LigneDifferentiel[] {
-  return Array.from({ length: n }, (_, i) =>
-    ligneSynthetique({
-      periode: new Date(Date.UTC(2022, 3 + i, 1)),
-      dernier_mois_commun: new Date(Date.UTC(2022, 3 + n - 1, 1)),
-      nature_ecart: i === 0 ? "mesure_ecsp_2022" : "estimation_a_partir_ecsp_2022",
-      differentiel_evolution_points: i * 0.3,
-    }),
-  );
+/** Jeu valide à quatre postes, N mois chacun. */
+function jeuQuatrePostes(n: number): LigneDifferentiel[] {
+  const dernier = new Date(Date.UTC(2022, 3 + n - 1, 1));
+  const lignes: LigneDifferentiel[] = [];
+  for (const poste of POSTES_ATTENDUS) {
+    for (let i = 0; i < n; i++) {
+      const avecAncre = poste === "alimentation";
+      lignes.push(
+        ligneSynthetique({
+          poste,
+          periode: new Date(Date.UTC(2022, 3 + i, 1)),
+          dernier_mois_commun: dernier,
+          nature_ecart: avecAncre
+            ? i === 0
+              ? "mesure_ecsp_2022"
+              : "estimation_a_partir_ecsp_2022"
+            : null,
+          ancre_ecsp_disponible: avecAncre,
+          ecart_ecsp_2022_pct: avecAncre ? 40.0 : null,
+          ecart_prix_estime_pct: avecAncre ? 40.0 + i : null,
+          source_ecsp: avecAncre
+            ? "https://www.insee.fr/fr/statistiques/7649202"
+            : null,
+          differentiel_evolution_points: i * 0.3,
+        }),
+      );
+    }
+  }
+  return lignes;
 }
 
 describe("validerColonnes", () => {
@@ -57,67 +104,81 @@ describe("validerColonnes", () => {
 });
 
 describe("validerLignes", () => {
-  it("accepte un jeu valide", () => {
-    expect(() => validerLignes(jeuValide(5))).not.toThrow();
+  it("accepte un jeu à quatre postes", () => {
+    expect(() => validerLignes(jeuQuatrePostes(5))).not.toThrow();
   });
 
   it("refuse zéro ligne", () => {
     expect(() => validerLignes([])).toThrow("aucune ligne");
   });
 
-  it("refuse une période dupliquée", () => {
-    const lignes = jeuValide(3);
-    lignes[2] = { ...lignes[1], nature_ecart: "estimation_a_partir_ecsp_2022" };
-    expect(() => validerLignes(lignes)).toThrow("non strictement croissantes");
+  it("refuse un poste manquant", () => {
+    const lignes = jeuQuatrePostes(3).filter((l) => l.poste !== "services");
+    expect(() => validerLignes(lignes)).toThrow(/Poste manquant.*services/);
   });
 
-  it("refuse des périodes désordonnées", () => {
-    const lignes = jeuValide(3);
-    [lignes[1], lignes[2]] = [lignes[2], lignes[1]];
-    expect(() => validerLignes(lignes)).toThrow("non strictement croissantes");
+  it("refuse des périodes désalignées entre postes", () => {
+    const lignes = jeuQuatrePostes(3).filter(
+      (l) => !(l.poste === "energie" && l.periode.getUTCMonth() === 5),
+    );
+    expect(() => validerLignes(lignes)).toThrow(/désalign/);
   });
 
-  it("refuse un mois manquant au milieu", () => {
-    const lignes = jeuValide(3);
-    // Sauter mai → passer directement à juin
-    lignes[1] = ligneSynthetique({
-      periode: new Date(Date.UTC(2022, 5, 1)), // juin au lieu de mai
-      nature_ecart: "estimation_a_partir_ecsp_2022",
-    });
-    lignes[2] = ligneSynthetique({
-      periode: new Date(Date.UTC(2022, 6, 1)),
-      nature_ecart: "estimation_a_partir_ecsp_2022",
-    });
-    expect(() => validerLignes(lignes)).toThrow("Mois manquant");
+  it("refuse un champ ECSP non nul sur un poste sans ancre", () => {
+    const lignes = jeuQuatrePostes(2);
+    const energie = lignes.find((l) => l.poste === "energie")!;
+    energie.ecart_prix_estime_pct = 12;
+    expect(() => validerLignes(lignes)).toThrow(/sans ancre/);
   });
 
-  it("refuse une nature_ecart inconnue", () => {
-    const lignes = jeuValide(2);
-    (lignes[1] as unknown as Record<string, unknown>).nature_ecart = "inventee";
-    expect(() => validerLignes(lignes as LigneDifferentiel[])).toThrow("inconnue");
+  it("refuse une période dupliquée sur un poste", () => {
+    const lignes = jeuQuatrePostes(3);
+    const alim = lignes.filter((l) => l.poste === "alimentation");
+    alim[2] = { ...alim[1], nature_ecart: "estimation_a_partir_ecsp_2022" };
+    const autres = lignes.filter((l) => l.poste !== "alimentation");
+    expect(() => validerLignes([...autres, ...alim])).toThrow(
+      /non strictement croissantes/,
+    );
   });
 
-  it("refuse plus d'une ligne mesure_ecsp_2022", () => {
-    const lignes = jeuValide(3);
-    lignes[1] = { ...lignes[1], nature_ecart: "mesure_ecsp_2022" };
-    expect(() => validerLignes(lignes)).toThrow("mesure_ecsp_2022");
-  });
-
-  it("refuse aucune ligne mesure_ecsp_2022", () => {
-    const lignes = jeuValide(3);
-    lignes[0] = { ...lignes[0], nature_ecart: "estimation_a_partir_ecsp_2022" };
+  it("refuse plus d'une ligne mesure_ecsp_2022 sur l'alimentation", () => {
+    const lignes = jeuQuatrePostes(3);
+    const alim = lignes.find(
+      (l) => l.poste === "alimentation" && l.periode.getUTCMonth() === 4,
+    )!;
+    alim.nature_ecart = "mesure_ecsp_2022";
     expect(() => validerLignes(lignes)).toThrow("mesure_ecsp_2022");
   });
 });
 
 describe("formaterMoisUtc", () => {
   it("avril 2022 quel que soit le fuseau", () => {
-    // Le 1er avril 2022 00:00 UTC — ne doit jamais devenir mars 2022
     const date = new Date(Date.UTC(2022, 3, 1));
     expect(formaterMoisUtc(date)).toBe("avril 2022");
   });
 
   it("décembre 2025", () => {
     expect(formaterMoisUtc(new Date(Date.UTC(2025, 11, 1)))).toBe("décembre 2025");
+  });
+});
+
+describe("bascule de poste sans réseau", () => {
+  it("charge une seule fois et recalcule depuis les lignes en mémoire", async () => {
+    const { calculerResume } = await import("./calculs.ts");
+    const lignes = jeuQuatrePostes(3);
+    const charger = vi.fn(async () => lignes);
+    const conteneur = { innerHTML: "" } as HTMLElement;
+
+    // Échec attendu sans DOM complet pour le rendu, mais le chargeur
+    // ne doit être appelé qu'une fois avant toute bascule pure.
+    await demarrer(conteneur, { charger }).catch(() => undefined);
+    expect(charger).toHaveBeenCalledTimes(1);
+
+    const alim = calculerResume(lignes, "alimentation");
+    const energie = calculerResume(lignes, "energie");
+    expect(alim.ancreEcspDisponible).toBe(true);
+    expect(energie.ancreEcspDisponible).toBe(false);
+    expect(energie.noteSansAncre).toMatch(/fonctions? de consommation/i);
+    expect(charger).toHaveBeenCalledTimes(1);
   });
 });

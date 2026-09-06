@@ -1,4 +1,4 @@
-"""Tests du collecteur IPC alimentaire : brut intact, sans réseau réel."""
+"""Tests du collecteur IPC : brut intact, sans réseau réel."""
 
 from datetime import datetime, timezone
 import importlib.util
@@ -14,14 +14,25 @@ assert _spec is not None and _spec.loader is not None
 insee_ipc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(insee_ipc)
 
-XML_MINUSCULE = b"<message>ipc-alimentation-brut</message>"
+XML_MINUSCULE = b"<message>ipc-postes-brut</message>"
 URL_ATTENDUE = (
     "https://bdm.insee.fr/series/sdmx/data/SERIES_BDM/"
-    "011813726+011813720?startPeriod=2022-04"
+    "011813726+011813720+011813873+011813867+011813789+011813783"
+    "+011813915+011813909?startPeriod=2022-04"
 )
 ACCEPT = "application/vnd.sdmx.structurespecificdata+xml;version=2.1"
 INSTANT = datetime(2026, 9, 2, 15, 1, 2, tzinfo=timezone.utc)
-NOM_UTC = "ipc_alimentation_2026-09-02T150102Z.xml"
+NOM_UTC = "ipc_postes_2026-09-02T150102Z.xml"
+IDBANKS_ACTIFS = (
+    "011813726",
+    "011813720",
+    "011813873",
+    "011813867",
+    "011813789",
+    "011813783",
+    "011813915",
+    "011813909",
+)
 
 
 class FauxReponse:
@@ -69,17 +80,15 @@ def brancher_transport(monkeypatch, contenu=XML_MINUSCULE, erreur=None):
     return appels
 
 
-def test_un_seul_appel_deux_series_alimentaires_depuis_avril_2022(
-    monkeypatch, brut, horloge
-):
+def test_un_seul_appel_huit_series_depuis_avril_2022(monkeypatch, brut, horloge):
     appels = brancher_transport(monkeypatch)
     insee_ipc.collecter()
     assert len(appels) == 1
     appel = appels[0]
     assert appel["url"] == URL_ATTENDUE
-    assert "011813720" in appel["url"]
+    for idbank in IDBANKS_ACTIFS:
+        assert idbank in appel["url"]
     assert "011813717" not in appel["url"]
-    assert "011813873" not in appel["url"]
     assert appel["headers"].get("Accept") == ACCEPT
     assert appel["timeout"] == 60
 
@@ -121,8 +130,8 @@ def test_dry_run_n_ecrit_rien(monkeypatch, brut, horloge, capsys):
     sortie = capsys.readouterr().out
     assert resultat is None
     assert not brut.exists()
-    assert "011813726" in sortie
-    assert "011813720" in sortie
+    for idbank in IDBANKS_ACTIFS:
+        assert idbank in sortie
     assert "011813717" not in sortie
     assert f"{len(XML_MINUSCULE)}" in sortie.replace(",", "")
     assert "aucune écriture" in sortie

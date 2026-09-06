@@ -1,9 +1,9 @@
-"""Parse les XML SDMX-ML 2.1 bruts de l'IPC alimentaire Insee.
+"""Parse les XML SDMX-ML 2.1 bruts de l'IPC Insee.
 
 Ce module ne télécharge rien et ne modifie jamais le brut : il lit, il structure,
-il échoue bruyamment. Il accepte exactement deux paires par fichier
-({011813726, 011813717} historique, {011813726, 011813720} métropolitain)
-et ne compare pas les niveaux d'indice entre territoires.
+il échoue bruyamment. Il accepte les lots alimentaires historiques
+({011813726, 011813717} ou {011813726, 011813720}) et le lot actif des huit
+séries (quatre postes). Il ne compare pas les niveaux d'indice entre territoires.
 """
 
 from __future__ import annotations
@@ -14,17 +14,49 @@ from pathlib import Path
 import re
 from xml.etree import ElementTree as ET
 
-IDBANK_TERRITOIRE = {
-    "011813726": "D972",
-    "011813717": "FE",
-    "011813720": "FM",
+# idbank → (poste, code_territoire). Neuf entrées : huit actives + FE historique.
+IDBANK_REFERENTIEL: dict[str, tuple[str, str]] = {
+    "011813726": ("alimentation", "D972"),
+    "011813717": ("alimentation", "FE"),
+    "011813720": ("alimentation", "FM"),
+    "011813873": ("energie", "D972"),
+    "011813867": ("energie", "FM"),
+    "011813789": ("produits_manufactures", "D972"),
+    "011813783": ("produits_manufactures", "FM"),
+    "011813915": ("services", "D972"),
+    "011813909": ("services", "FM"),
 }
-PAIRES_PERIMETRE = {
-    frozenset({"011813726", "011813717"}): "france_entiere_historique",
-    frozenset({"011813726", "011813720"}): "france_metropolitaine",
+
+IDBANKS_ACTIFS = frozenset(
+    idbank
+    for idbank, (_poste, territoire) in IDBANK_REFERENTIEL.items()
+    if territoire != "FE"
+)
+
+# Préfixe de fichier → ensemble d'idbanks → (lot_collecte, perimetre_reference)
+LOTS_PAR_PREFIXE: dict[str, dict[frozenset[str], tuple[str, str]]] = {
+    "ipc_alimentation_": {
+        frozenset({"011813726", "011813717"}): (
+            "alimentation_france_entiere",
+            "france_entiere_historique",
+        ),
+        frozenset({"011813726", "011813720"}): (
+            "alimentation_france_metropolitaine",
+            "france_metropolitaine",
+        ),
+    },
+    "ipc_postes_": {
+        IDBANKS_ACTIFS: (
+            "quatre_postes_france_metropolitaine",
+            "france_metropolitaine",
+        ),
+    },
 }
-IDBANKS_AUTORISES = frozenset(IDBANK_TERRITOIRE)
-MOTIF_NOM_BRUT = re.compile(r"^ipc_alimentation_(\d{4}-\d{2}-\d{2}T\d{6}Z)\.xml$")
+
+IDBANKS_AUTORISES = frozenset(IDBANK_REFERENTIEL)
+MOTIF_NOM_BRUT = re.compile(
+    r"^(ipc_alimentation_|ipc_postes_)(\d{4}-\d{2}-\d{2}T\d{6}Z)\.xml$"
+)
 ATTRIBUTS_SERIE = (
     "IDBANK",
     "FREQ",
@@ -41,7 +73,7 @@ DOSSIER_BRUT_INSEE = RACINE_DEPOT / "data" / "raw" / "insee"
 
 
 class ErreurSdmx(ValueError):
-    """Échec de structure ou de provenance sur un XML SDMX alimentaire."""
+    """Échec de structure ou de provenance sur un XML SDMX IPC."""
 
 
 @dataclass(frozen=True)
@@ -49,7 +81,9 @@ class Observation:
     fichier_source: str
     collecte_utc: datetime
     idbank: str
+    poste: str
     code_territoire: str
+    lot_collecte: str
     perimetre_reference: str
     frequence: str
     titre: str
@@ -120,22 +154,54 @@ def collecte_utc_depuis_nom(nom: str) -> datetime:
     correspondance = MOTIF_NOM_BRUT.fullmatch(nom)
     if correspondance is None:
         raise ErreurSdmx(f"nom de fichier non conforme : {nom}")
-    instant = datetime.strptime(correspondance.group(1), "%Y-%m-%dT%H%M%SZ")
+    instant = datetime.strptime(correspondance.group(2), "%Y-%m-%dT%H%M%SZ")
     return instant.replace(tzinfo=timezone.utc)
+
+
+def _prefixe_depuis_nom(nom: str) -> str:
+    correspondance = MOTIF_NOM_BRUT.fullmatch(nom)
+    if correspondance is None:
+        raise ErreurSdmx(f"nom de fichier non conforme : {nom}")
+    return correspondance.group(1)
 
 
 def _fichier_source(chemin: Path, racine: Path) -> str:
     return chemin.resolve().relative_to(racine.resolve()).as_posix()
 
 
-def _erreur_paire(nom: str, idbanks: set[str]) -> ErreurSdmx:
-    if len(idbanks) < 2:
-        return ErreurSdmx(f"paire incomplète dans {nom}")
-    if len(idbanks) > 2:
-        return ErreurSdmx(f"troisième idbank dans {nom}")
-    return ErreurSdmx(
-        f"paire mélangée dans {nom} : {', '.join(sorted(idbanks))}"
-    )
+def _erreur_lot(nom: str, idbanks: set[str], prefixe: str) -> ErreurSdmx:
+    attendus = LOTS_PAR_PREFIXE.get(prefixe, {})
+    attendus_aplatis = set().union(*attendus.keys()) if attendus else set()
+    manquants = sorted(attendus_aplatis - idbanks) if attendus else []
+    surnumeraires = sorted(idbanks - attendus_aplatis) if attendus else sorted(idbanks)
+    parties = [f"lot non conforme dans {nom}"]
+    if manquants:
+        parties.append(f"manquants : {', '.join(manquants)}")
+    if surnumeraires:
+        parties.append(f"surnuméraires : {', '.join(surnumeraires)}")
+    if not manquants and not surnumeraires:
+        parties.append(f"idbanks : {', '.join(sorted(idbanks))}")
+    return ErreurSdmx(" ; ".join(parties))
+
+
+def _resoudre_lot(nom: str, idbanks: set[str]) -> tuple[str, str]:
+    prefixe = _prefixe_depuis_nom(nom)
+    lots = LOTS_PAR_PREFIXE.get(prefixe)
+    if lots is None:
+        raise ErreurSdmx(f"préfixe inconnu dans {nom}")
+    resultat = lots.get(frozenset(idbanks))
+    if resultat is None:
+        # Messages historiques pour les paires alimentaires.
+        if prefixe == "ipc_alimentation_":
+            if len(idbanks) < 2:
+                raise ErreurSdmx(f"paire incomplète dans {nom}")
+            if len(idbanks) > 2:
+                raise ErreurSdmx(f"troisième idbank dans {nom}")
+            raise ErreurSdmx(
+                f"paire mélangée dans {nom} : {', '.join(sorted(idbanks))}"
+            )
+        raise _erreur_lot(nom, idbanks, prefixe)
+    return resultat
 
 
 def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
@@ -161,7 +227,7 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
         if frequence != "M":
             raise ErreurSdmx(f"fréquence autre que M : {frequence}")
         code_territoire = _attr(serie, "REF_AREA")
-        attendu = IDBANK_TERRITOIRE[idbank]
+        _poste, attendu = IDBANK_REFERENTIEL[idbank]
         if code_territoire != attendu:
             raise ErreurSdmx(
                 f"territoire incohérent pour {idbank} : {code_territoire} "
@@ -173,13 +239,12 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
         if not _enfants(serie, "Obs"):
             raise ErreurSdmx(f"XML vide : {chemin.name}")
 
-    perimetre = PAIRES_PERIMETRE.get(frozenset(idbanks_vus))
-    if perimetre is None:
-        raise _erreur_paire(chemin.name, idbanks_vus)
+    lot_collecte, perimetre = _resoudre_lot(chemin.name, idbanks_vus)
 
     observations: list[Observation] = []
     for serie in series:
         idbank = _attr(serie, "IDBANK")
+        poste, _territoire = IDBANK_REFERENTIEL[idbank]
         frequence = _attr(serie, "FREQ")
         code_territoire = _attr(serie, "REF_AREA")
         vus_periode: set[date] = set()
@@ -196,7 +261,9 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
                     fichier_source=fichier_source,
                     collecte_utc=collecte_utc,
                     idbank=idbank,
+                    poste=poste,
                     code_territoire=code_territoire,
+                    lot_collecte=lot_collecte,
                     perimetre_reference=perimetre,
                     frequence=frequence,
                     titre=_titre(serie),
@@ -217,7 +284,10 @@ def parser_fichier(chemin: Path, *, racine: Path) -> list[Observation]:
 def parser_repertoire(dossier: Path, *, racine: Path) -> list[Observation]:
     if not dossier.is_dir():
         raise ErreurSdmx("aucun fichier brut trouvé")
-    fichiers = sorted(dossier.glob("ipc_alimentation_*.xml"))
+    fichiers = sorted(
+        list(dossier.glob("ipc_alimentation_*.xml"))
+        + list(dossier.glob("ipc_postes_*.xml"))
+    )
     if not fichiers:
         raise ErreurSdmx("aucun fichier brut trouvé")
     observations: list[Observation] = []
