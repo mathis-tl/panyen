@@ -31,6 +31,11 @@ Si le graphe est absent ou en erreur, revenir aux lectures ciblées et le signal
 ## Specs et prompts Cursor
 
 - "SPEC.txt" contient uniquement la spec active ; "ROADMAP.md" reste concis.
+- Toute création, correction ou substitution de "SPEC.txt" s'accompagne, dans la
+  même boucle, de la création ou mise à jour du prompt Cursor correspondant. Le
+  prompt nomme la spec active, en reprend le périmètre et ne doit conserver aucune
+  instruction devenue contradictoire ; une spec sans prompt synchronisé n'est pas
+  prête à être lancée dans Cursor.
 - Tout prompt d'implémentation destiné à Cursor doit lui demander d'utiliser
   Graphify pour la navigation initiale avec une question liée à la spec, puis de
   vérifier les résultats dans les fichiers. Écrire "Graphify" et la commande
