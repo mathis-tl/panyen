@@ -78,6 +78,14 @@ make publier
 
 `make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, tests Vitest, build Vite) n'appelle pas le réseau et ne publie jamais le Parquet. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
 
+## CI
+
+```bash
+make ci
+```
+
+`make ci` reproduit localement le job GitHub Actions : installation verrouillée (`uv sync --locked`, `npm ci`), puis `make verify` avec `UV_LOCKED=1`. Le workflow se déclenche sur pull request, push sur `main` et manuellement. Il ne contacte pas l'API Insee : le dry-run sans écriture est couvert par un test à réponse synthétique. Il ne publie ni Parquet ni site.
+
 ## La page
 
 La page statique lit `web/public/data/differentiel_alimentation.parquet` dans le
