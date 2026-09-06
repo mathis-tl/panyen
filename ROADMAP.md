@@ -49,7 +49,7 @@ avril 2022.
       entière à France métropolitaine, sans effacer le brut historique.
 - [x] **1.4 — Différentiel alimentaire** : appariement, rebasage, calculs et tests dbt.
 - [x] **1.5 — Publication sûre** : Parquet remplacé seulement après tests verts.
-- [ ] **1.6 — Écran alimentaire minimal** : lecture Parquet navigateur, Plot et
+- [x] **1.6 — Écran alimentaire minimal** : lecture Parquet navigateur, Plot et
       limite méthodologique.
 - [ ] **1.7 — CI de la tranche** : lint, tests, build et dry-run reproductibles.
 

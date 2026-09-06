@@ -1,232 +1,168 @@
-SPEC ACTIVE — 1.6 : ÉCRAN ALIMENTAIRE MINIMAL
+SPEC ACTIVE — 1.7 : CI REPRODUCTIBLE DE LA TRANCHE ALIMENTAIRE
 DESTINATAIRE — nouveau Cursor Agent
 
 OBJECTIF UTILISATEUR
-Ouvrir une page statique, sans aucun serveur applicatif, et voir en quelques
-secondes si l'écart d'évolution des prix alimentaires entre la Martinique et la
-France métropolitaine s'est creusé ou resserré depuis avril 2022. La page lit le
-Parquet publié en 1.5 dans le navigateur, affiche le dernier mois commun, distingue
-la mesure ECSP 2022 des estimations, et échoue visiblement plutôt que d'afficher un
-graphe vide.
+À chaque push sur `main` et chaque pull request, prouver automatiquement qu’un
+clone propre peut installer les dépendances verrouillées puis vérifier toute la
+tranche alimentaire : lint Python, tests Python, modèles/tests dbt, tests web et
+build statique. Une erreur doit bloquer la CI avec une sortie lisible.
 
-DÉCISION À CONFIRMER PAR MATHIS AVANT DE LANCER CURSOR
-`ROADMAP.md` annonçait DuckDB-WASM pour cet écran. Mesures du 2026-09-03 :
-- `@duckdb/duckdb-wasm` : `duckdb-eh.wasm` pèse 34,2 Mo non compressé (mvp 39,4 Mo,
-  coi 34,0 Mo) ; le tag npm `latest` pointe une préversion `1.33.1-dev57.0` et la
-  dernière version stable est `1.32.0` du 2025-12-16.
-- `hyparquet` + `hyparquet-compressors` : 0,28 Mo + 0,16 Mo décompressés.
-  `hyparquet` n'a aucune dépendance, `hyparquet-compressors` n'a que `fzstd` et
-  `hysnappy`. Publication du 2026-08-26, types TypeScript fournis, ZSTD pris en
-  charge.
-- Le fichier à lire fait 7 056 octets et 52 lignes.
-Cette spec retient donc `hyparquet` : un moteur SQL WASM de plus de 30 Mo pour
-52 lignes n'est pas justifié, et rien dans l'écran 1.6 ne demande du SQL client.
-DuckDB-WASM sera reposé à l'incrément 3 (carburants, plusieurs milliers de stations
-par jour), où l'agrégation côté navigateur peut réellement le justifier.
-Si Mathis préfère DuckDB-WASM dès maintenant, seules changent la section
-« CHARGEMENT DES DONNÉES » et les dépendances ; le reste de la spec tient.
+ÉTAT VALIDÉ
+- 1.6 est GREEN et cochée dans `ROADMAP.md` : récit, méthodologie, graphe
+  responsive et cycle `ResizeObserver` validés.
+- `make verify` passe localement : Ruff, 44 pytest, dbt PASS=91, 36 Vitest et
+  build Vite.
+- `make install` utilise déjà `uv sync --locked` et
+  `npm --prefix web ci`.
+- Python est déclaré `>=3.13,<3.14` et `.python-version` contient `3.13`.
+- `uv.lock` et `web/package-lock.json` sont versionnés ; aucun workflow GitHub
+  Actions n’existe encore.
+- Il n’existe encore ni remote ni exécution GitHub possible depuis ce dépôt local.
+  La première exécution distante reste donc une preuve ultérieure, après
+  autorisation explicite de Mathis pour créer/pousser un remote.
 
-ÉTAT ET DÉCISIONS VALIDÉES
-- 1.5 est vérifiée : `make publier` exécute `make verify`, exporte un candidat
-  Parquet ZSTD voisin, le compare à la fact, puis `os.replace` en dernière mutation.
-  `make verify` : Ruff PASS, 44 pytest PASS, dbt PASS=91, build Vite PASS.
-- La source unique de l'écran est
-  `web/public/data/differentiel_alimentation.parquet`, produit par `make publier`,
-  non versionné. Il contient 17 colonnes, aucun niveau d'indice territorial.
-  Au 2026-09-03 : 52 lignes, avril 2022 à juillet 2026, 1 `mesure_ecsp_2022` et
-  51 `estimation_a_partir_ecsp_2022`.
-- Le front reste le squelette Vite + TypeScript d'origine : `web/src/main.ts`,
-  `web/src/counter.ts` et les visuels de démarrage sont encore ceux du gabarit.
-  1.6 les remplace.
-- Le graphe utilise `@observablehq/plot` (0.6.17), déjà retenu dans `ROADMAP.md`.
-- Les tests du front utilisent `vitest` en version `^4.1` (4.1.11 du 2026-08-18) :
-  `vitest` 5.0.0 est sorti le 2026-09-03, trop frais pour être adopté ici.
-  `vitest` 4.1 déclare `vite ^8` en pair, la version présente dans le dépôt.
-- Aucune valeur affichée n'est écrite dans le code : chaque chiffre, chaque mois et
-  chaque libellé de provenance sort du Parquet lu à l'exécution.
+DÉCISION SUR LE « DRY-RUN REPRODUCTIBLE »
+La CI de pull request ne contacte pas l’API Insee. Le collecteur
+`ingest/insee_ipc.py --dry-run` réalise une vraie requête réseau avant de ne rien
+écrire : l’exécuter dans le job bloquant rendrait les PR dépendantes d’un service
+externe.
 
-SOURCES DE LA DÉCISION DE RÉEMPLOI
-- hyparquet, lecteur Parquet pur JavaScript, sans dépendance, types inclus :
-  https://github.com/hyparam/hyparquet
-- hyparquet ne décompresse nativement que « uncompressed » et Snappy ; ZSTD exige
-  `hyparquet-compressors` : https://github.com/hyparam/hyparquet-compressors
-- Observable Plot, marques et échelles : https://observablehq.com/plot/
-- Vite sert `public/` à la racine du site et copie son contenu dans `dist/` :
-  https://vite.dev/guide/assets.html#the-public-directory
-- `import.meta.env.BASE_URL` pour construire une URL correcte sous sous-chemin :
-  https://vite.dev/guide/env-and-mode.html
-- Vitest, exécution unique via `vitest run` : https://vitest.dev/guide/cli.html
+Le contrat reproductible est le test existant
+`tests/test_insee_ipc.py::test_dry_run_n_ecrit_rien`, avec réponse synthétique :
+le chemin dry-run est exécuté sans réseau et prouve qu’il n’écrit aucun brut. Le
+smoke test live et la collecte planifiée restent en incrément 5.
 
-AVANT DE MODIFIER — CONTEXTE MINIMAL
-1. Ne pas parcourir tout le dépôt. Appliquer `AGENTS.md`, puis lire seulement
-   `SPEC.txt`, la section « Incrément 1 » de `ROADMAP.md`, la règle méthodologique
-   de `CLAUDE.md`, `Makefile`, `web/package.json`, `web/tsconfig.json`,
-   `web/index.html`, `web/src/main.ts`, `web/src/style.css`,
-   `publication/publier_differentiel_alimentation.py` pour la liste exacte des
-   colonnes publiées, `dbt/models/marts/schema.yml` pour leur sens, et la section
-   README consacrée aux commandes. Ne lire d'autres fichiers qu'après avoir nommé
-   une question non résolue.
-2. Utiliser d'abord Graphify avec la commande réelle :
-   `graphify query "Comment la page statique doit-elle lire differentiel_alimentation.parquet, distinguer la mesure ECSP 2022 des estimations et échouer visiblement ?" --budget 1800`
-   Confirmer dans les fichiers chaque conclusion importante. Employer seulement au
-   besoin `graphify path`, `graphify explain`, `graphify affected` ou une recherche
-   `rg` ciblée ; le graphe n'est jamais une preuve unique.
-3. Lire et appliquer `~/.claude/skills/tdd-adaptive/SKILL.md`.
-4. Reformuler en cinq lignes maximum : source lue, chargement, contenu affiché,
-   distinction mesure/estimation, comportement en cas d'échec.
-5. L'architecture est décidée. STOP avant tout changement si elle est impossible
-   avec Vite, TypeScript, hyparquet et Plot ; ne proposer aucune infrastructure
-   maison, aucun serveur, aucune API.
+SOLUTION MAINTENUE RETENUE
+Un seul workflow GitHub Actions et les actions officielles/maintenues, sans
+infrastructure maison :
+- `actions/checkout`, `actions/setup-python`, `actions/setup-node` ;
+- `astral-sh/setup-uv`, recommandé par la documentation officielle uv ;
+- toutes les actions tierces épinglées sur un SHA complet de 40 caractères, avec
+  le tag stable correspondant en commentaire.
 
-CHARGEMENT DES DONNÉES
-- L'URL est construite avec `import.meta.env.BASE_URL` suivi de
-  `data/differentiel_alimentation.parquet`, jamais un chemin absolu codé en dur.
-- La lecture passe par `asyncBufferFromUrl` puis `parquetReadObjects` de
-  `hyparquet`, avec `compressors` importé de `hyparquet-compressors` pour ZSTD.
-- Les colonnes lues sont exactement celles publiées en 1.5, dans cet ordre :
-  `periode`, `dernier_mois_commun`, `poste`, `fichier_source`, `collecte_utc`,
-  `idbank_martinique`, `idbank_france_metropolitaine`, `facteur_martinique`,
-  `facteur_france_metropolitaine`, `evolution_martinique_pct`,
-  `evolution_france_metropolitaine_pct`, `differentiel_evolution_points`,
-  `coefficient_ecart`, `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`,
-  `source_ecsp`, `nature_ecart`.
-- Une fonction de validation pure s'exécute avant tout rendu et lève une erreur
-  explicite si : la requête HTTP échoue, le fichier est absent, la liste des
-  colonnes diffère de la liste attendue, il y a zéro ligne, une `periode` est
-  dupliquée, les périodes ne sont pas strictement croissantes, un mois manque entre
-  la première et la dernière période, `nature_ecart` prend une valeur inconnue, ou
-  le nombre de lignes `mesure_ecsp_2022` est différent de 1.
-- Les dates Parquet sont manipulées en UTC. Le mois affiché est calculé avec les
-  accesseurs UTC ; un décalage de fuseau ne doit jamais transformer avril 2022 en
-  mars 2022. C'est un cas de test obligatoire.
+Références vérifiées le 2026-09-06 :
+- https://docs.astral.sh/uv/guides/integration/github/
+- https://github.com/actions/checkout
+- https://github.com/actions/setup-python
+- https://github.com/actions/setup-node
+- https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching
 
-CONTRAT DE L'ÉCRAN
-- Une réponse en une phrase, calculée : signe et amplitude de
-  `differentiel_evolution_points` au dernier mois commun, exprimée en points
-  d'évolution depuis avril 2022, avec les mots « creusé », « resserré » ou
-  « pratiquement stable » lorsque la valeur absolue est inférieure à 0,5 point.
-  Ce seuil est une convention d'affichage, écrite une fois, documentée, jamais
-  appliquée à la valeur elle-même.
-- Un graphe Plot principal : `differentiel_evolution_points` en fonction de
-  `periode`, ligne avec règle horizontale à zéro, axe des ordonnées en points
-  d'évolution, premier et dernier mois lisibles.
-- Un second affichage, facultatif mais recommandé : `ecart_prix_estime_pct`, dont
-  le point d'ancrage d'avril 2022 est visuellement distingué et étiqueté
-  « mesure ECSP 2022 » tandis que tous les autres mois portent « estimation ».
-  Sans cette distinction visible, ne pas afficher cette série du tout.
-- Un bloc « limite méthodologique » en texte : les indices martiniquais et français
-  sont chacun en base 100 sur leur propre territoire, leurs niveaux ne sont pas
-  comparables ; seule l'enquête de comparaison spatiale de mars-avril 2022 donne un
-  écart de niveau, et son prolongement mois par mois est une estimation.
-- Un bloc provenance : dernier mois commun, `collecte_utc`, `fichier_source`, les
-  deux idbanks, `source_ecsp`. Toutes ces valeurs viennent des lignes lues.
-- Un état d'erreur visible et lisible remplaçant le contenu principal quand la
-  validation lève : message explicite, cause, et rappel que la page n'affiche pas
-  de données tant que la source n'est pas saine. Aucune donnée de repli, aucun
-  graphe vide, aucun zéro affiché à la place d'une valeur manquante.
-- Un état de chargement sobre pendant la lecture du fichier.
-- La page est en français, avec `lang="fr"`, un titre et une description honnêtes.
+Avant d’écrire le workflow, recontrôler dans ces sources officielles que les tags
+et SHA stables indiqués ci-dessous sont encore valides. STOP si un SHA ne
+correspond pas exactement au tag annoncé :
+- `actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1` — v7.0.1 ;
+- `actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97` — v7.0.0 ;
+- `actions/setup-node@820762786026740c76f36085b0efc47a31fe5020` — v7.0.0 ;
+- `astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9` — v9.0.0.
 
-TRAVAIL AUTORISÉ
-1. Ajouter à `web/package.json` uniquement : `hyparquet`, `hyparquet-compressors`,
-   `@observablehq/plot` en dépendances, `vitest` en dépendance de développement.
-   Mettre à jour `web/package-lock.json` par `npm install` dans `web/`.
-2. Écrire le code du front sous `web/src/`, en français, en séparant :
-   chargement/validation, calculs d'affichage purs, rendu du graphe, rendu du DOM.
-   Les fonctions pures doivent être testables sans DOM ni réseau.
-3. Remplacer `web/src/main.ts`, `web/index.html` et `web/src/style.css` par l'écran
-   réel. Supprimer `web/src/counter.ts` et les visuels du gabarit Vite devenus
-   inutiles (`web/src/assets/hero.png`, `typescript.svg`, `vite.svg`,
-   `web/public/icons.svg`) uniquement s'ils ne sont plus référencés.
-4. Activer `"strict": true` dans `web/tsconfig.json`, absent du gabarit, puisque le
-   front porte désormais de la logique.
-5. Ajouter `"test": "vitest run"` aux scripts de `web/package.json` et insérer
-   `npm --prefix web run test` dans la cible `verify` du `Makefile`, avant le build.
-6. Documenter dans le README : la page lit le Parquet dans le navigateur, elle
-   exige que `make publier` ait tourné au moins une fois, et la commande
-   `make dev` pour la voir. Ne pas recopier de chiffres datés. Corriger la ligne
-   « DuckDB + dbt + Parquet + DuckDB-WASM » du README, qui ne décrit plus la
-   lecture navigateur retenue. Ne pas toucher `docs/CONTEXTE.md`.
+NAVIGATION AVANT MODIFICATION
+1. Lire `AGENTS.md`, cette spec, la règle méthodologique de `CLAUDE.md` et la
+   section Incrément 1 de `ROADMAP.md`.
+2. Utiliser d’abord Graphify avec la commande réelle :
+   `graphify query "Quelles commandes installent et vérifient aujourd’hui la tranche alimentaire, quels lockfiles les rendent reproductibles et quel dry-run est couvert sans réseau ?" --budget 1800`
+3. Confirmer dans `Makefile`, `pyproject.toml`, `.python-version`,
+   `web/package.json`, les deux lockfiles, `tests/test_insee_ipc.py` et
+   `README.md`. Employer au besoin `graphify path`, `graphify explain` ou
+   `graphify affected`, jamais le graphe comme preuve unique.
+4. Rechercher les solutions maintenues dans les documentations officielles
+   ci-dessus avant toute modification. Ne créer aucune action maison.
+5. Lire et appliquer `~/.claude/skills/verification-loop/SKILL.md` avant le
+   rapport final.
 
-TDD ET CAS OBLIGATOIRES
-- Commencer par un test rouge : un jeu de lignes valide produit la phrase de
-  réponse et le résumé attendus ; les fonctions n'existent pas encore.
-- Tests de validation, chacun avec sa preuve d'échec : colonne manquante, zéro
-  ligne, période dupliquée, période manquante au milieu, périodes désordonnées,
-  `nature_ecart` inconnue, plus d'une ou aucune ligne `mesure_ecsp_2022`.
-- Test de fuseau : une `periode` au 1er avril 2022 se rend « avril 2022 » quel que
-  soit le fuseau local simulé.
-- Test de formulation : différentiel positif, négatif et inférieur à 0,5 point en
-  valeur absolue produisent respectivement « creusé », « resserré » et
-  « pratiquement stable ».
-- Test de garde méthodologique : aucune fonction d'affichage n'accepte ni ne rend
-  de colonne de niveau d'indice ; la liste des colonnes attendues ne contient pas
-  `valeur_indice`.
-- Test d'échec réseau : un `fetch` simulé qui renvoie 404 conduit à l'état d'erreur
-  et jamais à un rendu partiel.
-- Les tests utilisent des lignes synthétiques en mémoire. Aucun test ne lit
-  `web/public/data/differentiel_alimentation.parquet`, `build/panyen.duckdb` ni
-  `data/raw/`.
+CONTRAT DE LA COMMANDE LOCALE
+- Ajouter une cible `make ci` qui appelle l’installation verrouillée existante,
+  puis `make verify`, sans dupliquer les commandes de vérification.
+- `make ci` est le contrat unique appelé par GitHub Actions et reproductible
+  localement.
+- Ajouter `ci` à `.PHONY`.
+- Ne pas affaiblir `make verify`, `make publier` ni leurs ordres d’exécution.
+- La cible `ci` exécute la vérification avec `UV_LOCKED=1` afin que ses `uv run`
+  refusent de modifier `uv.lock`, localement comme dans GitHub Actions.
 
-INVARIANTS
-- Aucun niveau d'indice territorial n'est affiché ni comparé, nulle part.
-- Toute valeur affichée provient d'une ligne lue ; aucune constante chiffrée de
-  résultat dans le code, aucun jeu de données de démonstration livré.
-- Toute estimation est étiquetée « estimation » à l'endroit où elle est lue, pas
-  seulement dans une note de bas de page.
-- Le dernier mois affiché est le dernier mois commun, et la page l'écrit.
-- Un échec est bruyant : erreur visible, message explicite, aucun rendu partiel.
-- Aucun appel réseau autre que la lecture du Parquet du même domaine. Aucune police,
-  aucune image, aucun script tiers chargés depuis un CDN.
-- Aucun fichier Parquet versionné, aucune modification de `publication/`, `dbt/`,
-  `ingest/`, `data/` ni des seeds.
+CONTRAT DU WORKFLOW
+- Créer uniquement `.github/workflows/ci.yml`, avec un nom explicite.
+- Déclencheurs : `pull_request`, push sur `main` et `workflow_dispatch`.
+- Permissions minimales au niveau workflow : `contents: read`.
+- Un seul job `verification`, sur `ubuntu-24.04`, avec
+  `timeout-minutes: 15`.
+- Ajouter une concurrence par workflow et référence, avec annulation de l’ancienne
+  exécution pour une même branche/PR.
+- Étapes, dans cet ordre :
+  1. checkout ;
+  2. Python depuis `.python-version` ;
+  3. uv maintenu, version binaire explicitement fixée à `0.12.7`, cache uv fondé
+     sur `uv.lock` ;
+  4. Node `24.9.0`, cache npm fondé sur `web/package-lock.json` ;
+  5. `make ci`.
+- Utiliser les SHA complets ci-dessus et garder le tag en commentaire.
+- Ne transmettre aucun secret et ne demander aucune permission d’écriture.
+- Ne lancer ni collecte live, ni `make publier`, ni déploiement.
+
+CONTRAT DE REPRODUCTIBILITÉ
+- Ajouter `.node-version` contenant exactement `24.9.0` et demander à
+  `setup-node` de le lire ; ne dupliquer la version dans le YAML que si l’action
+  ne sait pas lire ce fichier.
+- `uv sync --locked` et `npm ci` restent les seules installations.
+- Aucun lockfile ne doit changer pendant `make ci`.
+- Le workflow doit utiliser le brut Insee déjà versionné ; il ne télécharge aucune
+  donnée métier.
+- Après `make ci`, vérifier que `data/raw/insee/` n’a subi aucune modification.
+- Les caches ne contiennent aucun secret ni résultat métier. Ils sont des
+  optimisations : une absence de cache ne doit pas changer le résultat.
+
+PÉRIMÈTRE ET FICHIERS TOUCHABLES
+- Nouveau : `.github/workflows/ci.yml`, `.node-version`.
+- Modification : `Makefile`, `README.md`.
+- Tests seulement si une petite preuve utile manque réellement ; aucune nouvelle
+  dépendance pour tester le YAML.
+
+DOCUMENTATION
+Mettre à jour `README.md` sans chiffre daté :
+- `make ci` reproduit localement le job après installation verrouillée ;
+- la CI est déclenchée sur pull request, push `main` et manuellement ;
+- elle reste hors réseau métier : le dry-run sans écriture est testé avec une
+  réponse synthétique, pas avec l’API Insee live ;
+- elle ne publie ni Parquet, ni site.
 
 NON-OBJECTIFS
-- Ne pas installer DuckDB-WASM, ni Arrow, ni aucun moteur SQL navigateur.
-- Ne pas traiter les autres postes IPC, ni le sélecteur de poste : incrément 2.
-- Ne pas traiter les carburants : incrément 3.
-- Ne pas faire le design final : palette daltonisme, thèmes clair/sombre, variantes
-  d'écran, animations et revue d'accessibilité complète relèvent de l'incrément 4.
-  1.6 vise la sobriété et la lisibilité, pas la finition.
-- Ne pas créer la CI, ni déployer : 1.7 et incrément 5.
-- Ne pas ajouter de framework, de routeur, de gestionnaire d'état, de composant
-  maison générique, de skill, de hook, de MCP ni de plugin.
-- Ne pas modifier `AGENTS.md`, `.gitignore` racine, `.codex-handoff.md`, ni les
-  fichiers touchés par 1.5.
-- Ne pas committer, pousser, créer de remote ou de PR. Ne pas commencer 1.7.
+- Ne modifier aucun code Python/TypeScript/SQL, test métier, graphe, style, donnée,
+  Parquet, seed, modèle dbt, schéma ou dépendance.
+- Ne lancer aucune collecte réelle et ne modifier aucun brut horodaté.
+- Ne créer ni matrice multi-OS/multi-version, Dockerfile, action composite,
+  Dependabot, badge, artifact, couverture, déploiement ou publication.
+- Ne créer ni remote, branche, commit, push ou PR.
+- Ne cocher 1.7 dans `ROADMAP.md` : aucune exécution GitHub réelle n’est encore
+  possible. Ne commencer ni l’incrément 2 ni le design de l’incrément 4.
 
-VÉRIFICATION
-1. Conserver la preuve RED du premier test, puis le GREEN.
-2. Appliquer `~/.claude/skills/verification-loop/SKILL.md`.
-3. `npm --prefix web run test` : tous les tests passent, y compris les cas d'échec.
-4. `make verify` reste vert de bout en bout et ne publie rien.
-5. `make publier` reste vert et produit le même Parquet qu'avant l'incrément.
-6. Lancer `make dev`, ouvrir la page, et fournir une capture montrant la phrase de
-   réponse, le graphe, le dernier mois commun et le bloc de limite méthodologique.
-7. Renommer temporairement le Parquet, recharger, capturer l'état d'erreur, puis
-   remettre le fichier en place et vérifier que la page redevient normale.
-8. `npm --prefix web run build` puis contrôler que `web/dist/data/` contient bien
-   le Parquet copié, et qu'aucun fichier temporaire ne traîne à côté.
-9. Inspecter `git status --short`, `git diff --check` et le diff complet.
-10. Rendre le rapport pour audit indépendant `panyen_verifier` avant tout commit.
+TESTS ET VÉRIFICATION
+1. Capturer l’état initial des lockfiles et de `data/raw/insee/`.
+2. Exécuter `make ci` : installation verrouillée puis tous les contrôles verts.
+3. Confirmer explicitement Ruff, 44 pytest dont le dry-run synthétique, dbt 91/91,
+   36 Vitest et build Vite.
+4. Confirmer que `uv.lock`, `web/package-lock.json` et `data/raw/insee/` sont
+   inchangés après `make ci`.
+5. Valider que le YAML se parse localement avec un parseur déjà disponible ; ne pas
+   ajouter une dépendance au projet pour cela.
+6. Revoir manuellement les déclencheurs, permissions, SHA complets, versions,
+   caches, ordre des étapes, timeout et absence de secret/publication/collecte.
+7. `git diff --check`, diff complet et `git status --short --branch`.
+8. Exécuter `graphify update .`, puis rejouer la requête Graphify de départ.
+9. Faire relire le changement par `panyen_verifier` avant toute proposition de
+   commit.
 
 FINI QUAND
-- La page ouverte sans serveur applicatif répond à la question, avec un chiffre lu
-  dans le Parquet et le dernier mois commun écrit en clair.
-- La mesure d'avril 2022 et les estimations des mois suivants sont distinguées à
-  l'endroit où elles sont affichées.
-- Chaque cas de source cassée produit une erreur visible et aucun rendu partiel.
-- Les tests du front sont dans `make verify`, et `make verify` reste hors réseau.
-- Aucun niveau d'indice territorial, aucune valeur codée en dur, aucune donnée de
-  repli, aucun Parquet versionné.
+- `make ci` réussit depuis l’environnement local avec les deux lockfiles intacts.
+- Le workflow minimal reflète exactement cette commande et respecte les contrats
+  de sécurité/reproductibilité.
+- Le dry-run sans écriture est couvert sans réseau métier.
+- Les contrôles locaux et `panyen_verifier` sont verts.
+- Le rapport distingue clairement « workflow prêt localement » de
+  « exécution GitHub distante non encore prouvée ».
 
-RAPPORT FINAL
-- Verdict terminé ou bloqué ; fichiers touchés et raison pour chacun.
-- Preuve RED puis GREEN, commandes et sorties exactes de `npm --prefix web run test`,
-  `make verify`, `make publier` et `npm --prefix web run build`.
-- Captures : écran nominal, état d'erreur source absente, retour à la normale.
-- Liste des dépendances ajoutées avec versions résolues et leur justification.
-- Confirmation : aucun niveau d'indice comparé, aucune valeur inventée, aucune
-  collecte, aucun fichier 1.4 ou 1.5 modifié.
-- Chemins des skills lus, écarts et risques restants.
-- Puis STOP : 1.7 est une autre spec.
+RAPPORT FINAL ET STOP
+Rendre : verdict local ; fichiers touchés ; versions et SHA des actions ; sortie
+de `make ci` ; preuve des lockfiles/bruts inchangés ; audit du YAML ; état de la
+preuve GitHub distante ; risques restants.
+
+Puis STOP. Ne pas cocher 1.7, créer de remote, committer, pousser, déployer ou
+commencer l’incrément suivant.

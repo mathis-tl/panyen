@@ -29,9 +29,22 @@ d'aujourd'hui, lui, reste une estimation jusqu'à la prochaine enquête.
 
 > L'écart mesuré en 2022 s'est-il creusé ou resserré depuis ?
 
-Cette question a une réponse, mois par mois, et elle est vérifiable. Elle bouge
-aussi selon la fenêtre choisie, ce qui est précisément pourquoi le site montre la
-série entière plutôt qu'un chiffre choc :
+Cette question a une réponse, mois par mois, et elle est vérifiable. Le site
+raconte la trajectoire complète : l'ancre ECSP de 2022, les deux évolutions
+cumulées (Martinique et France métropolitaine) depuis avril 2022, les épisodes
+de resserrement et de creusement de l'écart estimé, puis la position au dernier
+mois commun. Il compare d'abord les deux évolutions avant d'en tirer une
+estimation d'écart ; cette estimation n'est jamais présentée comme une nouvelle
+mesure.
+
+L'exemple « 100 € en métropole / montant martiniquais dérivé » est une
+**illustration mécanique** à partir des indices et de l'ECSP, jamais le prix
+d'un panier réellement relevé en magasin. Un resserrement relatif peut coexister
+avec une différence illustrative en euros plus grande qu'en 2022, parce que les
+deux paniers ont augmenté.
+
+La fenêtre choisie change la lecture, ce qui est précisément pourquoi le site
+montre la série entière plutôt qu'un chiffre choc :
 
 - **Glissement annuel d'avril 2026** : alimentation +1,5 % en Martinique contre
   +1,2 % en France → sur douze mois, l'écart se creuse.

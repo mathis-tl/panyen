@@ -76,7 +76,17 @@ make verify
 make publier
 ```
 
-`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, build Vite) n'appelle pas le réseau et ne publie jamais le Parquet. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
+`make verify` (Ruff, pytest, `dbt build` de `stg_ipc` et du différentiel alimentaire, tests Vitest, build Vite) n'appelle pas le réseau et ne publie jamais le Parquet. La collecte Insee ci-dessus doit avoir eu lieu une fois, pour fournir le XML brut.
+
+## La page
+
+La page statique lit `web/public/data/differentiel_alimentation.parquet` dans le
+navigateur via `hyparquet`, sans serveur applicatif. Elle exige que `make publier`
+ait tourné au moins une fois pour produire le fichier Parquet.
+
+```bash
+make dev
+```
 
 `make publier` exécute d'abord `make verify`, puis exporte `fct_differentiel_alimentation` vers un candidat Parquet Zstandard voisin, le valide contre la fact, et remplace atomiquement `web/public/data/differentiel_alimentation.parquet` avec `os.replace`. Si la vérification, l'export ou la validation échoue, la dernière version saine est conservée telle quelle. Le fichier généré n'est pas versionné.
 
@@ -100,9 +110,10 @@ uv run python -c "import duckdb; print(duckdb.sql(\"select count(*), min(periode
 - **La série IPC alimentaire de référence est la France métropolitaine**
   (`011813720`), alignée sur l'ECSP 2022. Un lot historique France entière
   (`011813717`) reste au brut, étiqueté comme tel, et n'est plus collecté.
-- **DuckDB + dbt + Parquet + DuckDB-WASM**, pas de serveur : le site interroge un
-  fichier dans le navigateur du visiteur. Zéro coût d'hébergement, et le visiteur
-  peut filtrer sans aller-retour réseau.
+- **DuckDB + dbt + Parquet + hyparquet**, pas de serveur : le site lit le
+  Parquet dans le navigateur via `hyparquet` (lecteur Parquet pur JavaScript,
+  0,3 Mo) et affiche les graphiques avec Observable Plot. Zéro coût d'hébergement,
+  et le visiteur peut filtrer sans aller-retour réseau.
 - **Le brut n'est jamais corrigé à l'ingestion.** Les collecteurs téléchargent et
   rangent, rien d'autre, pour que toute exécution passée reste rejouable.
 - **Le Bouclier Qualité Prix a été écarté** après vérification : il ne publie
