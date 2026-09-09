@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   SEUIL_ETROIT_PX,
   calculerDispositionGraphe,
+  calculerDomaineEvolution,
   jalonsRepereGraphe,
   libellesFinCourbes,
 } from "./graphe.ts";
@@ -64,5 +65,40 @@ describe("jalonsRepereGraphe", () => {
     expect(jalons.find((j) => j.periode === max)?.label).toBe("max.");
     expect(jalons.find((j) => j.periode === actuel)?.label).toBeNull();
     expect(jalons.some((j) => j.label === "actuel")).toBe(false);
+  });
+});
+
+describe("calculerDomaineEvolution", () => {
+  it("n'écrête pas une évolution négative : le poste énergie descend sous zéro", () => {
+    // Amplitude réelle observée sur le poste énergie : -8,98 % à +17,52 %.
+    const domaine = calculerDomaineEvolution([-8.98, 0, 12.28, 17.52, -1.09]);
+
+    expect(domaine.min).toBeLessThan(-8.98);
+    expect(domaine.max).toBeGreaterThan(17.52);
+  });
+
+  it("garde un plancher à zéro quand toutes les évolutions sont positives", () => {
+    const domaine = calculerDomaineEvolution([0, 5.2, 20.3]);
+
+    expect(domaine.min).toBe(0);
+    expect(domaine.max).toBeGreaterThan(20.3);
+  });
+
+  it("garde le zéro dans le domaine même si toute la série est négative", () => {
+    const domaine = calculerDomaineEvolution([-4, -2.5, -0.8]);
+
+    expect(domaine.min).toBeLessThan(-4);
+    expect(domaine.max).toBeGreaterThanOrEqual(0);
+  });
+
+  it("ouvre un domaine lisible sur une série plate", () => {
+    const domaine = calculerDomaineEvolution([0, 0, 0]);
+
+    expect(domaine.max).toBeGreaterThan(domaine.min);
+    expect(domaine.max).toBeGreaterThanOrEqual(5);
+  });
+
+  it("refuse une série vide au lieu de produire un domaine muet", () => {
+    expect(() => calculerDomaineEvolution([])).toThrow(/aucune valeur/i);
   });
 });

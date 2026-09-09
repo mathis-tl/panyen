@@ -1,6 +1,6 @@
 import "./style.css";
 import { chargerDonnees } from "./chargement.ts";
-import { calculerResume } from "./calculs.ts";
+import { calculerResume, titreDuPoste } from "./calculs.ts";
 import {
   afficherChargement,
   afficherErreur,
@@ -16,6 +16,8 @@ export interface OptionsDemarrage {
   posteInitial?: CodePoste;
   /** Injecté par les tests ; par défaut, focus DOM sur le bouton du poste. */
   focaliserPoste?: (poste: CodePoste) => void;
+  /** Injecté par les tests ; par défaut, écrit document.title. */
+  titrer?: (titre: string) => void;
   /** Injecté par les tests ; par défaut, le rendu DOM réel. */
   afficher?: (
     conteneur: HTMLElement,
@@ -34,6 +36,12 @@ function focaliserBoutonPoste(poste: CodePoste): void {
   document.getElementById(identifiantBoutonPoste(poste))?.focus();
 }
 
+/** Le titre d'onglet doit suivre le poste, sinon il décrit une autre page. */
+function definirTitre(titre: string): void {
+  if (typeof document === "undefined") return;
+  document.title = titre;
+}
+
 /** Point d'entrée testable : injection possible du chargeur, du rendu et du focus. */
 export async function demarrer(
   conteneur: HTMLElement,
@@ -45,15 +53,18 @@ export async function demarrer(
     let poste: CodePoste = options.posteInitial ?? "alimentation";
     const focaliser = options.focaliserPoste ?? focaliserBoutonPoste;
     const afficher = options.afficher ?? afficherEcran;
+    const titrer = options.titrer ?? definirTitre;
 
     const redessiner = (rendreLeFocus: boolean): void => {
-      afficher(conteneur, calculerResume(lignes, poste), {
+      const resume = calculerResume(lignes, poste);
+      afficher(conteneur, resume, {
         posteSelectionne: poste,
         onChangerPoste: (suivant) => {
           poste = suivant;
           redessiner(true);
         },
       });
+      titrer(titreDuPoste(poste, resume.ancreEcspDisponible));
       // Au premier rendu personne n'a encore le focus : ne pas le voler.
       if (rendreLeFocus) focaliser(poste);
     };

@@ -3,6 +3,8 @@ import {
   BASE_PANIER_ILLUSTRATIF,
   calculerPanierIllustratif,
   calculerResume,
+  desPrixDuPoste,
+  prixDuPoste,
   expliquerPourcentageVsPoints,
   preparerSeriesEvolution,
   selectionnerJalons,
@@ -308,7 +310,6 @@ describe("expliquerPourcentageVsPoints", () => {
   it("distingue pourcentage et point de pourcentage", () => {
     const texte = expliquerPourcentageVsPoints(
       jeuTrajectoireResserréPuisCreusé().at(-1)!,
-      "Alimentation",
     );
     expect(texte.toLowerCase()).toMatch(/pourcentage/);
     expect(texte.toLowerCase()).toMatch(/point/);
@@ -328,5 +329,49 @@ describe("garde méthodologique", () => {
     const r = calculerResume(jeuTrajectoireResserréPuisCreusé());
     const serialise = JSON.stringify(r);
     expect(serialise).not.toContain("valeur_indice");
+  });
+});
+
+describe("formulations françaises par poste", () => {
+  it("insère l'article : jamais « les prix énergie »", () => {
+    expect(prixDuPoste("energie")).toBe("les prix de l'énergie");
+    expect(prixDuPoste("produits_manufactures")).toBe(
+      "les prix des produits manufacturés",
+    );
+    expect(prixDuPoste("services")).toBe("les prix des services");
+    expect(prixDuPoste("alimentation")).toBe("les prix de l'alimentation");
+  });
+
+  it("décline aussi la forme complément du nom", () => {
+    expect(desPrixDuPoste("energie")).toBe("des prix de l'énergie");
+    expect(desPrixDuPoste("produits_manufactures")).toBe(
+      "des prix des produits manufacturés",
+    );
+  });
+
+  it("aucune phrase de conclusion ne colle le libellé au mot prix", () => {
+    for (const poste of [
+      "energie",
+      "produits_manufactures",
+      "services",
+    ] as const) {
+      const resume = calculerResume(
+        [
+          ligneSansAncre({ poste, periode: new Date(Date.UTC(2022, 3, 1)) }),
+          ligneSansAncre({
+            poste,
+            periode: new Date(Date.UTC(2022, 4, 1)),
+            dernier_mois_commun: new Date(Date.UTC(2022, 4, 1)),
+            facteur_martinique: 1.05,
+            evolution_martinique_pct: 5,
+            differentiel_evolution_points: 5,
+            coefficient_ecart: 1.05,
+          }),
+        ],
+        poste,
+      );
+      expect(resume.phrase).not.toMatch(/les prix (énergie|produits|services)/);
+      expect(resume.phrase).toContain(prixDuPoste(poste));
+    }
   });
 });

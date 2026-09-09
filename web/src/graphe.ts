@@ -65,6 +65,30 @@ export function libellesFinCourbes(
   };
 }
 
+/**
+ * Domaine vertical couvrant réellement les deux séries.
+ *
+ * Une évolution cumulée peut être négative : les prix d'un poste peuvent être
+ * repassés sous leur niveau d'avril 2022. Un domaine cloué à zéro écrêterait
+ * ces mois sans le dire, ce qui afficherait une donnée fausse. Le zéro reste
+ * toujours dans le domaine, puisque c'est l'ancre du récit.
+ */
+export function calculerDomaineEvolution(
+  valeurs: number[],
+): { min: number; max: number } {
+  if (valeurs.length === 0) {
+    throw new Error("Domaine vertical impossible : aucune valeur.");
+  }
+  const minObserve = Math.min(...valeurs, 0);
+  const maxObserve = Math.max(...valeurs, 0);
+  // Marge proportionnelle à l'amplitude, avec un plancher pour les séries plates.
+  const marge = Math.max((maxObserve - minObserve) * 0.15, 1);
+  return {
+    min: minObserve < 0 ? minObserve - marge : 0,
+    max: Math.max(maxObserve + marge, 5),
+  };
+}
+
 /** Repères temporels : règle pour les trois dates, libellé omis pour le terminal. */
 export function jalonsRepereGraphe(
   minimum: Date,
@@ -107,13 +131,12 @@ export function grapheEvolutions(
   const derniere = lignes[lignes.length - 1];
   const evoMq = derniere.evolution_martinique_pct;
   const evoFm = derniere.evolution_france_metropolitaine_pct;
-  const maxEvo = Math.max(
-    ...lignes.map((l) =>
-      Math.max(l.evolution_martinique_pct, l.evolution_france_metropolitaine_pct),
-    ),
-    0,
+  const domaineY = calculerDomaineEvolution(
+    lignes.flatMap((l) => [
+      l.evolution_martinique_pct,
+      l.evolution_france_metropolitaine_pct,
+    ]),
   );
-  const ymax = Math.max(maxEvo * 1.2, 5);
 
   const ecartFinal = Math.abs(evoMq - evoFm);
   const dyMq = evoMq >= evoFm ? -14 : 18;
@@ -165,7 +188,7 @@ export function grapheEvolutions(
     y: {
       label: disposition.etroit ? null : "Évolution cumulée (%)",
       grid: true,
-      domain: [0, ymax],
+      domain: [domaineY.min, domaineY.max],
       nice: false,
       tickFormat: (d: number) => String(d),
     },
@@ -191,7 +214,9 @@ export function grapheEvolutions(
       }),
       Plot.text(jalonsLibelles, {
         x: "periode",
-        y: 0,
+        // Ancré au plancher du domaine, qui n'est plus zéro dès qu'une
+        // évolution passe sous son niveau d'avril 2022.
+        y: domaineY.min,
         text: "label",
         dy: 14,
         fontSize: 11,
