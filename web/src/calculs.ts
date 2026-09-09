@@ -9,6 +9,39 @@ import { formaterMoisUtc, regrouperParPoste } from "./validation.ts";
 const SEUIL_PROCHE_ANCRE_POINTS = 0.5;
 
 /**
+ * Complément du nom, article contracté inclus, pour que les phrases restent
+ * du français. Injecter le libellé nu produirait « les prix énergie ».
+ */
+const COMPLEMENT_POSTE: Record<CodePoste, string> = {
+  alimentation: "de l'alimentation",
+  energie: "de l'énergie",
+  produits_manufactures: "des produits manufacturés",
+  services: "des services",
+};
+
+/** « les prix de l'énergie », sujet d'une phrase. */
+export function prixDuPoste(poste: CodePoste): string {
+  return `les prix ${COMPLEMENT_POSTE[poste]}`;
+}
+
+/** « des prix de l'énergie », complément d'un nom. */
+export function desPrixDuPoste(poste: CodePoste): string {
+  return `des prix ${COMPLEMENT_POSTE[poste]}`;
+}
+
+/**
+ * Titre d'onglet du poste affiché.
+ * Le mot « écart » n'apparaît que là où un écart de niveau est publié, donc
+ * pour l'alimentation seule ; ailleurs le titre ne parle que d'évolution.
+ */
+export function titreDuPoste(poste: CodePoste, ancreEcspDisponible: boolean): string {
+  const sujet = ancreEcspDisponible
+    ? `écart de prix ${COMPLEMENT_POSTE[poste]}`
+    : `évolution ${desPrixDuPoste(poste)}`;
+  return `panyen — ${sujet}, Martinique / France métropolitaine`;
+}
+
+/**
  * Base conventionnelle du panier fictif.
  * Ce n'est pas un prix observé : c'est une échelle pédagogique.
  */
@@ -155,14 +188,12 @@ export function preparerSeriesEvolution(
 
 export function expliquerPourcentageVsPoints(
   actuelle: LigneDifferentiel,
-  libellePoste: string,
 ): string {
   const evoMq = formaterPct(actuelle.evolution_martinique_pct);
   const evoFm = formaterPct(actuelle.evolution_france_metropolitaine_pct);
   const diff = formaterPointsSignes(actuelle.differentiel_evolution_points);
-  const libelle = libellePoste.toLowerCase();
   return (
-    `Un pourcentage d'évolution mesure la variation des prix (${libelle}) ` +
+    `Un pourcentage d'évolution mesure la variation ${desPrixDuPoste(actuelle.poste)} ` +
     `à l'intérieur d'un territoire depuis avril 2022. ` +
     `Ainsi ${evoMq} % en Martinique et ${evoFm} % en France métropolitaine ` +
     `sont deux évolutions comparables, pas deux niveaux d'indice. ` +
@@ -217,27 +248,24 @@ function formulerConclusionAvecAncre(
   );
 }
 
-function formulerConclusionSansAncre(
-  actuelle: LigneDifferentiel,
-  libellePoste: string,
-): string {
+function formulerConclusionSansAncre(actuelle: LigneDifferentiel): string {
   const diff = actuelle.differentiel_evolution_points;
-  const libelle = libellePoste.toLowerCase();
+  const prix = prixDuPoste(actuelle.poste);
   if (Math.abs(diff) < SEUIL_PROCHE_ANCRE_POINTS) {
     return (
-      `Depuis avril 2022, les prix ${libelle} ont évolué à un rythme ` +
+      `Depuis avril 2022, ${prix} ont évolué à un rythme ` +
       `presque parallèle en Martinique et en France métropolitaine.`
     );
   }
   if (diff > 0) {
     return (
-      `Depuis avril 2022, les prix ${libelle} ont augmenté davantage ` +
+      `Depuis avril 2022, ${prix} ont augmenté davantage ` +
       `en Martinique qu'en France métropolitaine ` +
       `(différentiel : ${formaterPointsSignes(diff)} point).`
     );
   }
   return (
-    `Depuis avril 2022, les prix ${libelle} ont augmenté moins vite ` +
+    `Depuis avril 2022, ${prix} ont augmenté moins vite ` +
     `en Martinique qu'en France métropolitaine ` +
     `(différentiel : ${formaterPointsSignes(diff)} point).`
   );
@@ -263,7 +291,7 @@ export function calculerResume(
   const extremums = selectionnerExtremumsDifferentiel(lignes);
   const seriesEvolution = preparerSeriesEvolution(lignes);
   const dernierMoisCommun = formaterMoisUtc(actuelle.dernier_mois_commun);
-  const explication = expliquerPourcentageVsPoints(actuelle, libellePoste);
+  const explication = expliquerPourcentageVsPoints(actuelle);
 
   if (actuelle.ancre_ecsp_disponible) {
     const { ancre, minimumEstime, maximumEstime } = selectionnerJalons(lignes);
@@ -309,7 +337,7 @@ export function calculerResume(
     };
   }
 
-  const conclusion = formulerConclusionSansAncre(actuelle, libellePoste);
+  const conclusion = formulerConclusionSansAncre(actuelle);
   const phrase =
     `${conclusion} ` +
     `En ${dernierMoisCommun}, l'évolution cumulée depuis avril 2022 est de ` +

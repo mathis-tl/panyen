@@ -134,3 +134,38 @@ describe("bascule de poste", () => {
     expect(retour.phrase).toBe(alimentation.phrase);
   });
 });
+
+describe("titre de page", () => {
+  it("suit le poste sélectionné au lieu de rester sur l'alimentaire", async () => {
+    const espion = espionner();
+    const titres: string[] = [];
+    await demarrer(espion.conteneur, {
+      ...espion.options,
+      titrer: (t) => titres.push(t),
+    });
+
+    expect(titres).toHaveLength(1);
+    expect(titres[0]).toContain("alimentation");
+
+    espion.dernieresOptions!.onChangerPoste("energie");
+    expect(titres[1]).toContain("énergie");
+    expect(titres[1]).not.toContain("alimentation");
+  });
+
+  it("ne parle d'écart que là où un écart de niveau est publié", async () => {
+    const espion = espionner();
+    const titres: string[] = [];
+    await demarrer(espion.conteneur, {
+      ...espion.options,
+      titrer: (t) => titres.push(t),
+    });
+
+    expect(titres[0]).toContain("écart");
+
+    for (const poste of ["energie", "produits_manufactures", "services"] as const) {
+      espion.dernieresOptions!.onChangerPoste(poste);
+      expect(titres[titres.length - 1]).not.toContain("écart");
+      expect(titres[titres.length - 1]).toContain("évolution");
+    }
+  });
+});

@@ -104,6 +104,9 @@ connaître les indices de prix.
       chiffres tabulaires et absence de double axe.
 - [ ] Garder les interactions fréquentes sobres ; animations sous 300 ms,
       `transform`/`opacity`, survols adaptés et `prefers-reduced-motion`.
+- [ ] Reprendre les constats d'inspection du 2026-09-09 laissés hors incrément 2 :
+      séparer un `h1` court du paragraphe de conclusion, alléger un premier
+      viewport très textuel, et remplacer le « Chargement… » nu par un squelette.
 
 **Fini quand** : la page s'ouvre sans serveur applicatif, les filtres sont locaux,
 la palette est validée dans les deux thèmes et la revue d'animations est sans réserve.
