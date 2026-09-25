@@ -1,331 +1,639 @@
-SPEC ACTIVE — INCRÉMENT 2 : ÉTENDRE L'IPC AUX QUATRE POSTES
-DESTINATAIRE — nouveau Cursor Agent
+SPEC ACTIVE — INCRÉMENT 3 : tranche verticale carburants
 
-OBJECTIF UTILISATEUR
-Comparer le différentiel d'évolution des prix entre la Martinique et la France
-métropolitaine selon le poste de dépense : alimentation, énergie, produits
-manufacturés, services. Depuis avril 2022, quel poste creuse l'écart, lequel le
-resserre ? Le changement de poste sur le site ne déclenche aucun appel serveur.
+État de départ
 
-ÉTAT VALIDÉ AU DÉPART
-- L'incrément 1 est GREEN et coché : collecte brute horodatée, parseur SDMX,
-  `stg_ipc` → `int_ipc_alimentation_rebase` → `fct_differentiel_alimentation`,
-  publication Parquet atomique, écran alimentaire, CI GitHub Actions.
-- `make ci` PASS : Ruff, 44 pytest, dbt 91/91, 36 Vitest, build Vite.
-- `data/raw/insee/` contient deux XML de deux séries chacun :
-  `ipc_alimentation_2026-09-02T163321Z.xml` (paire historique {011813726,
-  011813717}) et `ipc_alimentation_2026-09-02T205447Z.xml` (paire active
-  {011813726, 011813720}). Ces deux fichiers sont immuables.
-- `web/public/data/*.parquet` est ignoré par Git : renommer la destination
-  n'implique aucune suppression versionnée.
+- L'incrément 2 est clos, poussé et vert au commit `09480fa`.
+- Aucun collecteur, manifeste, modèle, Parquet ou écran carburants n'existe.
+- La fenêtre du premier lot est figée d'avril 2022 à septembre 2026. Le
+  plafond prenant effet le `2026-09-01` appartient au lot ; les observations
+  nationales de septembre disponibles au moment de la collecte constituent un
+  mois incomplet et doivent être signalées comme telles.
+- `data/raw/carburants/` est ignoré par Git. Les bruts Insee versionnés et la
+  tranche IPC existante ne doivent pas être réécrits.
+- Cette spec remplace le découpage en sous-incréments. Cursor réalise la
+  collecte, les modèles, la publication et l'écran dans une seule boucle.
 
-FAITS VÉRIFIÉS LE 2026-09-06 — NE PAS RE-VÉRIFIER, MAIS RECONTRÔLER À LA COLLECTE
+Mode d'exécution
 
-Les huit idbanks des quatre postes ont été appelés réellement sur l'API SDMX
-ouverte, en un seul appel, `startPeriod=2022-04`. Résultat mesuré : 41 296 octets,
-**52 observations par série, 2022-04 → 2026-07, aucun statut autre que `A`**,
-base 2025, ensemble des ménages, indices tous entre 84 et 112.
+Les sections ci-dessous sont des portes de contrôle internes, pas des
+sous-incréments. Après chaque porte verte, continuer immédiatement avec la
+suivante. Ne rendre aucun rapport intermédiaire demandant l'autorisation de
+continuer et ne faire aucun STOP artificiel entre collecte, transformation,
+publication et écran.
 
-| poste                 | valeur `poste`          | France métropolitaine (`FM`) | Martinique (`D972`) |
-|-----------------------|-------------------------|------------------------------|---------------------|
-| Alimentation          | `alimentation`          | `011813720`                  | `011813726`         |
-| Énergie               | `energie`               | `011813867`                  | `011813873`         |
-| Produits manufacturés | `produits_manufactures` | `011813783`                  | `011813789`         |
-| Services              | `services`              | `011813909`                  | `011813915`         |
+STOP et signalement à Mathis sont obligatoires seulement si, après recherche
+dans les sources officielles :
 
-Correctif à la règle des rangs : dans un poste, l'indice martiniquais tombe
-**neuf rangs après l'indice France entière** (`FE`), donc **six rangs après
-l'indice France métropolitaine** (`FM`). Vérifié sur les quatre postes.
+1. un acte ou un mois de la fenêtre reste introuvable, illisible ou contredit
+   par une autre source officielle ;
+2. aucun carburant national ne peut être comparé à un produit réglementé
+   martiniquais sans choisir un proxy méthodologique non sourcé ;
+3. une modification destructive, une infrastructure distante, un secret ou un
+   arbitrage produit hors de cette spec devient indispensable.
 
-`LAST_UPDATE` mesurés : 2026-08-14 pour les quatre séries `FM`, 2026-08-27 pour
-les quatre séries `D972`. Un territoire est publié en bloc, tous postes ensemble.
+Une difficulté de code, un test rouge ou un volume important ne justifie pas à
+elle seule de scinder l'incrément : diagnostiquer, corriger et poursuivre.
 
-DÉCISION STRUCTURANTE VALIDÉE PAR MATHIS — ANCRE ECSP
+Objectif utilisateur
 
-L'enquête ECSP 2022 (Insee Analyses Martinique n° 63, figure 3) publie ses écarts
-de niveau **par grandes fonctions COICOP** : produits alimentaires +40 %,
-communications +37 %, loisirs et culture +14 %, santé +13 %, hôtellerie et
-restauration +8 %, boissons alcoolisées et tabac +23 %.
+Afficher, dans le site statique, comment la distribution mensuelle des prix
+déclarés par les stations métropolitaines se situe par rapport aux plafonds
+réglementés applicables en Martinique depuis avril 2022. Le lecteur doit voir
+qu'il compare une distribution de prix déclarés dans un marché métropolitain à
+un prix maximum administratif uniforme en Martinique, et non deux moyennes de
+même nature.
 
-Ce n'est **pas** la nomenclature des quatre postes de l'IPC. Les postes
-« produits manufacturés » et « services » de l'IPC traversent plusieurs fonctions
-COICOP : l'habillement, les biens de santé et les biens de loisir sont tous des
-produits manufacturés ; les communications et les services de santé sont tous des
-services. Aucune correspondance n'est publiée.
+La chaîne complète doit être rejouable manuellement depuis les sources brutes,
+traçable jusqu'aux URL officielles et incapable de publier un résultat partiel
+ou silencieusement corrigé.
 
-Conséquence, contraignante :
-- **Seul le poste `alimentation` possède une ancre ECSP sourcée** (+40 %).
-- Pour `energie`, `produits_manufactures` et `services`, l'écart de niveau 2022
-  est **inconnu** : `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`,
-  `source_ecsp` et `nature_ecart` sont **NULL**, et le site ne dit rien sur le
-  niveau de prix de ces postes.
-- Fabriquer, interpoler ou approcher une ancre pour ces trois postes est un
-  **bug bloquant**, pas un arrondi. C'est la règle « aucune valeur inventée ».
+Décisions structurantes
 
-DÉCISION STRUCTURANTE VALIDÉE PAR MATHIS — BRUT
+1. Réemploi avant création
 
-Le collecteur écrit désormais `ipc_postes_<horodatage>.xml`, contenant les huit
-séries en un seul appel. Le préfixe `ipc_alimentation_` reste **lu** par le
-parseur pour les deux fichiers historiques, qui ne sont ni renommés, ni réécrits,
-ni supprimés. Le brut est un journal.
+- Réutiliser le contrat d'ingestion de `ingest/insee_ipc.py`, le parsing aval
+  de `transformation/sdmx.py`, les grains et tests dbt existants, l'ordre de
+  publication vérifier → exporter → valider → remplacer de
+  `publication/publier_differentiel_ipc.py`, puis `hyparquet` et Observable
+  Plot dans le navigateur.
+- Pour ZIP, XML, CSV, hachage et HTTP, la bibliothèque standard Python suffit.
+  Ne pas ajouter de dépendance tant qu'un besoin constaté ne l'impose pas.
+- Si un PDF officiel n'est pas extractible de façon fiable, transcrire les
+  seules valeurs nécessaires dans le seed sourcé décrit plus bas. Ne pas bâtir
+  d'OCR, de scraper générique ou de parseur PDF maison.
+- Toute dépendance finalement nécessaire doit être maintenue, documentée,
+  verrouillée avec `uv lock` ou `npm install` selon le cas, et justifiée dans le
+  rapport. Ne pas ajouter de framework pour une fonction déjà couverte par la
+  pile.
 
-DERNIER MOIS COMMUN — RÈGLE UNIQUE
+2. Fenêtre et complétude
 
-`dernier_mois_commun` est le **minimum des derniers mois renseignés des huit
-séries du lot actif**, donc une seule valeur pour toute la table. Les quatre
-postes partagent exactement la même fenêtre : c'est ce qui rend le graphe
-comparable et la phrase du site vraie. Un poste publié en retard raccourcit la
-fenêtre de tous les autres, visiblement, jamais silencieusement.
+- Début analytique inclus : `2022-04-01`.
+- Dernière période réglementaire attendue : `2026-09-01`.
+- Les observations nationales sont conservées jusqu'au dernier horodatage
+  réellement présent dans le stock 2026 collecté. Le mois de septembre 2026
+  porte `mois_complet = false` ; aucun chiffre ne prétend représenter un mois
+  clos.
+- Les contrôles de chute mensuelle de volumétrie ignorent seulement ce dernier
+  mois explicitement incomplet. Ils restent actifs pour tous les mois clos.
+- Ne pas compléter une donnée manquante, reporter un prix de station sur un
+  mois sans déclaration, interpoler un plafond ou réduire la fenêtre.
 
-CONTRAT DE COLLECTE — `ingest/insee_ipc.py`
+3. Comparabilité des produits
 
-- Remplacer `SERIES` par un référentiel des huit idbanks actifs, portant pour
-  chacun le poste, le code territoire et le libellé. Ordre déterministe : par
-  poste dans l'ordre du tableau ci-dessus, Martinique puis France métropolitaine.
-- Un seul appel HTTP, les huit idbanks joints par `+`, `startPeriod` inchangé à
-  `2022-04`.
-- `nom_brut` produit `ipc_postes_<AAAA-MM-JJTHHMMSSZ>.xml`.
-- `--dry-run` conserve son contrat exact : requête réelle, aucune écriture,
-  aucun `mkdir`.
-- Ouverture en `"xb"` conservée : jamais d'écrasement.
-- Le collecteur ne parse toujours rien et ne corrige rien.
+Créer `data/manifests/correspondance_carburants.csv` avec les colonnes exactes :
 
-CONTRAT DE PARSING — `transformation/sdmx.py`
+`carburant_mq,libelle_mq,carburant_national,libelle_national,statut_comparabilite,url_justification,note`
 
-- Le référentiel devient `idbank → (poste, code_territoire)` sur neuf entrées :
-  les huit actives plus `011813717` (`FE`, `alimentation`, lot historique).
-- `Observation` gagne le champ `poste`.
-- Le contrat de lot par fichier est vérifié à partir du **préfixe du nom** :
-  - `ipc_alimentation_` : l'ensemble des idbanks du fichier doit valoir
-    exactement `{011813726, 011813717}` → `lot_collecte =
-    'alimentation_france_entiere'`, `perimetre_reference =
-    'france_entiere_historique'` ; ou exactement `{011813726, 011813720}` →
-    `lot_collecte = 'alimentation_france_metropolitaine'`,
-    `perimetre_reference = 'france_metropolitaine'`.
-  - `ipc_postes_` : l'ensemble doit valoir exactement les huit idbanks actifs →
-    `lot_collecte = 'quatre_postes_france_metropolitaine'`,
-    `perimetre_reference = 'france_metropolitaine'`.
-  - Tout autre ensemble lève `ErreurSdmx` avec un message nommant le fichier et
-    les idbanks fautifs : manquant, surnuméraire, mélangé.
-- Conserver sans affaiblissement : `FREQ` obligatoirement `M`, cohérence
-  `idbank → REF_AREA`, refus des doublons `(idbank, periode)`, attributs de série
-  et d'observation obligatoires, `OBS_VALUE` absent toléré uniquement si
-  `OBS_STATUS = 'ND'`, horodatage lu exclusivement dans le nom du fichier.
-- `parser_repertoire` lit les deux préfixes, en ordre déterministe.
+Contrat :
 
-CONTRAT DBT
+- une ligne par correspondance étudiée, libellés recopiés des sources ;
+- `statut_comparabilite` vaut `directe` ou `non_comparable` ;
+- URL officielle et note factuelle obligatoires ;
+- seules les lignes `directe` alimentent une comparaison graphique ;
+- ne jamais agréger SP95, SP98 et E10 ni assimiler l'un de ces produits au
+  « supercarburant sans plomb » martiniquais sans preuve officielle explicite ;
+- une ligne `non_comparable` est conservée et expliquée, pas transformée en
+  proxy ;
+- s'il existe au moins une correspondance directe, poursuivre la tranche avec
+  elle et signaler les produits écartés. S'il n'en existe aucune, STOP.
 
-Renommages, sans conserver d'alias ni de vue de compatibilité :
-- `int_ipc_alimentation_rebase` → `int_ipc_rebase`
-- `fct_differentiel_alimentation` → `fct_differentiel_ipc`
+Porte A — Sources et collecte brute
 
-`stg_ipc` — grain inchangé `(fichier_source, idbank, periode)`
-- Nouvelles colonnes : `poste`, `lot_collecte`.
-- `schema.yml` : `idbank` accepte les neuf valeurs ; `code_territoire` accepte
-  `D972`, `FE`, `FM` ; `poste` accepte les quatre valeurs snake case ;
-  `lot_collecte` accepte les trois valeurs ci-dessus.
-- Conserver le garde-fou « indice nul avec statut `ND`, sinon entre 50 et 200 ».
-- Le test `stg_ipc_deux_series_par_fichier` est remplacé par
-  `stg_ipc_lot_conforme` : chaque `fichier_source` porte exactement l'ensemble
-  d'idbanks imposé par son `lot_collecte`, ni plus, ni moins.
-- Nouveau test `stg_ipc_coherence_idbank_poste_territoire` : le triplet
-  `(idbank, poste, code_territoire)` ne prend que les neuf combinaisons du
-  référentiel.
+1. Stockage immuable commun
 
-`int_ipc_rebase` — grain : une ligne par `(poste, idbank, periode)`
-- Lot actif : le fichier de `lot_collecte = 'quatre_postes_france_metropolitaine'`
-  au `collecte_utc` le plus récent. **Aucun lot actif ⇒ échec bruyant**, jamais
-  un repli silencieux sur l'ancien lot alimentaire.
-- `dernier_mois_commun` : minimum, sur les huit séries du lot actif, du dernier
-  mois à valeur non nulle. Une seule valeur pour tout le modèle.
-- Calendrier mensuel complet de `2022-04-01` au `dernier_mois_commun`, croisé
-  avec les huit couples `(poste, idbank, code_territoire)` attendus. Un mois
-  absent laisse une ligne à `valeur_indice` nulle, que le test fait échouer.
-- `facteur` et `evolution_pct` calculés **à l'intérieur d'un seul territoire et
-  d'un seul poste**, ancrés sur `2022-04-01`. Aucun appariement de niveaux entre
-  territoires à cette étape ni ailleurs.
-- Tests conservés et généralisés par poste : ancre présente et égale à 1,0 ;
-  calendrier complet ; grain unique ; lot actif unique.
+- Conserver `data/raw/carburants/` hors Git. Ne pas ajouter Git LFS, DVC,
+  bucket ou artifact distant.
+- Versionner seulement les petits manifestes sous `data/manifests/` et le seed
+  de valeurs réglementaires sous `dbt/seeds/`.
+- Ranger chaque réponse HTTP brute octet pour octet sous
+  `data/raw/carburants/`, avec un nom horodaté UTC et ouverture exclusive.
+- Écrire à côté un sidecar JSON immuable contenant au minimum : identifiant
+  logique de ressource, URL demandée, instant UTC de collecte, taille en
+  octets, SHA-256, catégorie, période demandée et nom du brut.
+- Le cache local permet le rejeu de l'instantané présent sur cette machine. Le
+  manifeste rend une source re-téléchargeable mais ne garantit pas qu'une URL
+  mutable redonnera les mêmes octets ; documenter cette limite.
 
-`fct_differentiel_ipc` — grain : **une ligne par `(poste, periode)`**
-- Colonnes, dans cet ordre exact :
-  `periode`, `dernier_mois_commun`, `poste`, `libelle_poste`,
-  `fichier_source`, `collecte_utc`,
-  `idbank_martinique`, `idbank_france_metropolitaine`,
-  `facteur_martinique`, `facteur_france_metropolitaine`,
-  `evolution_martinique_pct`, `evolution_france_metropolitaine_pct`,
-  `differentiel_evolution_points`, `coefficient_ecart`,
-  `ancre_ecsp_disponible`,
-  `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`, `source_ecsp`, `nature_ecart`.
-- `libelle_poste` porte l'accentuation d'affichage : `Alimentation`, `Énergie`,
-  `Produits manufacturés`, `Services`.
-- Jointure `left join` sur le seed `ecsp_alimentation_2022`, sur
-  `poste = 'alimentation'`, `territoire_compare = 'D972'`,
-  `territoire_reference = 'FM'`, `periode_ancrage = date '2022-04-01'`.
-  Le seed n'est pas modifié.
-- `ancre_ecsp_disponible` vaut vrai si et seulement si le seed a apparié.
-- Quand l'ancre manque : `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`,
-  `source_ecsp` et `nature_ecart` sont NULL. Aucune valeur de repli, aucun zéro,
-  aucune chaîne vide.
-- Formules inchangées pour l'alimentation :
-  `differentiel_evolution_points = evolution_martinique_pct
-   - evolution_france_metropolitaine_pct` ;
-  `coefficient_ecart = facteur_martinique / facteur_france_metropolitaine` ;
-  `ecart_prix_estime_pct = ((1 + ecart_ecsp_2022_pct / 100) * coefficient_ecart
-   - 1) * 100`.
-- `differentiel_evolution_points` et `coefficient_ecart` sont renseignés pour les
-  quatre postes : ce sont des comparaisons d'évolutions, toujours licites.
+2. Source nationale
 
-Tests dbt nouveaux ou repris sur `fct_differentiel_ipc`
-1. Grain unique `(poste, periode)`.
-2. Exactement quatre postes distincts, chacun couvrant le **même ensemble de
-   périodes**, de `2022-04-01` au `dernier_mois_commun`.
-3. `dernier_mois_commun` prend une valeur unique dans toute la table, et vaut le
-   `max(periode)` de chaque poste.
-4. **Garde-fou d'ancre** : `ancre_ecsp_disponible` est vrai exactement pour
-   `poste = 'alimentation'` ; les quatre colonnes ECSP sont toutes non nulles
-   quand il est vrai et toutes nulles quand il est faux. Aucun état mixte.
-5. Identités arithmétiques recalculées en SQL avec tolérance `1e-9`, dont
-   `ecart_prix_estime_pct` seulement là où l'ancre existe.
-6. `nature_ecart` limité à `mesure_ecsp_2022` sur `2022-04-01` et
-   `estimation_a_partir_ecsp_2022` après, uniquement pour l'alimentation.
-7. Aucune colonne de niveau d'indice ne sort de `int_ipc_rebase`.
+Source officielle :
+`https://www.prix-carburants.gouv.fr/rubrique/opendata/`.
 
-Volumétrie attendue avec le brut du jour, à confirmer et non à présumer :
-416 observations dans le lot actif, 52 mois, **208 lignes** dans
-`fct_differentiel_ipc`.
+Collecter exactement :
 
-CONTRAT DE PUBLICATION
+- `https://donnees.roulez-eco.fr/opendata/annee/2022` ;
+- `https://donnees.roulez-eco.fr/opendata/annee/2023` ;
+- `https://donnees.roulez-eco.fr/opendata/annee/2024` ;
+- `https://donnees.roulez-eco.fr/opendata/annee/2025` ;
+- `https://donnees.roulez-eco.fr/opendata/annee` pour le stock 2026 courant ;
+- `https://donnees.roulez-eco.fr/opendata/jour` comme contrôle du flux courant
+  et point d'entrée de la future automatisation.
 
-- `publication/publier_differentiel_alimentation.py` →
-  `publication/publier_differentiel_ipc.py`.
-- Table source `fct_differentiel_ipc`, destination
-  `web/public/data/differentiel_ipc.parquet`.
-- Requête et empreinte de validation ordonnées par `poste, periode`.
-- Ordre strict conservé, sans exception : vérifier (`make verify`) → exporter un
-  candidat temporaire → relire et comparer ligne à ligne → `os.replace` en
-  dernière mutation. Nettoyage du candidat sur toute erreur.
-- Conserver le refus explicite de publier une colonne `valeur_indice`.
-- Le résumé imprimé indique en plus le nombre de postes publiés.
-- `make publier` pointe la nouvelle cible. Supprimer localement l'ancien
-  `differentiel_alimentation.parquet`, qui n'est pas versionné.
+Ne pas inventer `/annee/2026`. Les quatre archives closes restent adressées par
+leur année ; le stock 2026 et le flux quotidien sont mutables. Le collecteur
+valide le transport seulement : réponse non vide, ZIP lisible, au moins un
+membre XML, aucun membre absolu ou contenant `..`. Il n'extrait pas le ZIP et
+ne lit aucune valeur métier.
 
-CONTRAT DU FRONT
+Le modèle historique utilise les quatre archives annuelles et le dernier stock
+2026 collecté. Le flux `/jour` n'est pas mélangé à ces données : son
+recouvrement créerait des doublons et il sert ici uniquement à valider le
+contrat de collecte courant.
 
-- `types.ts` : `COLONNES_ATTENDUES` reflète l'ordre exact ci-dessus ;
-  `LigneDifferentiel` gagne `poste`, `libelle_poste`, `ancre_ecsp_disponible` ;
-  `ecart_ecsp_2022_pct`, `ecart_prix_estime_pct`, `source_ecsp` et
-  `nature_ecart` deviennent nullables.
-- `chargement.ts` : lit `differentiel_ipc.parquet`, convertit les valeurs nulles
-  en `null` sans les transformer en `0`, `NaN` ni `"null"`.
-- `validation.ts` : les quatre postes attendus sont présents ; chaque poste a des
-  périodes strictement croissantes, sans trou ni doublon ; les quatre postes
-  partagent le même ensemble de périodes ; `dernier_mois_commun` est unique ;
-  l'alimentation contient exactement une ligne `mesure_ecsp_2022` ; les trois
-  autres postes ont leurs quatre champs ECSP nuls. Chaque échec lève une
-  `ErreurValidation` nommant le poste fautif.
-- `calculs.ts` : introduire un regroupement par poste, puis deux récits.
-  - Poste **avec** ancre : récit actuel intact — jalons, panier illustratif,
-    écart estimé, conclusion, explication points contre pourcentages.
-  - Poste **sans** ancre : récit réduit à l'évolution — évolution de chaque
-    territoire depuis avril 2022, différentiel en points, mois du minimum et du
-    maximum du différentiel, conclusion formulée en points, **jamais** en écart
-    de prix, jamais de panier illustratif.
-  - Les fonctions de calcul restent pures : aucun DOM, aucun réseau.
-- `rendu.ts` : ajouter un sélecteur des quatre postes, accessible au clavier
-  (`role="tablist"` avec `aria-selected`, ou un groupe de boutons radio étiqueté),
-  `alimentation` sélectionné par défaut. Le changement de poste **redessine
-  depuis les lignes déjà en mémoire**, sans aucune requête.
-  Pour un poste sans ancre, remplacer les sections ECSP par une note visible et
-  explicite : l'ECSP 2022 mesure ses écarts par fonction de consommation, ce
-  découpage ne correspond pas à ce poste de l'IPC, donc aucun écart de niveau
-  n'est publiable ici et seule l'évolution est comparable.
-- `graphe.ts` : le graphe reste deux courbes d'évolution pour le poste
-  sélectionné. Le cycle `ResizeObserver` validé en 1.6 ne doit pas régresser.
-- La limite méthodologique de 1.6 reste affichée pour tous les postes.
+3. Source martiniquaise
 
-PÉRIMÈTRE ET FICHIERS TOUCHABLES
-- Nouveau : `data/raw/insee/ipc_postes_<horodatage>.xml` (une seule collecte
-  réelle), `dbt/models/intermediate/int_ipc_rebase.sql`,
-  `dbt/models/marts/fct_differentiel_ipc.sql`, les tests dbt correspondants,
-  `publication/publier_differentiel_ipc.py`, les fixtures XML de test.
-- Modification : `ingest/insee_ipc.py`, `transformation/sdmx.py`,
-  `dbt/models/staging/stg_ipc.py`, les trois `schema.yml`, `Makefile`,
-  `web/src/*.ts`, `tests/*.py`, `docs/SOURCES.md`, `README.md`.
-- Suppression : les modèles et tests dbt renommés, l'ancien script de
-  publication, leurs tests obsolètes.
-- Aucun autre fichier.
+Sources primaires autorisées : actes individuels officiels et RAAP/RAA publiés
+par la préfecture de Martinique. Un communiqué de la préfecture ou de la DEETS
+sert de contre-vérification ; il ne devient primaire qu'avec une exception
+motivée si l'acte reste introuvable.
 
-NON-OBJECTIFS
-- Ne pas inventer, estimer, interpoler ni emprunter une ancre ECSP pour
-  l'énergie, les produits manufacturés ou les services.
-- Ne comparer aucun niveau d'indice entre territoires, nulle part.
-- Ne pas ajouter de sous-postes (produits frais, produits pétroliers, habillement,
-  santé, loyers), ni de territoire (Guadeloupe, Guyane, Réunion), ni la série
-  « Ensemble ».
-- Ne pas toucher aux carburants, ni au Bouclier Qualité Prix.
-- Ne pas refondre le design : c'est l'incrément 4. Le sélecteur doit être sobre
-  et fonctionnel, pas une nouvelle direction visuelle.
-- Ne pas superposer les quatre postes sur un même graphe.
-- Ne pas modifier le seed ECSP, `CLAUDE.md`, `AGENTS.md`, `SPEC.txt`, le workflow
-  CI, les lockfiles ni les dépendances.
-- Ne pas cocher l'incrément 2 dans `ROADMAP.md` : Mathis coche après revue.
-- Ne pas planifier la collecte, ni déployer : c'est l'incrément 5.
-- Ne pas committer, pousser, créer de branche ou de PR.
+Créer `data/manifests/arretes_carburants_martinique.csv`, une ligne par acte ou
+révision, triée par date d'effet, avec les colonnes exactes :
 
-TESTS ET VÉRIFICATION
-1. Lancer **une seule fois** la collecte réelle
-   `uv run python ingest/insee_ipc.py`. Vérifier avant/après que les deux XML
-   historiques ont le même SHA256. Rendre le nom, la taille et le SHA256 du
-   nouveau brut, et le nombre d'observations par série.
-2. Étendre les tests Python : parsing d'une fixture huit séries ; refus d'un
-   fichier `ipc_postes_` à sept séries ; refus d'un idbank surnuméraire ; refus
-   d'une paire mélangée ; lecture inchangée des deux fixtures alimentaires ;
-   `--dry-run` sans écriture, avec réponse synthétique et sans réseau.
-3. Étendre les tests de publication : renommage, tri `poste, periode`, échec si
-   la table est vide ou absente, nettoyage du candidat, refus d'une colonne de
-   niveau.
-4. Étendre les tests Vitest : validation des quatre postes, rejet d'un poste
-   manquant, rejet de périodes désalignées entre postes, rejet d'un champ ECSP
-   non nul sur un poste sans ancre, récit réduit correct, bascule de poste sans
-   appel réseau.
-5. Exécuter `make ci` et rendre les compteurs **réellement obtenus** — Ruff,
-   pytest, dbt, Vitest, build Vite. Ne prédire aucun compteur ; les 44 pytest,
-   91 dbt et 36 Vitest de l'incrément 1 sont un plancher, pas une cible.
-6. Exécuter `make publier` et rendre chemin, taille, SHA256, nombre de lignes,
-   nombre de postes et bornes de période.
-7. Contrôler à la main dans le Parquet publié : 4 postes, 52 mois chacun,
-   `ecart_prix_estime_pct` non nul uniquement sur l'alimentation, aucune colonne
-   de niveau d'indice.
-8. `git status --short --branch`, `git diff --check` et diff complet relu.
-9. Exécuter `graphify update .`, puis rejouer la requête Graphify de départ.
-10. Faire relire le changement par `panyen_verifier` avant toute proposition de
-    commit.
+`debut_effet,reference_acte,date_signature,type_source_primaire,url_source_primaire,pages_acte,url_communique,motif_exception`
 
-DOCUMENTATION
-- `docs/SOURCES.md` : tableau des huit idbanks actifs avec territoire et poste ;
-  correctif de la règle des rangs (neuf rangs après `FE`, six après `FM`) ; la
-  volumétrie mesurée le 2026-09-06 ; et une section explicite disant que l'ECSP
-  2022 publie ses écarts par fonction COICOP, que ce découpage ne recouvre pas
-  les postes IPC, et qu'aucune ancre n'existe donc hors alimentation.
-- `README.md` : la question à quatre postes, la commande de reconstruction, le
-  nouveau nom du Parquet, et la phrase qui dit que l'écart de niveau n'est publié
-  que pour l'alimentation.
+Contrat :
 
-FINI QUAND
-- Une seule commande reconstruit les quatre postes depuis le brut versionné.
-- Les quatre postes traversent la même chaîne, sans logique dupliquée par poste.
-- Le dernier mois commun est unique, explicite et affiché.
-- Un test cassé empêche toujours la publication du Parquet.
-- Aucun écart de niveau n'apparaît hors alimentation, et le site dit pourquoi.
-- Le changement de poste ne déclenche aucun appel serveur.
-- `make ci` et `panyen_verifier` sont verts.
+- dates ISO lues dans le document, référence exacte, URL officielle directe ;
+- `pages_acte` obligatoire pour un recueil ;
+- `motif_exception` vide si l'acte est disponible, obligatoire si un
+  communiqué devient exceptionnellement primaire ;
+- première date `2022-04-01`, dernière période `2026-09-01` ;
+- au moins une date d'effet par mois civil, sans imposer une seule ligne par
+  mois ;
+- présence obligatoire de `2022-11-16` ;
+- nombre final de lignes mesuré, jamais présumé.
 
-RAPPORT FINAL ET STOP
-Rendre : verdict ; fichiers touchés ; brut collecté avec son empreinte ; preuve
-d'immutabilité des deux XML historiques ; sortie de `make ci` avec compteurs
-réels ; sortie de `make publier` ; contrôle manuel du Parquet ; extrait du diff
-sur le garde-fou d'ancre ; risques restants.
+Créer ensuite `dbt/seeds/prix_max_carburants_martinique.csv`, une ligne par
+`(carburant_mq, debut_effet)`, avec les colonnes exactes :
 
-Puis STOP. Ne pas cocher l'incrément 2, ne pas committer, ne pas pousser, ne pas
-commencer l'incrément 3.
+`debut_effet,carburant_mq,libelle_source,prix_max_eur_litre,reference_acte,url_source_primaire,pages_acte`
+
+Chaque valeur et chaque libellé sont transcrits du document primaire. Le prix
+est un décimal en euros par litre, jamais un flottant arrondi à l'ingestion.
+Chaque couple date/référence/URL/pages doit correspondre exactement au
+manifeste des actes. Une double lecture manuelle des lignes saisies est exigée
+dans la vérification finale. Aucun gaz en bouteille ni produit hors carburants
+routiers comparables n'entre dans le seed.
+
+4. Collecteurs et commandes
+
+Créer, sans réseau réel dans les tests :
+
+- `ingest/prix_carburants_national.py` ;
+- `ingest/arretes_carburants_martinique.py`.
+
+Chaque CLI fournit `--dry-run`. Le dry-run effectue les requêtes et validations
+de transport, mais ne crée aucun dossier, brut ou sidecar. Le collecteur
+martiniquais télécharge chaque URL primaire unique une seule fois par exécution
+et classe séparément les communiqués secondaires.
+
+Contrat commun : timeout explicite, User-Agent descriptif, formats attendus,
+échec bruyant sur HTTP/format/manifeste/collision, aucun écrasement, nom UTC
+`AAAA-MM-JJTHHMMSSZ`, affichage ressource/taille/SHA-256/chemin, aucun parsing de
+prix dans `ingest/`.
+
+Ajouter les cibles manuelles :
+
+- `collecter-carburants-national` ;
+- `collecter-arretes-martinique` ;
+- `collecter-carburants` qui les compose sans dupliquer leur logique.
+
+`make verify` et `make ci` ne déclenchent jamais de réseau.
+
+Tests de la porte A
+
+- six URL nationales exactes ; écriture octet pour octet ; ZIP synthétique sûr ;
+- refus vide/ZIP invalide/membre dangereux/HTML inattendu ;
+- sidecar complet et cohérent ; collision ; dry-run sans écriture ;
+- manifeste martiniquais : schéma exact, dates, tri, bornes, couverture,
+  `2022-11-16`, domaines officiels, pages et exceptions ;
+- déduplication des URL de recueils et erreur réseau sans faux succès ;
+- seed : unicité du grain, décimaux positifs, provenance identique au manifeste,
+  couverture de chaque produit sur toute la fenêtre ;
+- correspondances : statuts acceptés, justification officielle et au moins une
+  ligne directe.
+
+Porte B — Parsing et modèles
+
+1. Parsing national aval
+
+Créer `transformation/carburants.py` puis un modèle Python
+`dbt/models/staging/stg_carburants.py`. Le parseur lit les ZIP sans les extraire
+sur disque, rejette les XML mal formés et conserve la provenance du sidecar.
+Il contrôle explicitement le format réellement observé pour 2022, 2023, 2024,
+2025 et 2026 avant de figer les mappings.
+
+Grain de `stg_carburants` :
+`(fichier_source, membre_zip, id_station, carburant_national, releve_utc)`.
+
+Champs minimaux : fichier et SHA-256 source, collecte UTC, membre XML,
+identifiant station en chaîne, code postal, commune, latitude/longitude
+normalisées selon la documentation officielle, libellé et identifiant du
+carburant, horodatage de relevé, prix en euros par litre. Ne pas exposer ni
+inventer d'enseigne.
+
+Règles :
+
+- fenêtre à partir de `2022-04-01` ; métropole seulement, contrôlée par les
+  codes postaux et non déduite de l'absence constatée des DOM ;
+- prix et coordonnées convertis avec les unités documentées, sans heuristique ;
+- format, date, valeur ou unité invalide = erreur avec source et station, pas
+  ligne silencieusement supprimée ;
+- deux lignes de même grain et même valeur peuvent être dédupliquées en aval ;
+  deux valeurs différentes au même grain sont un échec.
+
+2. Modèles métier
+
+Créer et documenter dans les `schema.yml` appropriés :
+
+- `stg_arretes` depuis le seed réglementaire, grain
+  `(carburant_mq, debut_effet)` ;
+- `fct_carburant_station`, grain
+  `(id_station, carburant_national, releve_utc)`, après déduplication déterministe
+  des archives collectées ;
+- `int_carburant_station_mois`, grain
+  `(mois, id_station, carburant_national)`, qui retient la dernière déclaration
+  de chaque station dans le mois ; une station ne pèse donc qu'une fois ;
+- `fct_distribution_carburants_metropole`, grain
+  `(mois, carburant_national)`, avec `q10`, `q25`, `mediane`, `q75`, `q90`,
+  `nombre_stations` et `mois_complet` ;
+- `fct_prix_max_mq`, grain `(carburant_mq, debut_effet)`, avec
+  `fin_effet_exclusive = lead(debut_effet)` et `NULL` pour la dernière période
+  encore ouverte ;
+- `fct_comparaison_carburants`, grain
+  `(type_ligne, carburant, date_reference)`, union de publication limitée aux
+  correspondances `directe`.
+
+Schéma exact de `fct_comparaison_carburants`, dans cet ordre :
+
+`type_ligne,carburant,libelle_carburant,date_reference,mois_complet,q10_eur_litre,q25_eur_litre,mediane_eur_litre,q75_eur_litre,q90_eur_litre,nombre_stations,prix_max_mq_eur_litre,fin_effet_exclusive,reference_acte,url_source_primaire,collecte_utc_nationale`
+
+`type_ligne` vaut `distribution_metropole` ou `plafond_martinique`. Les lignes
+de distribution renseignent quantiles, volume, complétude et collecte ; leurs
+champs d'acte et de plafond sont `NULL`. Les lignes de plafond font l'inverse.
+Cette union de présentation n'altère pas les grains des deux facts sources.
+
+3. Garde-fous dbt
+
+- clés uniques et colonnes obligatoires sur chaque grain ;
+- carburants et `type_ligne` limités aux valeurs manifestées ;
+- prix strictement positifs, ordre `q10 <= q25 <= médiane <= q75 <= q90` ;
+- un mois complet sans station ou une chute de `nombre_stations` supérieure à
+  30 % par rapport au mois complet précédent fait échouer le build ;
+- septembre 2026 est le seul mois incomplet autorisé dans ce lot et reste
+  visible ;
+- aucune période réglementaire vide, chevauchante ou inversée ; la dernière
+  période peut seule avoir une fin `NULL` ;
+- chaque plafond publié rejoint une correspondance directe et sa provenance ;
+- zéro code postal 97 attendu dans la fact nationale est mesuré et rendu comme
+  limite de la source, pas utilisé comme filtre opportuniste ;
+- tests unitaires dbt synthétiques pour déduplication, dernier relevé mensuel,
+  quantiles, baisse de volume, période au `2022-11-16` et union finale ;
+- tests Python synthétiques couvrant variantes XML réellement observées,
+  conversions, erreurs et provenance.
+
+Les tests et la CI restent hors réseau. Si les gros bruts locaux sont requis
+pour un build réel, créer une cible `verifier-carburants` séparée ; `make
+verify` doit néanmoins exécuter tous les tests unitaires, le parsing de projet
+dbt, les tests web et le build sans téléchargement.
+
+Porte C — Publication sûre
+
+Créer `publication/publier_carburants.py`, sur le modèle existant, vers
+`web/public/data/carburants.parquet`.
+
+Ordre obligatoire :
+
+1. `make verify` ;
+2. build réel des modèles carburants depuis les bruts locaux ;
+3. export d'un candidat voisin de la destination ;
+4. relecture du candidat et comparaison exacte des colonnes, lignes, bornes,
+   types et contenu ordonné avec `fct_comparaison_carburants` ;
+5. `os.replace` en toute dernière mutation.
+
+Échec à n'importe quelle étape : ancien Parquet intact, candidat supprimé,
+message explicite. Ajouter `publier-carburants` et une commande manuelle
+`carburants` qui enchaîne collecte puis publication. Ne pas modifier le sens de
+la cible IPC `publier` existante.
+
+Tests : vérification rouge, table absente/vide, schéma différent, contenu
+différent, candidat invalide, remplacement en dernier, conservation de
+l'ancienne destination, résumé final avec chemin/taille/SHA-256/lignes/bornes.
+
+Porte D — Écran carburants minimal
+
+Ajouter au site un choix de vue explicite entre l'écran IPC existant et un
+écran « Carburants ». Réutiliser la lecture `hyparquet`, Plot, le planificateur
+de redessin, le nettoyage des observateurs et les contrôles natifs accessibles.
+Le changement de vue ou de carburant ne déclenche aucun serveur applicatif.
+
+Pour chaque correspondance directe :
+
+- afficher le ruban métropolitain q10–q90, un repère q25–q75 et la médiane ;
+- superposer le plafond martiniquais en escalier aux dates d'effet exactes,
+  notamment le `2022-11-16` ;
+- conserver un seul axe vertical en euros par litre ;
+- distinguer visuellement distribution observée et règle administrative ;
+- montrer `nombre_stations`, période, date de collecte nationale et source de
+  l'acte sélectionné ;
+- signaler septembre 2026 comme incomplet et toute correspondance
+  `non_comparable` comme non affichée, avec sa raison ;
+- expliquer que le flux national couvre la métropole et que le plafond est un
+  maximum uniforme, sans conclure sur les prix effectivement payés en
+  Martinique ;
+- ne montrer aucune courbe si le Parquet est absent, vide ou invalide.
+
+L'écran IPC conserve ses calculs, textes et tests. L'intégration peut extraire
+des chargeurs/types/rendus dédiés aux carburants ; éviter un fichier monolithique
+et ne pas réécrire l'interface finale prévue à l'incrément 4.
+
+Tests web minimaux : schéma et nullabilité discriminée, tri, quantiles, mois
+incomplet, choix de vue, choix de carburant, labels/provenance, erreur sans
+repli, graphique étroit/large, nettoyage des observateurs et absence de double
+axe.
+
+Périmètre de fichiers
+
+Nouveaux attendus :
+
+- les deux collecteurs et leurs tests ;
+- les deux manifestes versionnés et le seed réglementaire ;
+- `transformation/carburants.py` et ses tests ;
+- les modèles dbt, schémas et tests décrits ;
+- `publication/publier_carburants.py` et ses tests ;
+- modules et tests web dédiés aux carburants ;
+- `web/public/data/carburants.parquet`, seulement après publication vérifiée.
+
+Modifiables : `Makefile`, `README.md`, fichiers dbt de schéma, point d'entrée et
+styles web, éventuellement `pyproject.toml`/`uv.lock` uniquement si une
+dépendance justifiée est indispensable, `docs/SOURCES.md` pour les faits
+réellement vérifiés, puis `ROADMAP.md` après acceptation.
+
+Ne pas modifier le fond des modèles IPC/ECSP, leurs Parquets bruts, le workflow
+CI, `CLAUDE.md`, `AGENTS.md`, `SPEC.txt` ou le prompt actif. Une adaptation
+strictement additive du point d'entrée ou de la publication ne doit pas changer
+les résultats IPC existants.
+
+Non-objectifs
+
+- Aucune comparaison de niveaux d'indices IPC territoriaux.
+- Aucun proxy entre carburants non équivalents, moyenne de grades d'essence,
+  appariement d'enseigne ou estimation de prix payé en Martinique.
+- Aucun gaz en bouteille, fioul, pétrole lampant ou carburant aviation.
+- Aucune carte de stations ni exposition de coordonnées dans le Parquet web.
+- Aucun OCR, scraper administratif générique, API maison ou serveur applicatif.
+- Aucun stockage distant, Git LFS, DVC, planification, déploiement ou
+  automatisation ; ces sujets restent à l'incrément 5.
+- Aucune refonte visuelle finale ; elle reste à l'incrément 4.
+- Aucun commit, push, branche, remote ou PR.
+- Ne pas commencer l'incrément 4.
+
+Vérification réelle finale
+
+1. Capturer avant travaux `git status`, HEAD et SHA-256 des trois bruts Insee
+   et des deux lockfiles ; prouver qu'ils sont inchangés à la fin, sauf lockfile
+   explicitement justifié.
+2. Exécuter les tests unitaires hors réseau et rendre leurs compteurs réels.
+3. Collecter réellement les six ressources nationales et tous les documents
+   martiniquais ; rendre chemin, taille et SHA-256 de chaque brut.
+4. Rendre le nombre exact d'actes et de lignes du seed, leurs bornes, les dates
+   hors premier du mois, exceptions et correspondances non comparables.
+5. Double-relire chaque prix réglementaire contre page, référence et URL.
+6. Exécuter le build réel carburants ; rendre lignes, grains, bornes,
+   carburants, volumes mensuels et mois incomplets de chaque modèle.
+7. Exécuter `make verify`, puis la publication réelle ; rendre les compteurs et
+   l'empreinte du Parquet.
+8. Vérifier dans un navigateur les vues IPC et carburants aux largeurs 375,
+   390 et 1440 px, erreurs console comprises ; conserver une preuve visuelle
+   dans `/private/tmp`, pas dans Git.
+9. Prouver que la publication échouée conserve l'ancien Parquet et que les
+   données IPC existantes donnent les mêmes résultats.
+10. `git diff --check`, diff complet relu, recherche globale des anciens noms
+    de sous-incréments, `git status --short --branch`.
+11. `graphify update .`, puis rejouer la requête Graphify de départ et vérifier
+    que la tranche complète est retrouvée.
+12. Faire relire l'implémentation non triviale par `panyen_verifier`.
+
+Fini
+
+Une commande manuelle collecte les sources, construit les modèles, refuse les
+trous et publie atomiquement un Parquet ; le site statique permet de comparer
+au moins un carburant réellement équivalent, avec distribution métropolitaine,
+plafond martiniquais aux dates exactes, provenance et mois incomplet visibles.
+Les sources et grains sont traçables, aucune donnée manquante ou équivalence
+n'est inventée, `make verify`, la vérification réelle, le navigateur et
+`panyen_verifier` sont verts.
+
+Rendre un seul rapport final : verdict ; fichiers touchés ; décisions de
+comparabilité ; inventaire et empreintes ; grains/volumes/bornes ; tests et
+compteurs ; preuve de publication atomique ; vérification visuelle ; limites et
+risques. Puis STOP avant l'incrément 4, sans commit ni push.
+
+========================================================================
+
+CORRECTIF 3b — PARSING NATIONAL EN FLUX (porte B, sans changement de résultat)
+
+Ce correctif s'insère dans l'incrément 3 ; il ne le remplace pas. Il ne
+touche qu'au mécanisme de lecture et de chargement de `stg_carburants`.
+Toutes les règles de la porte B restent valables mot pour mot.
+
+Constat mesuré le 2026-09-25 (Mac 8 Go, 8 cœurs)
+
+- Le build réel ne finit pas : `dbt/logs/dbt.log` s'arrête 0,1 s après
+  `START python table model main.stg_carburants`, sans erreur ni fin.
+- Les archives annuelles font de 337 à 386 Mo de XML décompressé ; 2025 contient
+  5 297 800 balises `<prix>`, soit environ 22 M observations de 2022 à 2026.
+- `parser_membre_xml` passe par `ET.fromstring` : l'arbre coûte 8,4 fois la
+  taille du XML (mesuré : 122 Mo pour le fichier jour de 14,5 Mo). Chaque
+  `ObservationCarburant` coûte 547 octets et son `astuple` 259 de plus. Pic
+  extrapolé : 6 à 7 Go pour une seule année.
+- `session.executemany` insère environ 1 200 lignes/s : il faudrait environ 5 h
+  pour 22 M lignes, même avec une mémoire suffisante.
+- Mesures de validation déjà faites. Un lot NDJSON écrit par la stdlib puis lu
+  par `read_json` de DuckDB avec colonnes VARCHAR explicites insère environ
+  150 000 lignes/s. L'aller-retour est exact pour une chaîne vide, un retour
+  à la ligne, une tabulation, des guillemets, un antislash, des accents, des
+  coordonnées négatives à 7 décimales et un prix à 4 décimales. `read_csv`
+  est écarté parce qu'il refuse les retours à la ligne entre guillemets et
+  transforme les chaînes vides en NULL. Une table temporaire DuckDB de 22 M
+  lignes suivie d'un CTAS culmine à environ 1 Go de RSS.
+
+Objectif
+
+`dbt build --select stg_carburants` se termine sur les données réelles, avec
+une mémoire bornée et en quelques minutes. La table produite contient
+exactement les observations que le parseur actuel produirait si la mémoire
+suffisait.
+
+Décision
+
+- Parser en flux : `ET.iterparse` sur `archive.open(membre)`. On traite chaque
+  `<pdv>` à son événement `end`, puis on vide la racine. On ne garde jamais le
+  document entier ni la liste de toutes les observations.
+- Charger par lots NDJSON : fichiers temporaires dans `build/`, insérés dans
+  `_stg_carburants` avec `read_json(format='newline_delimited', columns=…)`,
+  toutes colonnes en VARCHAR et liste de colonnes explicite. DuckDB fait la
+  conversion vers les types de la DDL existante, qui ne change pas.
+- Aucun thread, multiprocessing ni OpenMP. Aucune nouvelle dépendance : ni
+  pyarrow, ni pandas, ni lxml. Lockfiles inchangés.
+
+Contrat de code
+
+`transformation/carburants.py` (empreinte de référence avant travaux
+`e1f2c8c784950ae0b5d03e6f5703c5fec72e33893785a19ed7ba8884be3796a8`) :
+
+1. Extraire le corps de la boucle par `<pdv>` dans une fonction dédiée, sans
+   changer ses règles : filtre CP métropole, PDV sans coordonnées ignoré,
+   `<prix/>` entièrement vide ignoré, prix partiel, carburant inconnu ou id
+   manquant signalés par une erreur, fenêtre `2022-04-01`, prix ≤ 0 signalé
+   par une erreur, dernière occurrence retenue par `(nom, releve)` dans le PDV,
+   ordre de sortie identique.
+2. Ajouter `iterer_membre_xml(flux, *, fichier_source, sha256_source,
+   collecte_utc, membre_zip)`, un générateur fondé sur `iterparse`. Une
+   `ET.ParseError`, y compris au milieu du flux, lève `CarburantErreur` avec
+   le message actuel `XML mal formé dans {fichier_source}:{membre_zip}`.
+3. `parser_membre_xml(contenu: bytes, …)` garde sa signature et renvoie
+   `list(iterer_membre_xml(io.BytesIO(contenu), …))`.
+4. Ajouter `iterer_zip(chemin_zip, *, racine)`, un générateur. Sidecar,
+   identifiant historique et ZIP illisible sont contrôlés comme aujourd'hui.
+   Tous les noms de membres sont contrôlés contre `_membre_dangereux` avant la
+   première observation émise. Le ZIP est ouvert depuis le chemin, sans
+   `read_bytes()`. `parser_zip` et `parser_repertoire` gardent leur signature
+   et renvoient une liste.
+5. Ajouter `ecrire_lot_ndjson(observations, chemin)` (stdlib seule). Les
+   champs et leur ordre viennent de `dataclasses.fields(ObservationCarburant)`.
+   `Decimal` est écrit avec `str()`, `datetime` avec `isoformat()`, et
+   refusé s'il n'a pas de fuseau. `str` est écrit tel quel. Tout autre type
+   lève une erreur.
+
+`dbt/models/staging/stg_carburants.py` (empreinte de référence
+`7041824f0d91eb547c3464b404652de2edf6488d3302b9d1b94836695e593445`) :
+
+6. Garder la DDL, le grain, l'ordre des colonnes et `session.table(...)` en
+   retour. Remplacer `executemany` par un parcours de `iterer_zip` en lots
+   d'au plus 500 000 observations. Chaque lot est écrit dans un
+   `tempfile.TemporaryDirectory(dir=<racine>/build)` puis inséré avec
+   `INSERT INTO _stg_carburants (<colonnes>) SELECT <colonnes> FROM read_json(…)`.
+   Le dossier temporaire est supprimé même en cas d'échec. Un échec du
+   parseur fait échouer le modèle, sans table partielle publiée.
+
+Hors périmètre de ce correctif : `stg_ipc.py`, `transformation/sdmx.py`,
+les modèles dbt en aval, `ingest/`, `publication/`, `web/`, CI, Makefile,
+lockfiles, bruts. Changer une règle de parsing, un grain ou un filtre est
+interdit. Si une différence apparaît, c'est un bug du correctif ; elle ne se
+corrige pas en changeant la référence.
+
+Tests hors réseau (ajoutés à `tests/test_carburants.py`, existants inchangés)
+
+- Pour chaque XML de fixture existant, `list(iterer_membre_xml(...))` est égal
+  à `parser_membre_xml(...)` et à la sortie de la référence figée.
+- Un XML valide sur plusieurs PDV puis tronqué lève `CarburantErreur` avec la
+  provenance.
+- Un flux synthétique d'au moins 1 Mo, lu par un objet qui compte les octets
+  lus, émet sa première observation avant la lecture de la moitié du flux.
+- Un membre dangereux placé après un membre XML valide fait échouer
+  `iterer_zip` avant toute observation émise.
+- Aller-retour `ecrire_lot_ndjson` → DuckDB en mémoire → table à la DDL de
+  `stg_carburants` : identique, `EXCEPT` dans les deux sens, à un
+  `executemany` des mêmes tuples. Le jeu contient une commune vide, avec
+  guillemets, retour à la ligne, tabulation, antislash et accents, des
+  coordonnées négatives à 7 décimales et un prix à 4 décimales.
+- Un `datetime` sans fuseau ou un type inattendu fait échouer
+  `ecrire_lot_ndjson`.
+
+Preuve de parité sur données réelles (scripts dans `/private/tmp`, pas dans Git)
+
+A. Avant toute modification, copier `transformation/carburants.py` vers
+   `/private/tmp/panyen_3b/carburants_reference.py` et vérifier son empreinte
+   ci-dessus.
+B. Pour chacun des cinq ZIP historiques retenus par `lister_zips_historiques` :
+   - Référence : lire le membre en flux, découper les octets après chaque
+     `</pdv>` en blocs d'environ 20 000 PDV, envelopper chaque bloc avec le
+     prologue d'origine (tout ce qui précède le premier `<pdv `) et
+     `</pdv_liste>`, puis passer chaque bloc à `parser_membre_xml` de la
+     référence.
+   - Nouveau : `iterer_zip`.
+   - Comparer le nombre d'observations et un SHA-256 calculé sur le `repr`
+     des tuples, dans l'ordre d'émission. Aucune différence n'est tolérée.
+C. Après `dbt build --select stg_carburants`, recalculer dans DuckDB le
+   nombre de lignes par `fichier_source` et le comparer à B. Recalculer le
+   même SHA-256 sur les lignes relues de `stg_carburants`, triées par grain,
+   et le comparer au SHA-256 de B trié par grain.
+
+Mesures à rendre
+
+- `/usr/bin/time -l uv run dbt build --project-dir dbt --profiles-dir dbt
+  --select stg_carburants` : durée totale, RSS maximal, lignes par
+  `fichier_source`, lignes totales, bornes de `releve_utc`.
+- Seuils : build fini, RSS maximal ≤ 2 Go, durée ≤ 20 min. Au-delà : STOP et
+  rapport chiffré, sans optimisation supplémentaire improvisée.
+- Puis `make verifier-carburants` : rendre le résultat de chaque modèle et
+  test en aval. Un échec en aval est rapporté avec sa cause, pas corrigé dans
+  ce correctif.
+
+Fini
+
+Tests hors réseau verts, `uv run ruff check .` vert, `make verify` vert. La
+parité B et C est prouvée sur les cinq archives. Les seuils de mesure sont
+tenus. `git diff --check` est propre. Le diff se limite aux trois fichiers
+Python cités plus cette section de spec. Rapport unique puis STOP, sans
+commit ni push.
+
+========================================================================
+
+REPRISE 3c — FIN DE L'INCRÉMENT 3 APRÈS LE CORRECTIF 3b
+
+Cette section s'insère dans l'incrément 3 ; elle ne le remplace pas. Les
+portes A à D, les non-objectifs, la « Vérification réelle finale » et « Fini »
+restent valables mot pour mot, sauf les précisions ci-dessous.
+
+État de départ constaté le 2026-09-25
+
+- Porte A : bruts nationaux collectés le 2026-09-10 (`annee_2022` à
+  `annee_2025`, `stock_2026`, `jour`) et documents martiniquais sous
+  `data/raw/carburants/martinique/primaires` ; seed réglementaire de 108
+  lignes.
+- Porte B : correctif 3b vérifié. Parité B et C identiques sur 22 200 789
+  observations, `make verifier-carburants` PASS=14, `make verify` vert, RSS
+  max 670 Mo.
+- Porte C : `publication/publier_carburants.py` existe. La dernière
+  publication réelle (2026-09-12, `build/publier-carburants.log`) a échoué
+  avec le code 143 pendant `stg_carburants`. Un
+  `web/public/data/carburants.parquet` daté du 2026-09-12 18:30 existe
+  pourtant (54 lignes `distribution_metropole`, 54 `plafond_martinique`) :
+  sa provenance n'est pas prouvée, il ne compte pas comme publication vérifiée.
+- Porte D : modules web carburants présents, jamais vérifiés en navigateur.
+
+Objectif
+
+Terminer l'incrément 3 : une publication réelle vérifiée, l'écran vérifié en
+navigateur et le rapport final unique demandé par « Fini ».
+
+Précisions
+
+1. Pas de nouvelle collecte. Les bruts du 2026-09-10 sont la collecte de
+   référence du lot. L'étape 3 de la vérification finale devient : inventaire
+   des bruts existants avec chemin, taille et SHA-256, prouvés inchangés.
+2. Machine de 8 Go : ne jamais lancer en parallèle deux commandes lourdes
+   (`make verify`, `make verifier-carburants`, `make publier-carburants`,
+   `dbt build`, `pytest`, `vitest`). Un arrêt 137 ou 143 est rapporté avec la
+   commande, l'heure et ce qui tournait en même temps ; relancer une fois
+   seule, puis STOP si l'arrêt se reproduit.
+3. La publication passe exclusivement par `make publier-carburants`. Rendre
+   les SHA-256 du Parquet avant et après ; le Parquet du 2026-09-12 n'est
+   jamais réutilisé ni recopié à la main.
+4. La preuve de conservation en cas d'échec (étape 9) se fait par les tests
+   existants ou sur une copie dans `/private/tmp/panyen_3c/`, jamais en
+   cassant les bruts, le Parquet publié ou la base de travail.
+5. `web/public/data/differentiel_ipc.parquet` doit garder le même SHA-256.
+6. Seul un bug démontré par la vérification peut modifier le code. Le
+   correctif reste minimal, dans le périmètre de fichiers de l'incrément 3,
+   testé en rouge puis vert, et il est cité dans le rapport. Ne pas toucher à
+   la mécanique du correctif 3b sans nouvelle parité B/C.
+
+Fini
+
+« Fini » de l'incrément 3 tenu, rapport unique puis STOP. Aucun commit, push
+ni coche dans `ROADMAP.md` : Mathis décide après lecture du rapport.

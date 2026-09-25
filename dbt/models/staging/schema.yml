@@ -118,3 +118,84 @@ models:
         description: Type SDMX OBS_TYPE, conservé sans correction.
         data_tests:
           - not_null
+
+  - name: stg_carburants
+    description: >
+      Relevés nationaux bruts après parsing ZIP/XML. Grain : (fichier_source,
+      membre_zip, id_station, carburant_national, releve_utc). Métropole
+      seulement (filtre code postal) ; aucune enseigne.
+    columns:
+      - name: fichier_source
+        description: Chemin relatif du ZIP brut.
+        data_tests:
+          - not_null
+      - name: sha256_source
+        data_tests:
+          - not_null
+      - name: collecte_utc
+        data_tests:
+          - not_null
+      - name: membre_zip
+        data_tests:
+          - not_null
+      - name: id_station
+        data_tests:
+          - not_null
+      - name: carburant_national
+        data_tests:
+          - not_null
+      - name: releve_utc
+        data_tests:
+          - not_null
+      - name: prix_eur_litre
+        data_tests:
+          - not_null
+
+  - name: stg_arretes
+    description: >
+      Actes réglementaires martiniquais depuis le seed sourcé. Grain :
+      (carburant_mq, debut_effet).
+    columns:
+      - name: debut_effet
+        description: Date d'effet inclusive du plafond.
+        data_tests:
+          - not_null
+      - name: carburant_mq
+        description: Identifiant réglementaire martiniquais.
+        data_tests:
+          - not_null
+      - name: prix_max_eur_litre
+        data_tests:
+          - not_null
+      - name: reference_acte
+        data_tests:
+          - not_null
+      - name: url_source_primaire
+        data_tests:
+          - not_null
+
+  - name: stg_correspondance_carburants
+    description: >
+      Manifeste versionné des équivalences produit. Grain : (carburant_mq,
+      carburant_national). Seules les lignes directe alimentent la comparaison.
+    columns:
+      - name: carburant_mq
+        data_tests:
+          - not_null
+      - name: carburant_national
+        data_tests:
+          - not_null
+      - name: statut_comparabilite
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - directe
+                  - non_comparable
+      - name: url_justification
+        data_tests:
+          - not_null
+      - name: note
+        data_tests:
+          - not_null

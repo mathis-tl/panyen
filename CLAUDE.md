@@ -5,8 +5,10 @@
 Un site de données qui répond à une question : **l'écart de prix mesuré en 2022
 entre la Martinique et la France hexagonale s'est-il creusé ou resserré depuis ?**
 
-Pipeline autonome (Insee + prix des carburants) → DuckDB + dbt → Parquet →
-page statique qui interroge le Parquet dans le navigateur. Aucun serveur.
+Pipeline de données (Insee + prix des carburants) → DuckDB + dbt → Parquet →
+page statique qui lit le Parquet avec hyparquet dans le navigateur. Aucun serveur.
+La collecte et la publication sont encore manuelles ; leur planification relève
+de l'incrément 5.
 
 ## Règles de session — non négociables
 
@@ -57,25 +59,34 @@ bloquant, pas un détail de présentation.
   En-tête recommandé : `Accept: application/vnd.sdmx.structurespecificdata+xml;version=2.1`.
 - idbanks confirmés (base 2025, ensemble des ménages) :
   - `011813726` Martinique (`D972`) · Alimentation · indice
-  - `011813720` France métropolitaine (`FM`) · Alimentation · indice — référence active
-  - `011813717` France entière (`FE`) · Alimentation · indice — lot historique, plus collecté
+  - `011813720` France métropolitaine (`FM`) · Alimentation · indice
   - `011813873` Martinique · Énergie · indice
+  - `011813867` France métropolitaine · Énergie · indice
+  - `011813789` Martinique · Produits manufacturés · indice
+  - `011813783` France métropolitaine · Produits manufacturés · indice
+  - `011813915` Martinique · Services · indice
+  - `011813909` France métropolitaine · Services · indice
+  - `011813717` France entière (`FE`) · Alimentation · indice — lot historique, plus collecté
   - `011813728` Martinique · Alimentation · glissement annuel
   - `011813719` France · Alimentation · glissement annuel
-- Collecte IPC alimentaire active : un seul appel `011813726+011813720` depuis
-  `2022-04`. Le XML historique `{011813726, 011813717}` reste au brut, étiqueté
+- Collecte IPC active : un seul appel des huit séries des quatre postes depuis
+  `2022-04`, écrit sous `ipc_postes_<horodatage>.xml`. Le XML historique
+  `{011813726, 011813717}` reste au brut, étiqueté
   `france_entiere_historique`.
-- **Règle des neuf rangs** : dans un poste donné, les territoires se suivent
-  (France, France métropolitaine, Guadeloupe, Martinique, Guyane, La Réunion) avec
-  trois séries chacun (indice, variation mensuelle, glissement annuel). L'indice
-  martiniquais tombe **neuf rangs après** l'indice France. Vérifié sur alimentation
-  et énergie. À confirmer par balayage pour les autres postes.
+- **Règle des rangs** : dans un poste donné, les territoires se suivent
+  (France entière, France métropolitaine, Guadeloupe, Martinique, Guyane,
+  La Réunion) avec trois séries chacun (indice, variation mensuelle, glissement
+  annuel). L'indice martiniquais tombe **neuf rangs après** l'indice France
+  entière (`FE`), donc **six rangs après** l'indice France métropolitaine
+  (`FM`). Vérifié sur les quatre postes.
 - Prix des carburants : `https://donnees.roulez-eco.fr/opendata/{instantane,jour,jour/AAAAMMJJ,annee/AAAA}`,
   archives annuelles depuis 2007, XML compressé, licence ouverte.
 - **Les DOM sont absents du fichier national** : mesuré le 29/08/2026, 9 915 stations,
   dont 0 en code postal 97. Ce n'est pas un trou : l'obligation de déclarer vise les
   stations vendant ≥ 500 m³/an en métropole ; outre-mer le prix est plafonné par
-  arrêté préfectoral mensuel, identique dans tout le département.
+  arrêté préfectoral, identique dans tout le département. Les tarifs sont
+  généralement révisés chaque mois, mais une période d'effet peut commencer en
+  cours de mois ; son grain est la date d'effet, pas le mois civil.
 
 ## Pièges connus dans les données
 

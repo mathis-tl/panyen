@@ -1,4 +1,4 @@
-name: CI tranche alimentaire
+name: CI panyen
 
 on:
   pull_request:

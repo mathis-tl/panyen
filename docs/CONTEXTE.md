@@ -64,8 +64,9 @@ territoires n'obéissent pas au même régime.
   prix, qui sont libres. Le fichier national contient des milliers de points,
   rafraîchis toutes les dix minutes.
 - **Martinique** : personne ne déclare rien, parce qu'il n'y a rien à déclarer. Le
-  préfet fixe un prix maximum, révisé au 1er de chaque mois, identique dans tout
-  le département.
+  préfet fixe un prix maximum, identique dans tout le département. Les tarifs
+  sont généralement révisés chaque mois, mais leur date d'effet n'est pas
+  systématiquement le premier jour du mois.
 
 Mesuré le 29 août 2026 : **9 915 stations dans le fichier national, dont 0 en code
 postal 97**. Ce zéro n'est pas une lacune à combler, c'est le fait à montrer.
@@ -138,5 +139,6 @@ poste et par mois. » Sans grain explicite, on joint de travers.
 **Parquet** — Un format compressé pensé pour l'analyse, bien plus petit et rapide
 qu'un CSV.
 
-**DuckDB-WASM** — La même base, compilée pour le navigateur. Le visiteur charge le
-Parquet une fois, puis chaque filtre est une requête SQL dans son onglet.
+**hyparquet** — Le lecteur Parquet JavaScript utilisé par la page statique. Le
+visiteur charge le fichier une fois, puis les filtres s'appliquent aux lignes
+déjà en mémoire dans son navigateur.

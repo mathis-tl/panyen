@@ -1,6 +1,6 @@
 # Panyen Context
 
-Context consolidated on 2026-09-01 from `CLAUDE.md`, `README.md`, `docs/CONTEXTE.md`, `docs/SOURCES.md`, and `ROADMAP.md`.
+Context consolidated on 2026-09-10 from `CLAUDE.md`, `README.md`, `docs/CONTEXTE.md`, `docs/SOURCES.md`, and `ROADMAP.md`.
 
 ## Project in one line
 
@@ -11,7 +11,7 @@ Context consolidated on 2026-09-01 from `CLAUDE.md`, `README.md`, `docs/CONTEXTE
 - The site compares evolutions, not price levels, because each CPI index is base-100 on its own territory.
 - The only known level gap comes from the Insee 2022 spatial comparison survey.
 - Any extrapolation of today's level gap is an estimate and must be labeled as such.
-- Fuel is the exception where real monthly prices exist, but Martinique and mainland France still follow different pricing regimes.
+- Fuel is the exception where real prices exist, but Martinique and mainland France still follow different pricing regimes. Martinique's regulated ceilings are generally revised monthly, while the business grain is the effective date because a change can start mid-month.
 
 ## Current source-of-truth files
 
@@ -23,11 +23,12 @@ Context consolidated on 2026-09-01 from `CLAUDE.md`, `README.md`, `docs/CONTEXTE
 
 ## Engineering shape
 
-- Pipeline target: `Insee + fuel data -> DuckDB + dbt -> Parquet -> static page using DuckDB-WASM`.
+- Pipeline target: `Insee + fuel data -> DuckDB + dbt -> Parquet -> static page using hyparquet`.
 - No server.
 - `ingest/` writes raw timestamped inputs only.
 - dbt layering is expected to be `stg_ -> int_ -> fct_/dim_`.
 - If a dbt quality test fails, nothing new is published.
+- Collection and publication are still manual; daily/monthly scheduling belongs to increment 5.
 
 ## User-facing rules that should affect implementation guidance
 
@@ -40,8 +41,8 @@ Context consolidated on 2026-09-01 from `CLAUDE.md`, `README.md`, `docs/CONTEXTE
 ## Known project facts already established
 
 - Insee SDMX is open and usable without a key.
-- Confirmed 2025-base idbanks already include food for Martinique and France, plus Martinique energy.
-- The "nine-rank rule" is a working heuristic for finding related idbanks and still needs confirmation for some categories.
+- Eight active 2025-base idbanks cover four verified posts (food, energy, manufactured products, and services) for Martinique and mainland France; one call writes `ipc_postes_<timestamp>.xml`.
+- The rank rule is verified on all four posts: Martinique's index is +9 from France (`FE`) and +6 from mainland France (`FM`).
 - National fuel open data contained 9,915 stations on 2026-08-29 and zero DOM station entries; this absence is part of the domain reality, not a data-quality hole.
 - Bouclier Qualité Prix is intentionally excluded because it does not provide per-product price series.
 

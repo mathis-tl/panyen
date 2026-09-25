@@ -77,15 +77,27 @@ mois commun est explicite et le changement de poste ne déclenche aucun appel se
 
 ## Incrément 3 — Tranche verticale carburants
 
-**But utilisateur** : comparer la distribution des prix métropolitains au plafond
-mensuel martiniquais, deux régimes de prix explicitement différents.
+**But utilisateur** : comparer la distribution des prix métropolitains aux
+plafonds réglementés martiniquais, généralement révisés chaque mois mais pas
+systématiquement applicables le premier jour, deux régimes de prix explicitement
+différents.
 
-- [ ] Collecter le flux national quotidien et une archive annuelle en brut.
-- [ ] Collecter ou saisir les arrêtés martiniquais avec leur source exacte.
-- [ ] Construire `stg_carburants`, `stg_arretes`, `fct_carburant_station` et
-      `fct_prix_max_mq` avec grains déclarés.
-- [ ] Tester les valeurs acceptées et les chutes de volumétrie supérieures à 30 %.
-- [ ] Afficher distribution métropolitaine et plafonds martiniquais en escalier.
+- [ ] Inventorier puis collecter les sources d'avril 2022 à septembre 2026 :
+      archives/flux nationaux, actes martiniquais, bruts locaux immuables et
+      empreintés. Le grain des actes est la date d'effet, sans supposer une
+      seule révision par mois.
+- [ ] Transformer les sources en modèles aux grains déclarés, sans pondérer une
+      station par son nombre de mises à jour ; tester les valeurs, la continuité
+      des plafonds et les chutes de volumétrie supérieures à 30 %.
+- [ ] Publier un Parquet vérifié et afficher la distribution métropolitaine avec
+      les plafonds martiniquais en escalier, les différences de régime et les
+      mois incomplets étant visibles.
+- [ ] Vérifier la tranche complète sur données réelles puis faire relire le
+      changement avant de passer à l'incrément 4.
+
+Ces lignes sont les phases internes d'un seul incrément : elles s'enchaînent
+dans la même boucle. Une séparation supplémentaire n'est décidée qu'en présence
+d'un blocage documentaire ou méthodologique démontré.
 
 **Fini quand** : les deux sources sont rejouables et traçables, l'absence des DOM
 dans le flux national est expliquée et aucune donnée manquante n'est masquée.

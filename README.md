@@ -17,8 +17,9 @@ les autres postes, seule l'évolution est comparable.
 
 - Toute valeur affichée vient d'une source publique identifiée, avec sa date de
   collecte et son identifiant d'origine.
-- Le pipeline se rafraîchit seul : mensuellement pour les indices, quotidiennement
-  pour les carburants.
+- La collecte et la publication sont encore lancées manuellement. Leur
+  automatisation quotidienne pour les carburants et mensuelle pour les indices
+  est prévue à l'incrément 5.
 - Si un test de qualité échoue, **rien n'est republié** : le site conserve sa
   dernière version saine plutôt que d'afficher un chiffre faux.
 

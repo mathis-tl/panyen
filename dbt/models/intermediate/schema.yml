@@ -1,6 +1,30 @@
 version: 2
 
 models:
+  - name: int_carburant_station_mois
+    description: >
+      Dernière déclaration de chaque station dans le mois. Grain : (mois,
+      id_station, carburant_national). Une station ne pèse qu'une fois par
+      mois et par carburant.
+    columns:
+      - name: mois
+        description: Premier jour du mois civil du relevé retenu.
+        data_tests:
+          - not_null
+      - name: id_station
+        data_tests:
+          - not_null
+      - name: carburant_national
+        data_tests:
+          - not_null
+      - name: releve_utc
+        description: Horodatage du dernier relevé retenu dans le mois.
+        data_tests:
+          - not_null
+      - name: prix_eur_litre
+        data_tests:
+          - not_null
+
   - name: int_ipc_rebase
     description: >
       Rebasage intra-territoire et intra-poste des indices du dernier lot
