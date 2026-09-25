@@ -31,3 +31,4 @@ node_modules/
 # outils locaux d'agents
 graphify-out/
 .codex-handoff.md
+.agent-work/

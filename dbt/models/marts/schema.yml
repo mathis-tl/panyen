@@ -96,6 +96,116 @@ models:
                   - mesure_ecsp_2022
                   - estimation_a_partir_ecsp_2022
 
+  - name: fct_carburant_station
+    description: >
+      Relevés nationaux dédupliqués. Grain : (id_station, carburant_national,
+      releve_utc). Métropole seulement ; aucune enseigne ni coordonnée exposée
+      dans le Parquet web.
+    columns:
+      - name: id_station
+        description: Identifiant station du flux national.
+        data_tests:
+          - not_null
+      - name: carburant_national
+        description: Nom du carburant tel que publié dans le flux national.
+        data_tests:
+          - not_null
+      - name: releve_utc
+        description: Horodatage du relevé de prix, fuseau UTC.
+        data_tests:
+          - not_null
+      - name: prix_eur_litre
+        description: Prix déclaré en euros par litre, strictement positif.
+        data_tests:
+          - not_null
+
+  - name: fct_distribution_carburants_metropole
+    description: >
+      Distribution mensuelle des prix de station. Grain : (mois,
+      carburant_national). Quantiles empiriques q10–q90 et mois_complet.
+    columns:
+      - name: mois
+        description: Premier jour du mois civil.
+        data_tests:
+          - not_null
+      - name: carburant_national
+        description: Carburant national agrégé.
+        data_tests:
+          - not_null
+      - name: q10_eur_litre
+        data_tests:
+          - not_null
+      - name: q25_eur_litre
+        data_tests:
+          - not_null
+      - name: mediane_eur_litre
+        data_tests:
+          - not_null
+      - name: q75_eur_litre
+        data_tests:
+          - not_null
+      - name: q90_eur_litre
+        data_tests:
+          - not_null
+      - name: nombre_stations
+        data_tests:
+          - not_null
+      - name: mois_complet
+        description: Faux uniquement pour septembre 2026 dans ce lot.
+        data_tests:
+          - not_null
+
+  - name: fct_prix_max_mq
+    description: >
+      Plafonds réglementaires martiniquais en périodes d'effet. Grain :
+      (carburant_mq, debut_effet). fin_effet_exclusive = lead(debut_effet),
+      NULL pour la dernière période ouverte.
+    columns:
+      - name: carburant_mq
+        description: Identifiant réglementaire martiniquais.
+        data_tests:
+          - not_null
+      - name: debut_effet
+        description: Date d'effet inclusive du plafond.
+        data_tests:
+          - not_null
+      - name: prix_max_eur_litre
+        data_tests:
+          - not_null
+      - name: reference_acte
+        data_tests:
+          - not_null
+      - name: url_source_primaire
+        data_tests:
+          - not_null
+
+  - name: fct_comparaison_carburants
+    description: >
+      Union de publication pour le Parquet web. Grain : (type_ligne, carburant,
+      date_reference). Limité aux correspondances directe. Nullabilité
+      discriminée par type_ligne.
+    columns:
+      - name: type_ligne
+        description: distribution_metropole ou plafond_martinique.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - distribution_metropole
+                  - plafond_martinique
+      - name: carburant
+        description: Identifiant produit côté distribution ou plafond.
+        data_tests:
+          - not_null
+      - name: libelle_carburant
+        data_tests:
+          - not_null
+      - name: date_reference
+        description: Mois (distribution) ou date d'effet (plafond).
+        data_tests:
+          - not_null
+
 # Les indices des unit tests sont synthétiques, pas des données Insee.
 
 unit_tests:

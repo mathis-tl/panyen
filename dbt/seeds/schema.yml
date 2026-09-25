@@ -63,3 +63,34 @@ seeds:
           - accepted_values:
               arguments:
                 values: ["https://www.insee.fr/fr/statistiques/7649202"]
+
+  - name: prix_max_carburants_martinique
+    description: >
+      Seed réglementaire des plafonds martiniquais. Grain : (carburant_mq,
+      debut_effet). 108 lignes d'avril 2022 à septembre 2026, provenance
+      portée par reference_acte et url_source_primaire.
+    config:
+      column_types:
+        debut_effet: date
+        prix_max_eur_litre: decimal(12,4)
+    columns:
+      - name: debut_effet
+        data_tests:
+          - not_null
+      - name: carburant_mq
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - gazole
+                  - super_sans_plomb
+      - name: prix_max_eur_litre
+        data_tests:
+          - not_null
+      - name: reference_acte
+        data_tests:
+          - not_null
+      - name: url_source_primaire
+        data_tests:
+          - not_null

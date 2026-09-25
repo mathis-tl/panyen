@@ -1,4 +1,6 @@
-.PHONY: install verify ci dev publier
+.PHONY: install verify ci dev publier \
+	collecter-carburants-national collecter-arretes-martinique collecter-carburants \
+	verifier-carburants publier-carburants carburants
 
 install:
 	uv sync --locked
@@ -20,6 +22,23 @@ ci:
 
 publier:
 	uv run python publication/publier_differentiel_ipc.py
+
+collecter-carburants-national:
+	uv run python ingest/prix_carburants_national.py
+
+collecter-arretes-martinique:
+	uv run python ingest/arretes_carburants_martinique.py
+
+collecter-carburants: collecter-carburants-national collecter-arretes-martinique
+
+verifier-carburants:
+	mkdir -p build
+	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_carburants+ stg_arretes+ prix_max_carburants_martinique+
+
+publier-carburants:
+	uv run python publication/publier_carburants.py
+
+carburants: collecter-carburants publier-carburants
 
 dev:
 	npm --prefix web run dev

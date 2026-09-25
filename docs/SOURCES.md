@@ -1,4 +1,4 @@
-# Sources — état vérifié au 6 septembre 2026
+# Sources — inventaire vérifié au 9 septembre 2026
 
 « Vérifié » signifie que la source a été appelée et la réponse regardée, pas
 qu'une page prétend qu'elle existe. Toute source ajoutée plus tard suit le même
@@ -128,13 +128,21 @@ https://donnees.roulez-eco.fr/opendata/instantane        (toutes les 10 min)
 https://donnees.roulez-eco.fr/opendata/instantane_ruptures
 https://donnees.roulez-eco.fr/opendata/jour              (30 derniers jours)
 https://donnees.roulez-eco.fr/opendata/jour/AAAAMMJJ
-https://donnees.roulez-eco.fr/opendata/annee/AAAA        (2007 → 2025)
+https://donnees.roulez-eco.fr/opendata/annee             (année courante)
+https://donnees.roulez-eco.fr/opendata/annee/AAAA        (archives closes, 2007 → 2025)
 ```
 
 XML compressé en ZIP. Champs : identifiant du point de vente, latitude et
 longitude (**à diviser par 100 000**), code postal, ville, horaires, services,
 et par carburant le prix avec son horodatage de mise à jour. Les enseignes ne sont
 pas fournies.
+
+Pour la tranche validée avril 2022 → septembre 2026, l'index officiel annonce
+34 Mo pour 2022, 28 Mo pour 2023, 26 Mo pour 2024 et 31 Mo pour 2025. Le stock
+de l'année courante est mutable et mis à jour quotidiennement ; il ne faut pas
+inventer une URL d'archive `/annee/2026` avant sa publication officielle. Les
+ZIP nationaux restent donc dans le cache local ignoré `data/raw/carburants/`,
+avec URL, taille et SHA-256 dans un sidecar de collecte.
 
 ### Couverture : métropole seulement — mesuré
 
@@ -162,16 +170,22 @@ print(len(cps), sum(1 for c in cps if c and c.startswith("97")))
 
 ## 5. Prix maximum des produits pétroliers en Martinique
 
-**Statut** : vérifié, publication mensuelle, format rédigé (pas de flux).
+**Statut** : vérifié, format rédigé sans flux structuré maintenu.
 
-Arrêtés préfectoraux révisant le prix maximum au 1er de chaque mois. Relevés pour
-mars, avril, mai et juillet 2026.
+Les arrêtés préfectoraux fixent une date d'effet qui est généralement le premier
+jour du mois, mais pas toujours. Une révision officielle a notamment pris effet
+le **16 novembre 2022**. Le grain correct est donc une période d'effet, pas un
+mois civil ; la fin d'une période ne peut être déduite du prochain acte qu'après
+contrôle de continuité.
 
-- <https://www.martinique.gouv.fr/> — rubrique Actualités
-- <https://martinique.deets.gouv.fr/>
+- <https://www.martinique.gouv.fr/Publications/Recueils-des-actes-administratifs-publies/Archives>
+  — archives RAAP/RAA 2015–2026, source primaire ;
+- <https://martinique.deets.gouv.fr/prix-des-produits-petroliers> — publications
+  et archives AP/CP.
 
-Une valeur par mois et par carburant, avec la référence de l'arrêté pour que
-chaque ligne reste vérifiable.
+Le premier lot à inventorier est figé du 1er avril 2022 au 1er septembre 2026.
+Chaque date d'effet doit porter la référence exacte de l'acte et son URL ; les
+communiqués servent de contre-vérification, jamais de remplacement silencieux.
 
 ---
 
