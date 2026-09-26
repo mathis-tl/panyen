@@ -82,17 +82,17 @@ plafonds réglementés martiniquais, généralement révisés chaque mois mais p
 systématiquement applicables le premier jour, deux régimes de prix explicitement
 différents.
 
-- [ ] Inventorier puis collecter les sources d'avril 2022 à septembre 2026 :
+- [x] Inventorier puis collecter les sources d'avril 2022 à septembre 2026 :
       archives/flux nationaux, actes martiniquais, bruts locaux immuables et
       empreintés. Le grain des actes est la date d'effet, sans supposer une
       seule révision par mois.
-- [ ] Transformer les sources en modèles aux grains déclarés, sans pondérer une
+- [x] Transformer les sources en modèles aux grains déclarés, sans pondérer une
       station par son nombre de mises à jour ; tester les valeurs, la continuité
       des plafonds et les chutes de volumétrie supérieures à 30 %.
-- [ ] Publier un Parquet vérifié et afficher la distribution métropolitaine avec
+- [x] Publier un Parquet vérifié et afficher la distribution métropolitaine avec
       les plafonds martiniquais en escalier, les différences de régime et les
       mois incomplets étant visibles.
-- [ ] Vérifier la tranche complète sur données réelles puis faire relire le
+- [x] Vérifier la tranche complète sur données réelles puis faire relire le
       changement avant de passer à l'incrément 4.
 
 Ces lignes sont les phases internes d'un seul incrément : elles s'enchaînent
