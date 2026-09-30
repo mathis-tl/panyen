@@ -94,3 +94,60 @@ seeds:
       - name: url_source_primaire
         data_tests:
           - not_null
+
+  - name: evenements_contexte
+    description: >
+      Événements datés et sourcés qui éclairent les séries (mobilisations,
+      mesures publiques, accords de prix, chocs extérieurs, études). Grain :
+      (date_evenement, titre). Chaque ligne est vérifiée dans
+      docs/analyse/validation.md. Contexte, jamais une mesure.
+    config:
+      column_types:
+        date_evenement: date
+        consulte_le: date
+    columns:
+      - name: date_evenement
+        description: Date de l'événement ; premier jour du mois si precision_date = mois.
+        data_tests:
+          - not_null
+      - name: precision_date
+        description: Précision réelle de la date, sans en inventer davantage.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["jour", "mois"]
+      - name: titre
+        data_tests:
+          - not_null
+      - name: type_evenement
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - mobilisation
+                  - mesure_publique
+                  - accord_prix
+                  - choc_exterieur
+                  - etude
+      - name: postes_concernes
+        description: >
+          Postes séparés par « | » parmi alimentation, energie,
+          produits_manufactures, services, ou « tous ».
+        data_tests:
+          - not_null
+      - name: url_source
+        description: URL exacte de la page ouverte et vérifiée.
+        data_tests:
+          - not_null
+      - name: type_source
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["officielle", "presse", "etude", "partie_prenante"]
+      - name: consulte_le
+        description: Date de la vérification de la source.
+        data_tests:
+          - not_null
