@@ -19,7 +19,7 @@ les autres postes, seule l'évolution est comparable.
   collecte et son identifiant d'origine.
 - La collecte et la publication sont encore lancées manuellement. Leur
   automatisation quotidienne pour les carburants et mensuelle pour les indices
-  est prévue à l'incrément 5.
+  est prévue à l'incrément 6.
 - Si un test de qualité échoue, **rien n'est republié** : le site conserve sa
   dernière version saine plutôt que d'afficher un chiffre faux.
 

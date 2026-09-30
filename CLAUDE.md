@@ -8,7 +8,7 @@ entre la Martinique et la France hexagonale s'est-il creusé ou resserré depuis
 Pipeline de données (Insee + prix des carburants) → DuckDB + dbt → Parquet →
 page statique qui lit le Parquet avec hyparquet dans le navigateur. Aucun serveur.
 La collecte et la publication sont encore manuelles ; leur planification relève
-de l'incrément 5.
+de l'incrément 6.
 
 ## Règles de session — non négociables
 

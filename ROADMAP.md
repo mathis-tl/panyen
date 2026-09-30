@@ -104,14 +104,36 @@ dans le flux national est expliquée et aucune donnée manquante n'est masquée.
 
 ---
 
-## Incrément 4 — Interface finale accessible
+## Incrément 4 — Analyse et contexte
+
+**But utilisateur** : comprendre ce que les chiffres montrent et ce qui s'est
+passé en Martinique depuis 2022, pas seulement lire des courbes.
+
+- [ ] Faire mener une recherche sourcée : validation de nos chiffres contre des
+      publications indépendantes, chronologie 2022 → aujourd'hui, mécanismes
+      par poste avec niveau de preuve, dimension humaine et sociale publiée.
+- [ ] Vérifier chaque lien et chaque chiffre repris ; écarter ce qui n'est pas
+      vérifiable.
+- [ ] Rédiger le récit en trois registres visibles : **Mesuré** (nos données),
+      **Contexte** (faits sourcés), **Lecture** (interprétation assumée).
+- [ ] Verser les événements datés dans une table sourcée, pour annotation future.
+- [ ] Relecture et réécriture par Mathis.
+
+**Fini quand** : chaque phrase du récit est soit calculée par le pipeline, soit
+reliée à une source ouverte et vérifiée, soit marquée comme lecture ; aucune
+causalité n'est affirmée sans étude qui la démontre ; Mathis a relu le texte.
+
+---
+
+## Incrément 5 — Interface finale accessible
 
 **But utilisateur** : comprendre le résultat, sa période et ses limites sans
 connaître les indices de prix.
 
 - [ ] Rechercher et choisir des bibliothèques maintenues avant tout composant maison.
 - [ ] Produire trois variantes de l'écran principal, puis en choisir une.
-- [ ] Finaliser les écrans ECSP 2022, IPC et carburants.
+- [ ] Finaliser les écrans ECSP 2022, IPC et carburants, en y intégrant le récit
+      et les annotations de l'incrément 4.
 - [ ] Valider palette daltonisme, thèmes clair/sombre, légendes, labels directs,
       chiffres tabulaires et absence de double axe.
 - [ ] Garder les interactions fréquentes sobres ; animations sous 300 ms,
@@ -125,7 +147,7 @@ la palette est validée dans les deux thèmes et la revue d'animations est sans 
 
 ---
 
-## Incrément 5 — Automatisation et fraîcheur
+## Incrément 6 — Automatisation et fraîcheur
 
 **But utilisateur** : savoir si les données sont actuelles et fiables.
 
@@ -139,7 +161,7 @@ une exécution cassée conserve la dernière version saine.
 
 ---
 
-## Incrément 6 — Reproductibilité et publication
+## Incrément 7 — Reproductibilité et publication
 
 **But utilisateur** : permettre à un tiers de comprendre et reproduire le projet.
 
