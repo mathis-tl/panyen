@@ -99,3 +99,43 @@ Source : `web/public/data/differentiel_ipc.parquet`, collecte
 - Recopie mot pour mot des citations (Bellemare, Desplanques, Bermont, Petitot,
   Conconne) depuis les pages.
 - Méthode mensuelle des carburants Hexagone (voir § 3).
+
+## 6. Dernier axe « vie chère » — validation ciblée (2026-10-02)
+
+Vérification de `recherche-vie-chere.md` (sortie brute de `prompt-recherche-vie-chere.md`).
+Les pages ont été lues via un outil de résumé : recopier mot pour mot avant publication.
+Seuls les chiffres destinés à la conclusion ont été vérifiés ; le reste du dossier reste
+non validé.
+
+| Élément du dossier | Statut | Détail |
+|---|---|---|
+| Écarts de niveau Martinique 2010 / 2015 / 2022 : ensemble 9,7 / 12,3 / 13,8 % | vérifié | [Insee Première 1958](https://www.insee.fr/fr/statistiques/7648939) pour les trois ; [Analyses Martinique 9](https://www.insee.fr/fr/statistiques/1908423) pour 9,7 et 12,3. |
+| Alimentation 29,5 % (2010) → 38,2 % (2015) | vérifié | Analyses Martinique 9. |
+| Alimentation 2022 : 40,2 % | vérifié | Insee Première 1958 ; [Analyses 63](https://www.insee.fr/fr/statistiques/7649202) donne 40 % (arrondi). Notre seed `ecsp_alimentation_2022.csv` utilise 40,0 : même mesure arrondie. |
+| Comparabilité des enquêtes | nuancé | Analyses 9 : « la comparaison entre les deux années reste délicate » (champs de consommation différents). Analyses 63 : paniers « suffisamment proches » pour comparer. À citer des deux côtés. 2015 → 2022 : source de collecte différente (données de caisse), non lu sur la page. |
+| Postes 2022 (communications +37, meubles +25, alcool-tabac +23, santé +13, logement +7, transports −5) | vérifié | Analyses 63. |
+| Poids de l'alimentation 14 % | vérifié | Analyses 63 : 14,0 % Martinique, 15,0 % métropole (périmètre de l'enquête de prix, pas du budget total). |
+| Production locale (viande 17, boissons 28, laitiers 64 %) | vérifié | Analyses 63. |
+| Niveau de vie médian 19 770 € / 23 000 € ; pauvreté 26,8 / 15,3 % (2021) | nuancé | [Insee 7752770](https://www.insee.fr/fr/statistiques/7752770) : exact, mais le comparateur est « France métropolitaine + Martinique + La Réunion », pas l'Hexagone seul. Déciles D1/D9 : absents de la page, **non vérifiés**. |
+| Ménages pauvres 30 / 15 % ; travailleurs pauvres 12 / 9 % | vérifié | [Analyses 80](https://www.insee.fr/fr/statistiques/8674292), seuil 60 % du médian (1 150 €/mois). Unité = ménages, pas personnes. |
+| Chômage 13 % contre 8 % (2025) | vérifié | [Analyses 83](https://www.insee.fr/fr/statistiques/8994356). |
+| Taux d'emploi « −15 points » | **corrigé** | Analyses 83 : 61 % contre 70 %, soit **−9 points**. |
+| Salaires : privé −11,6 %, fonction publique +27,2 %, revenu salarial +1,9 % | **corrigé** | [Insee 8733103](https://www.insee.fr/fr/statistiques/8733103?sommaire=8733125), valeurs actuelles : privé **−10,7 %** (2024), fonction publique **+19,7 %** (2024), revenu salarial **+2,1 %** (2023), non-salariés **−13,6 %** (2024). Le +27,2 % du dossier date d'un millésime antérieur et ne doit pas être repris. Référence = moyenne nationale, pas l'Hexagone. |
+| Majoration de 40 % du traitement (25 % + 15 %) | non vérifié | Seul le principe est confirmé (Insee : « dispositif de majoration des traitements »). Taux et composition : extrait de recherche, à lire sur une page officielle. |
+| « 40 % contre 13,8 % » attribué à la Cour des comptes | non vérifié | Extrait La 1ère, non remonté à la source. À ne pas publier tel quel. |
+| Prochaine enquête de comparaison spatiale en 2028 | vérifié (réserve) | [Cnis, compte-rendu Commission Territoires du 16 juin 2026](https://www.cnis.fr/app/uploads/2026/04/cr-2026-1-com-terr.pdf) : enquête « en 2028, avec un probable recours aux données de caisse ». Formulation conditionnelle ; la page Cnis de l'enquête, elle, n'est pas à jour (collecte 2022). |
+| Enquête Budget de famille « prévue en 2026 » | **corrigé** | Même compte-rendu : Budget de famille **en 2030**. |
+| Frais d'approche 28 → 33,3 %, marges nettes, octroi de mer 9,6 % | vérifié en § 2 / non rouvert | Avis 26-A-01 déjà validé (voir ci-dessus). Les chiffres de la Cour (4 à 10 %) et de la CTM (1,8 % / 8,6 %) : non vérifiés, source partie prenante pour la CTM. |
+| Budget des ménages modestes (20 % / 14 % ; 22,8 %) | non vérifié | Extraits de recherche. À ne pas publier sans lecture des Analyses 36 et 60. |
+| Inflation par revenu | non trouvé | Étude 1998-2013 seulement. Ne rien affirmer pour aujourd'hui. |
+
+### Corrections de fond pour la conclusion
+
+1. « Niveau élevé **et croissant** » ne vaut que pour 2010 → 2022 (9,7 → 13,8 % ; 29,5 → 40,2 %).
+   Pour 2022 → 2026, notre écart estimé est stable (40,3 % en juillet 2026 pour 40,0 %
+   mesurés, après un pic estimé de 42,5 % en décembre 2024).
+2. « Les gens ressentent… » : aucune enquête de perception trouvée. Écrire « coïncide avec ».
+3. Salaires : utiliser les valeurs 2024 (§ ci-dessus), jamais +27,2 %.
+4. Pauvreté : choisir une définition. Proposition : « 30 % des ménages (Analyses 80, 2021) »,
+   déjà utilisée dans `recit.md`.
+5. Ne jamais comparer au « niveau d'indice » : seules les enquêtes ECSP donnent des niveaux.
