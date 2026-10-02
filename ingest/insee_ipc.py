@@ -6,6 +6,7 @@ passée et de comprendre, plus tard, un chiffre qui a changé.
 
 Usage :
   uv run python ingest/insee_ipc.py [--depuis YYYY-MM] [--dry-run]
+  uv run python ingest/insee_ipc.py --carburants [--depuis YYYY-MM] [--dry-run]
 """
 from __future__ import annotations
 
@@ -67,6 +68,8 @@ BRUT = RACINE / "data" / "raw" / "insee"
 ENDPOINT = "https://bdm.insee.fr/series/sdmx/data/SERIES_BDM/"
 ENTETES = {"Accept": "application/vnd.sdmx.structurespecificdata+xml;version=2.1"}
 DEPUIS_DEFAUT = "2022-04"
+DEPUIS_CARBURANTS_DEFAUT = "2022-01"
+IDBANK_CARBURANTS_GAZOLE = "000442588"
 TIMEOUT_S = 60
 
 
@@ -79,9 +82,18 @@ def url_collecte(depuis: str) -> str:
     return f"{ENDPOINT}{idbanks}?startPeriod={depuis}"
 
 
+def url_collecte_carburants(depuis: str) -> str:
+    return f"{ENDPOINT}{IDBANK_CARBURANTS_GAZOLE}?startPeriod={depuis}"
+
+
 def nom_brut(instant: datetime) -> str:
     horodatage = instant.astimezone(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
     return f"ipc_postes_{horodatage}.xml"
+
+
+def nom_brut_carburants(instant: datetime) -> str:
+    horodatage = instant.astimezone(timezone.utc).strftime("%Y-%m-%dT%H%M%SZ")
+    return f"insee_carburants_{horodatage}.xml"
 
 
 def collecter(depuis: str = DEPUIS_DEFAUT, *, dry_run: bool = False) -> Path | None:
@@ -110,6 +122,33 @@ def collecter(depuis: str = DEPUIS_DEFAUT, *, dry_run: bool = False) -> Path | N
     return cible
 
 
+def collecter_carburants(
+    depuis: str = DEPUIS_CARBURANTS_DEFAUT, *, dry_run: bool = False
+) -> Path | None:
+    """Télécharge la série Insee 000442588 (gazole métropole). Écrit le brut."""
+    requete = urllib.request.Request(url_collecte_carburants(depuis), headers=ENTETES)
+    contenu = urllib.request.urlopen(requete, timeout=TIMEOUT_S).read()
+    if not contenu:
+        raise ValueError("réponse Insee carburants vide : aucun fichier brut écrit")
+
+    if dry_run:
+        print(
+            f"1 série ({IDBANK_CARBURANTS_GAZOLE}) · {len(contenu):,} octets · "
+            "dry-run : aucune écriture"
+        )
+        return None
+
+    cible = BRUT / nom_brut_carburants(maintenant_utc())
+    BRUT.mkdir(parents=True, exist_ok=True)
+    with cible.open("xb") as fichier:
+        fichier.write(contenu)
+    print(
+        f"1 série ({IDBANK_CARBURANTS_GAZOLE}) · {len(contenu):,} octets → "
+        f"{cible.relative_to(RACINE)}"
+    )
+    return cible
+
+
 def principal(argv: list[str] | None = None) -> None:
     parseur = argparse.ArgumentParser(
         description=(
@@ -127,8 +166,17 @@ def principal(argv: list[str] | None = None) -> None:
         action="store_true",
         help="exécute la requête sans créer de dossier ni de fichier brut",
     )
+    parseur.add_argument(
+        "--carburants",
+        action="store_true",
+        help="collecte la série 000442588 (prix moyen gazole métropole)",
+    )
     args = parseur.parse_args(argv)
-    collecter(depuis=args.depuis, dry_run=args.dry_run)
+    if args.carburants:
+        depuis = args.depuis if args.depuis != DEPUIS_DEFAUT else DEPUIS_CARBURANTS_DEFAUT
+        collecter_carburants(depuis=depuis, dry_run=args.dry_run)
+    else:
+        collecter(depuis=args.depuis, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":

@@ -65,6 +65,7 @@ def lancer_build_carburants(racine: Path = RACINE) -> int:
             "stg_carburants+",
             "stg_arretes+",
             "stg_correspondance_carburants+",
+            "stg_insee_carburants+",
             "prix_max_carburants_martinique+",
         ],
         cwd=racine,

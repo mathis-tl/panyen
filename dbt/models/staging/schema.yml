@@ -1,6 +1,31 @@
 version: 2
 
 models:
+  - name: stg_insee_carburants
+    description: >
+      Prix moyen mensuel Insee du gazole en France métropolitaine (idbank
+      000442588), issu des XML bruts insee_carburants_*.xml. Grain :
+      (fichier_source, idbank, periode).
+    columns:
+      - name: fichier_source
+        data_tests:
+          - not_null
+      - name: collecte_utc
+        data_tests:
+          - not_null
+      - name: idbank
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["000442588"]
+      - name: periode
+        data_tests:
+          - not_null
+      - name: prix_moyen_eur_litre
+        data_tests:
+          - not_null
+
   - name: stg_ipc
     description: >
       Observations mensuelles des indices IPC Insee (quatre postes actifs,

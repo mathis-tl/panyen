@@ -33,7 +33,7 @@ collecter-carburants: collecter-carburants-national collecter-arretes-martinique
 
 verifier-carburants:
 	mkdir -p build
-	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_carburants+ stg_arretes+ prix_max_carburants_martinique+
+	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_carburants+ stg_arretes+ stg_insee_carburants+ prix_max_carburants_martinique+
 
 publier-carburants:
 	uv run python publication/publier_carburants.py

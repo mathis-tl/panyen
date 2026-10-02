@@ -1,14 +1,14 @@
 version: 2
 
 models:
-  - name: int_carburant_station_mois
+  - name: int_carburant_station_periode
     description: >
-      Dernière déclaration de chaque station dans le mois. Grain : (mois,
-      id_station, carburant_national). Une station ne pèse qu'une fois par
-      mois et par carburant.
+      Moyenne par station pondérée par la durée d'affichage sur chaque période
+      d'effet du plafond martiniquais (gazole). Grain :
+      (debut_effet, id_station, carburant_national).
     columns:
-      - name: mois
-        description: Premier jour du mois civil du relevé retenu.
+      - name: debut_effet
+        description: Date d'effet inclusive de la période (fuseau Martinique).
         data_tests:
           - not_null
       - name: id_station
@@ -17,11 +17,8 @@ models:
       - name: carburant_national
         data_tests:
           - not_null
-      - name: releve_utc
-        description: Horodatage du dernier relevé retenu dans le mois.
-        data_tests:
-          - not_null
       - name: prix_eur_litre
+        description: Moyenne pondérée en euros par litre sur la période.
         data_tests:
           - not_null
 
@@ -121,6 +118,352 @@ models:
 # Les valeurs des unit tests sont explicitement synthétiques.
 
 unit_tests:
+  - name: periode_prix_unique_station
+    description: Un seul prix sur toute la période — moyenne = ce prix. Synthétique.
+    model: int_carburant_station_periode
+    given:
+      - input: ref("stg_correspondance_carburants")
+        rows:
+          - {
+              carburant_mq: gazole,
+              libelle_mq: Gazole,
+              carburant_national: Gazole,
+              libelle_national: Gazole,
+              statut_comparabilite: directe,
+              url_justification: "",
+              note: "",
+            }
+      - input: ref("fct_prix_max_mq")
+        rows:
+          - {
+              carburant_mq: gazole,
+              debut_effet: 2024-01-01,
+              fin_effet_exclusive: 2024-02-01,
+              libelle_source: test,
+              prix_max_eur_litre: 1.90,
+              reference_acte: TEST,
+              url_source_primaire: https://example.test,
+              pages_acte: null,
+            }
+      - input: ref("fct_carburant_station")
+        format: sql
+        rows: |
+          select
+            'S1' as id_station,
+            'Gazole' as carburant_national,
+            timestamptz '2024-01-15 12:00:00+00' as releve_utc,
+            1.50::double as prix_eur_litre,
+            '75001' as code_postal,
+            'test.xml' as fichier_source,
+            'abc' as sha256_source,
+            timestamptz '2024-01-01 00:00:00+00' as collecte_utc,
+            'zip' as membre_zip
+    expect:
+      rows:
+        - {
+            debut_effet: 2024-01-01,
+            id_station: S1,
+            carburant_national: Gazole,
+            prix_eur_litre: 1.50,
+          }
+
+  - name: periode_moyenne_ponderee_deux_prix
+    description: >
+      Deux prix à parts égales de durée sur la période — moyenne pondérée 2,00 €.
+      Synthétique.
+    model: int_carburant_station_periode
+    given:
+      - input: ref("stg_correspondance_carburants")
+        rows:
+          - {
+              carburant_mq: gazole,
+              libelle_mq: Gazole,
+              carburant_national: Gazole,
+              libelle_national: Gazole,
+              statut_comparabilite: directe,
+              url_justification: "",
+              note: "",
+            }
+      - input: ref("fct_prix_max_mq")
+        rows:
+          - {
+              carburant_mq: gazole,
+              debut_effet: 2024-06-01,
+              fin_effet_exclusive: 2024-07-01,
+              libelle_source: test,
+              prix_max_eur_litre: 1.90,
+              reference_acte: TEST,
+              url_source_primaire: https://example.test,
+              pages_acte: null,
+            }
+      - input: ref("fct_carburant_station")
+        format: sql
+        rows: |
+          select
+            'S1' as id_station,
+            'Gazole' as carburant_national,
+            timestamptz '2024-06-01 04:00:00+00' as releve_utc,
+            1.00::double as prix_eur_litre,
+            '75001' as code_postal,
+            'test.xml' as fichier_source,
+            'abc' as sha256_source,
+            timestamptz '2024-06-01 00:00:00+00' as collecte_utc,
+            'zip' as membre_zip
+          union all
+          select
+            'S1',
+            'Gazole',
+            timestamptz '2024-06-16 04:00:00+00',
+            3.00::double,
+            '75001',
+            'test.xml',
+            'abc',
+            timestamptz '2024-06-01 00:00:00+00',
+            'zip'
+    expect:
+      rows:
+        - {
+            debut_effet: 2024-06-01,
+            id_station: S1,
+            carburant_national: Gazole,
+            prix_eur_litre: 2.00,
+          }
+
+  - name: periode_report_moins_30_jours
+    description: >
+      Dernier prix avant la période (< 30 j) couvre le début jusqu'au relevé
+      suivant. Synthétique.
+    model: int_carburant_station_periode
+    given:
+      - input: ref("stg_correspondance_carburants")
+        rows:
+          - {
+              carburant_mq: gazole,
+              libelle_mq: Gazole,
+              carburant_national: Gazole,
+              libelle_national: Gazole,
+              statut_comparabilite: directe,
+              url_justification: "",
+              note: "",
+            }
+      - input: ref("fct_prix_max_mq")
+        rows:
+          - {
+              carburant_mq: gazole,
+              debut_effet: 2024-08-01,
+              fin_effet_exclusive: 2024-09-01,
+              libelle_source: test,
+              prix_max_eur_litre: 1.90,
+              reference_acte: TEST,
+              url_source_primaire: https://example.test,
+              pages_acte: null,
+            }
+      - input: ref("fct_carburant_station")
+        format: sql
+        rows: |
+          select
+            'S1' as id_station,
+            'Gazole' as carburant_national,
+            timestamptz '2024-07-20 04:00:00+00' as releve_utc,
+            1.00::double as prix_eur_litre,
+            '75001' as code_postal,
+            'test.xml' as fichier_source,
+            'abc' as sha256_source,
+            timestamptz '2024-07-01 00:00:00+00' as collecte_utc,
+            'zip' as membre_zip
+          union all
+          select
+            'S1',
+            'Gazole',
+            timestamptz '2024-08-15 12:00:00+00',
+            2.00::double,
+            '75001',
+            'test.xml',
+            'abc',
+            timestamptz '2024-08-01 00:00:00+00',
+            'zip'
+    expect:
+      rows:
+        - {
+            debut_effet: 2024-08-01,
+            id_station: S1,
+            carburant_national: Gazole,
+            prix_eur_litre: 1.5376344086021505,
+          }
+
+  - name: periode_report_plus_30_jours_exclu
+    description: >
+      Prix déclaré plus de 30 jours avant la période ignoré ; seul le prix
+      intra-période compte. Synthétique.
+    model: int_carburant_station_periode
+    given:
+      - input: ref("stg_correspondance_carburants")
+        rows:
+          - {
+              carburant_mq: gazole,
+              libelle_mq: Gazole,
+              carburant_national: Gazole,
+              libelle_national: Gazole,
+              statut_comparabilite: directe,
+              url_justification: "",
+              note: "",
+            }
+      - input: ref("fct_prix_max_mq")
+        rows:
+          - {
+              carburant_mq: gazole,
+              debut_effet: 2024-10-01,
+              fin_effet_exclusive: 2024-11-01,
+              libelle_source: test,
+              prix_max_eur_litre: 1.90,
+              reference_acte: TEST,
+              url_source_primaire: https://example.test,
+              pages_acte: null,
+            }
+      - input: ref("fct_carburant_station")
+        format: sql
+        rows: |
+          select
+            'S1' as id_station,
+            'Gazole' as carburant_national,
+            timestamptz '2024-08-01 04:00:00+00' as releve_utc,
+            1.00::double as prix_eur_litre,
+            '75001' as code_postal,
+            'test.xml' as fichier_source,
+            'abc' as sha256_source,
+            timestamptz '2024-08-01 00:00:00+00' as collecte_utc,
+            'zip' as membre_zip
+          union all
+          select
+            'S1',
+            'Gazole',
+            timestamptz '2024-10-10 12:00:00+00',
+            2.00::double,
+            '75001',
+            'test.xml',
+            'abc',
+            timestamptz '2024-10-01 00:00:00+00',
+            'zip'
+    expect:
+      rows:
+        - {
+            debut_effet: 2024-10-01,
+            id_station: S1,
+            carburant_national: Gazole,
+            prix_eur_litre: 2.00,
+          }
+
+  - name: periode_sans_declaration_station_exclue
+    description: >
+      Station sans déclaration dans la période absente du résultat. Synthétique.
+    model: int_carburant_station_periode
+    given:
+      - input: ref("stg_correspondance_carburants")
+        rows:
+          - {
+              carburant_mq: gazole,
+              libelle_mq: Gazole,
+              carburant_national: Gazole,
+              libelle_national: Gazole,
+              statut_comparabilite: directe,
+              url_justification: "",
+              note: "",
+            }
+      - input: ref("fct_prix_max_mq")
+        rows:
+          - {
+              carburant_mq: gazole,
+              debut_effet: 2024-11-01,
+              fin_effet_exclusive: 2024-12-01,
+              libelle_source: test,
+              prix_max_eur_litre: 1.90,
+              reference_acte: TEST,
+              url_source_primaire: https://example.test,
+              pages_acte: null,
+            }
+      - input: ref("fct_carburant_station")
+        format: sql
+        rows: |
+          select
+            'S_hors' as id_station,
+            'Gazole' as carburant_national,
+            timestamptz '2024-10-15 12:00:00+00' as releve_utc,
+            1.00::double as prix_eur_litre,
+            '75001' as code_postal,
+            'test.xml' as fichier_source,
+            'abc' as sha256_source,
+            timestamptz '2024-10-01 00:00:00+00' as collecte_utc,
+            'zip' as membre_zip
+          union all
+          select
+            'S_dedans',
+            'Gazole',
+            timestamptz '2024-11-10 12:00:00+00',
+            2.00::double,
+            '75001',
+            'test.xml',
+            'abc',
+            timestamptz '2024-11-01 00:00:00+00',
+            'zip'
+    expect:
+      rows:
+        - {
+            debut_effet: 2024-11-01,
+            id_station: S_dedans,
+            carburant_national: Gazole,
+            prix_eur_litre: 2.00,
+          }
+
+  - name: periode_debut_en_cours_de_mois
+    description: >
+      Période commençant le 16 — bornes Martinique respectées. Synthétique.
+    model: int_carburant_station_periode
+    given:
+      - input: ref("stg_correspondance_carburants")
+        rows:
+          - {
+              carburant_mq: gazole,
+              libelle_mq: Gazole,
+              carburant_national: Gazole,
+              libelle_national: Gazole,
+              statut_comparabilite: directe,
+              url_justification: "",
+              note: "",
+            }
+      - input: ref("fct_prix_max_mq")
+        rows:
+          - {
+              carburant_mq: gazole,
+              debut_effet: 2022-11-16,
+              fin_effet_exclusive: 2022-12-01,
+              libelle_source: test,
+              prix_max_eur_litre: 1.81,
+              reference_acte: TEST,
+              url_source_primaire: https://example.test,
+              pages_acte: null,
+            }
+      - input: ref("fct_carburant_station")
+        format: sql
+        rows: |
+          select
+            'S1' as id_station,
+            'Gazole' as carburant_national,
+            timestamptz '2022-11-20 12:00:00+00' as releve_utc,
+            1.65::double as prix_eur_litre,
+            '75001' as code_postal,
+            'test.xml' as fichier_source,
+            'abc' as sha256_source,
+            timestamptz '2022-11-01 00:00:00+00' as collecte_utc,
+            'zip' as membre_zip
+    expect:
+      rows:
+        - {
+            debut_effet: 2022-11-16,
+            id_station: S1,
+            carburant_national: Gazole,
+            prix_eur_litre: 1.65,
+          }
+
   - name: selectionne_le_fichier_quatre_postes_le_plus_recent_en_entier
     description: >
       Deux snapshots quatre postes et un lot historique : seul le fichier
