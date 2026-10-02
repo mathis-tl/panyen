@@ -109,15 +109,15 @@ dans le flux national est expliquée et aucune donnée manquante n'est masquée.
 **But utilisateur** : comprendre ce que les chiffres montrent et ce qui s'est
 passé en Martinique depuis 2022, pas seulement lire des courbes.
 
-- [ ] Faire mener une recherche sourcée : validation de nos chiffres contre des
+- [x] Faire mener une recherche sourcée : validation de nos chiffres contre des
       publications indépendantes, chronologie 2022 → aujourd'hui, mécanismes
       par poste avec niveau de preuve, dimension humaine et sociale publiée.
-- [ ] Vérifier chaque lien et chaque chiffre repris ; écarter ce qui n'est pas
+- [x] Vérifier chaque lien et chaque chiffre repris ; écarter ce qui n'est pas
       vérifiable.
-- [ ] Rédiger le récit en trois registres visibles : **Mesuré** (nos données),
+- [x] Rédiger le récit en trois registres visibles : **Mesuré** (nos données),
       **Contexte** (faits sourcés), **Lecture** (interprétation assumée).
-- [ ] Verser les événements datés dans une table sourcée, pour annotation future.
-- [ ] Relecture et réécriture par Mathis.
+- [x] Verser les événements datés dans une table sourcée, pour annotation future.
+- [x] Relecture et réécriture par Mathis.
 
 **Fini quand** : chaque phrase du récit est soit calculée par le pipeline, soit
 reliée à une source ouverte et vérifiée, soit marquée comme lecture ; aucune
