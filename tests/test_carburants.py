@@ -163,22 +163,6 @@ def test_conserve_provenance(tmp_path: Path):
     assert obs[0].membre_zip == "PrixCarburants_test.xml"
 
 
-def _charger_reference():
-    import importlib.util
-    import sys
-
-    chemin = Path("/private/tmp/panyen_3b/carburants_reference.py")
-    nom = "carburants_reference"
-    if nom in sys.modules:
-        return sys.modules[nom]
-    spec = importlib.util.spec_from_file_location(nom, chemin)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[nom] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 def _kwargs_membre(fichier: str = "f.xml") -> dict:
     return {
         "fichier_source": fichier,
@@ -216,18 +200,17 @@ def _kwargs_membre(fichier: str = "f.xml") -> dict:
     ],
     ids=["xml_ok", "sans_coordonnees", "dedup_prix"],
 )
-def test_iterer_membre_xml_egal_parser_et_reference(xml: str):
+def test_iterer_membre_xml_egal_parser(xml: str):
     from dataclasses import astuple
 
     kwargs = _kwargs_membre()
     contenu = xml.encode("iso-8859-1")
-    reference = _charger_reference()
-    attendu = [astuple(o) for o in reference.parser_membre_xml(contenu, **kwargs)]
     via_parser = [astuple(o) for o in parseur.parser_membre_xml(contenu, **kwargs)]
     via_iter = [
         astuple(o) for o in parseur.iterer_membre_xml(io.BytesIO(contenu), **kwargs)
     ]
-    assert via_iter == via_parser == attendu
+    assert via_parser, "le parseur doit produire au moins une observation"
+    assert via_iter == via_parser
 
 
 def test_iterer_membre_xml_refuse_flux_tronque():

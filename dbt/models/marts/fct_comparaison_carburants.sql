@@ -27,13 +27,16 @@ distribution as (
         dist.q90_eur_litre,
         dist.nombre_stations,
         null::decimal(12, 4) as prix_max_mq_eur_litre,
-        null::date as fin_effet_exclusive,
+        prix.fin_effet_exclusive,
         null::varchar as reference_acte,
         null::varchar as url_source_primaire,
         dist.collecte_utc_nationale
     from {{ ref("fct_distribution_carburants_metropole") }} as dist
     inner join correspondances as corr
         on dist.carburant_national = corr.carburant_national
+    inner join {{ ref("fct_prix_max_mq") }} as prix
+        on prix.carburant_mq = corr.carburant_mq
+        and prix.debut_effet = dist.mois
 ),
 
 plafonds as (

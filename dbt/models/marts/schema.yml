@@ -121,11 +121,13 @@ models:
 
   - name: fct_distribution_carburants_metropole
     description: >
-      Distribution mensuelle des prix de station. Grain : (mois,
-      carburant_national). Quantiles empiriques q10–q90 et mois_complet.
+      Distribution des moyennes pondérées par station sur les périodes d'effet
+      des plafonds martiniquais (gazole). Grain : (debut_effet,
+      carburant_national), colonne mois = debut_effet pour le Parquet web.
+      Quantiles empiriques q10–q90 ; mois_complet = période d'effet close.
     columns:
       - name: mois
-        description: Premier jour du mois civil.
+        description: Date de début d'effet (debut_effet), alignée sur fct_prix_max_mq.
         data_tests:
           - not_null
       - name: carburant_national
@@ -151,7 +153,9 @@ models:
         data_tests:
           - not_null
       - name: mois_complet
-        description: Faux uniquement pour septembre 2026 dans ce lot.
+        description: >
+          Vrai si la période d'effet est close (fin_effet_exclusive renseignée) ;
+          nom conservé pour le Parquet web (signifie « période complète »).
         data_tests:
           - not_null
 
@@ -202,7 +206,7 @@ models:
         data_tests:
           - not_null
       - name: date_reference
-        description: Mois (distribution) ou date d'effet (plafond).
+        description: Début d'effet (distribution et plafond).
         data_tests:
           - not_null
 
