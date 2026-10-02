@@ -112,3 +112,58 @@ s'est ralentie : l'écart estimé est revenu à peu près à son niveau de 2022,
 en dessous. Seule une nouvelle enquête de
 comparaison spatiale de l'Insee pourra dire où en est vraiment le panier
 martiniquais.
+
+---
+
+## Conclusion — brouillon IA du 2026-10-02, à relire et réécrire par Mathis
+
+*Chiffres vérifiés dans `validation.md` § 6. Les sources de ces paragraphes ne sont
+pas encore recopiées mot pour mot.*
+
+**[Mesuré]** « Les prix ont moins augmenté » et « la vie est plus chère » répondent à
+deux questions différentes. La première compare des évolutions depuis 2022 ; la seconde
+porte sur un niveau. Sur le niveau, l'Insee a mesuré un écart alimentaire de 29,5 % en
+2010, 38,2 % en 2015 et 40,2 % en 2022, et un écart tous produits de 9,7 %, 12,3 % puis
+13,8 %. L'écart de niveau s'est donc creusé entre 2010 et 2022.
+*Insee Analyses Martinique n° 9, Insee Première n° 1958, Analyses Martinique n° 63.*
+
+**[Contexte]** Ces trois enquêtes ne sont pas strictement comparables : l'Insee juge la
+comparaison 2010-2015 « délicate », les paniers et les modes de consommation ayant
+changé. Aucune étude ne décompose ce qui a creusé l'écart. Pour l'expliquer, les sources
+désignent des facteurs structurels : frais d'approche passés de 28 % à 33,3 % du coût
+d'achat des importations, octroi de mer, étroitesse du marché, concentration de
+l'import. Pour la grande distribution, l'Autorité de la concurrence ne relève pas de
+marges nettes anormales ; elle note des marges plus élevées chez les grossistes-
+importateurs et une opacité des facturations intra-groupe.
+*Avis 26-A-01, Analyses Martinique n° 9 et 63.*
+
+**[Mesuré]** Depuis 2022, l'alimentation a augmenté presque autant en Martinique qu'en
+Hexagone (+19,6 % contre +19,4 %). Appliqués à un niveau de départ supérieur de 40 %,
+des pourcentages identiques creusent l'écart en euros : un panier à 100 € en Hexagone
+et 140 € en Martinique en 2022 serait autour de 119 € et 168 €, soit environ 48 € d'écart
+au lieu de 40 € (illustration arithmétique, pas une mesure). Mesuré en pourcentage,
+l'écart estimé reste stable, à 40,3 % en juillet 2026.
+*`differentiel_ipc.parquet` ; Insee Première n° 1958.*
+
+**[Contexte]** Le poids de ces prix dépend des revenus. En 2021, le niveau de vie
+médian de la Martinique (19 770 €) est inférieur de 14 % à la médiane nationale ; 30 %
+des ménages sont pauvres contre 15 % dans l'Hexagone, et 12 % des ménages vivant de
+revenus d'activité sont pauvres contre 9 %. En 2025, le chômage est de 13 % contre 8 %,
+et 61 % des 15-64 ans ont un emploi contre 70 % en métropole.
+*Insee, niveau de vie et pauvreté 2021 ; Analyses Martinique n° 80 et n° 83.*
+
+**[Contexte]** Les revenus sont duaux. En 2024, le salaire net moyen est inférieur de
+10,7 % à la moyenne nationale dans le privé, et supérieur de 19,7 % dans la fonction
+publique, « du fait du dispositif de majoration des traitements » (la moyenne nationale
+inclut l'Île-de-France). Le revenu d'activité des non-salariés est inférieur de 13,6 %.
+La moyenne masque donc un écart entre salariés du public et ménages du privé, des
+indépendants ou des personnes sans emploi.
+*Insee, disparités territoriales de salaires et de revenus d'activité.*
+
+**[Lecture]** Ces éléments coïncident avec le sentiment d'une vie plus chère et plus
+difficile : un niveau de prix alimentaire supérieur de 40 %, qui ne s'est pas refermé
+depuis 2022, supporté par des revenus médians plus bas, davantage de pauvreté et de
+chômage. Cette coïncidence n'est pas une démonstration. Aucune enquête de perception n'a
+été trouvée, et rien n'établit aujourd'hui que les ménages modestes subissent une
+inflation plus forte. Seule la prochaine enquête de comparaison spatiale, annoncée pour
+2028 avec un « probable » recours aux données de caisse, dira où en est l'écart de niveau.
