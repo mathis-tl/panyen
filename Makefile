@@ -1,4 +1,4 @@
-.PHONY: install verify ci dev publier \
+.PHONY: install verify ci dev publier publier-contexte \
 	collecter-carburants-national collecter-arretes-martinique collecter-carburants \
 	verifier-carburants publier-carburants carburants
 
@@ -12,7 +12,7 @@ verify:
 	uv run pytest
 	mkdir -p build
 	uv run dbt debug --project-dir dbt --profiles-dir dbt
-	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
+	uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+ ecsp_niveaux+ ecsp_alimentation_formules+ revenus_ecart_national+ evenements_contexte+
 	npm --prefix web run test
 	npm --prefix web run build
 
@@ -22,6 +22,9 @@ ci:
 
 publier:
 	uv run python publication/publier_differentiel_ipc.py
+
+publier-contexte:
+	uv run python publication/publier_seeds_contexte.py
 
 collecter-carburants-national:
 	uv run python ingest/prix_carburants_national.py

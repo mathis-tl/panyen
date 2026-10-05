@@ -1,0 +1,5 @@
+annee,indicateur,ecart_moyenne_nationale_pct,source_url,consulte_le,champ
+2024,salaire_net_moyen_prive,-10.7,https://www.insee.fr/fr/statistiques/8733103?sommaire=8733125,2026-10-05,"moyenne nationale, Île-de-France incluse"
+2024,salaire_net_moyen_fonction_publique,19.7,https://www.insee.fr/fr/statistiques/8733103?sommaire=8733125,2026-10-05,"moyenne nationale, Île-de-France incluse"
+2023,revenu_salarial,2.1,https://www.insee.fr/fr/statistiques/8733103?sommaire=8733125,2026-10-05,"moyenne nationale, Île-de-France incluse"
+2024,revenu_activite_non_salaries,-13.6,https://www.insee.fr/fr/statistiques/8733103?sommaire=8733125,2026-10-05,"moyenne nationale, Île-de-France incluse"

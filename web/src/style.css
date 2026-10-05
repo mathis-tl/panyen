@@ -1,26 +1,54 @@
+/*
+ * panyen — relevé de mesure.
+ * Chaque barre est une cote d'ingénieur (repère de départ, repère d'arrivée) ;
+ * chaque chiffre porte une légende en chasse fixe. Clair : planche blanche.
+ * Sombre : fond profond, filet de lumière sur les seules surfaces flottantes.
+ */
 :root {
-  --text: #374151;
-  --text-h: #111827;
-  --bg: #fff;
-  --border: #e5e7eb;
-  --accent: #e63946;
-  --accent-2: #457b9d;
-  --accent-3: #2a9d8f;
-  --code-bg: #f3f4f6;
-  --erreur-bg: #fef2f2;
-  --erreur-border: #fca5a5;
-  --jalon-bg: #f9fafb;
-  --colonne-texte: 800px;
-  --graphe-max: 1080px;
+  --fond: #f4f6f8;
+  --encre: #14202b;
+  --schiste: #4a5866;
+  --martinique: #1d5fa6;
+  --hexagone: #a35f00;
+  --brume: #c9d2db;
+  --plot-background: var(--fond);
 
-  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --font-titre: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --font-texte: "Atkinson Hyperlegible Next", "Helvetica Neue", Arial, sans-serif;
+  --font-chiffres: "IBM Plex Mono", ui-monospace, Menlo, monospace;
 
-  font: 17px/1.6 var(--sans);
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  --mesure: 1120px;
+  --gouttiere: clamp(1.25rem, 5vw, 3rem);
+  --respiration: clamp(5rem, 11vw, 9rem);
+
+  color-scheme: light;
+  color: var(--encre);
+  background: var(--fond);
+  font: 400 17px/1.55 var(--font-texte);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:root[data-theme="dark"] {
+  --fond: #121c27;
+  --encre: #e8edf2;
+  --schiste: #a3b1bf;
+  --martinique: #7db3f0;
+  --hexagone: #f0b259;
+  --brume: #2e3c4a;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --fond: #121c27;
+    --encre: #e8edf2;
+    --schiste: #a3b1bf;
+    --martinique: #7db3f0;
+    --hexagone: #f0b259;
+    --brume: #2e3c4a;
+    color-scheme: dark;
+  }
 }
 
 *,
@@ -29,334 +57,656 @@
   box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #d1d5db;
-    --text-h: #f9fafb;
-    --bg: #111827;
-    --border: #374151;
-    --code-bg: #1f2937;
-    --erreur-bg: #451a1a;
-    --erreur-border: #991b1b;
-    --jalon-bg: #1f2937;
-  }
-}
-
 body {
   margin: 0;
-  overflow-x: hidden;
+  background: var(--fond);
+  color: var(--encre);
 }
 
 #app {
-  max-width: var(--colonne-texte);
+  width: min(var(--mesure), calc(100% - 2 * var(--gouttiere)));
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 1.25rem 0 7rem;
 }
 
-.selecteur-vue {
+/* ——— Typographie : masse pour les titres, chasse fixe pour les mesures ——— */
+
+h1,
+h2,
+h3,
+h4,
+.nom {
+  font-family: var(--font-titre);
+  color: var(--encre);
+}
+
+h1,
+h2 {
+  font-weight: 700;
+  letter-spacing: -0.032em;
+}
+
+h3,
+h4 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+.chiffre,
+.ligne-estimation,
+.nav-lien,
+.bascule-theme,
+.badge-registre,
+.etiquette,
+.ligne-barre-sous,
+.renvois,
+.source,
+.sources-recit,
+.mention,
+.note-echelle,
+.note-incomplet,
+.limite-courte,
+.infobulle,
+.graphe-montage svg text {
+  font-family: var(--font-chiffres);
+  font-weight: 500;
+}
+
+.chiffre {
+  text-align: right;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+a {
+  color: var(--encre);
+  text-decoration-color: var(--brume);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--encre);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.defs-hachure {
+  position: absolute;
+}
+
+/* ——— En-tête ——— */
+
+.entete {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.5rem 0 1.1rem;
+  border-bottom: 1px solid var(--brume);
+}
+
+.nom {
+  font-weight: 700;
+  font-size: 1.2rem;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+}
+
+.nav-ecrans {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
+  gap: 0.5rem 1.25rem;
+  margin-left: auto;
 }
 
-.selecteur-vue-bouton {
-  font: inherit;
-  padding: 0.45rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 0.375rem;
-  background: var(--bg);
-  color: var(--text);
+.nav-lien,
+.bascule-theme {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-lien {
+  color: var(--schiste);
+  text-decoration: none;
+}
+
+.nav-lien:hover {
+  color: var(--encre);
+}
+
+.bascule-theme {
+  border: 1px solid var(--brume);
+  background: transparent;
+  color: var(--encre);
+  border-radius: 2px;
+  padding: 0.35rem 0.7rem;
   cursor: pointer;
 }
 
-.selecteur-vue-bouton[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
-  font-weight: 600;
+.bascule-theme:hover {
+  border-color: var(--encre);
 }
 
-.graphe-carburants .graphe-conteneur {
-  max-width: var(--graphe-max);
+/* ——— Réponse ——— */
+
+.reponse-hero {
+  display: grid;
+  gap: 3rem;
+  padding: clamp(3rem, 8vw, 6rem) 0 var(--respiration);
 }
 
-.legende-carburants .legende-liste {
-  list-style: none;
-  padding: 0;
-  margin: 0.75rem 0 0;
-}
-
-.legende-carburants li {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0.35rem 0;
-}
-
-.legende-echantillon {
-  display: inline-block;
-  width: 1.25rem;
-  height: 0.75rem;
-  border-radius: 2px;
-}
-
-.legende-ruban {
-  background: #457b9d33;
-  border: 1px solid #457b9d;
-}
-
-.legende-iqr {
-  background: #457b9d44;
-}
-
-.legende-mediane {
-  background: #457b9d;
-  height: 3px;
-}
-
-.legende-plafond {
-  background: var(--accent);
-  height: 3px;
-}
-
-h1 {
-  font-size: 1.35rem;
-  line-height: 1.4;
-  color: var(--text-h);
-  font-weight: 600;
+.titre-reponse {
+  font-size: clamp(38px, 5.2vw, 68px);
+  line-height: 0.98;
   margin: 0 0 1.5rem;
+  max-width: 11ch;
+  text-wrap: balance;
 }
 
-h2 {
-  font-size: 1.15rem;
-  color: var(--text-h);
-  font-weight: 600;
-  margin: 0 0 0.75rem;
+.ligne-estimation,
+.limite-courte,
+.note-echelle,
+.note-incomplet {
+  color: var(--schiste);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  margin: 0.5rem 0 0;
 }
 
-h3 {
-  font-size: 1rem;
-  color: var(--text-h);
-  font-weight: 600;
-  margin: 0 0 0.5rem;
+.ligne-estimation {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--encre);
 }
 
-section {
+.phrase-pic {
+  margin: 1.5rem 0 0;
+  max-width: 34ch;
+}
+
+.limite-courte {
+  max-width: 48ch;
+  line-height: 1.6;
+  margin-top: 1.25rem;
+}
+
+.lien-bas {
+  display: inline-block;
+  margin-top: 1.75rem;
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1px solid var(--encre);
+}
+
+.lien-bas::before {
+  content: "↓ ";
+}
+
+/* ——— Panier : la règle des 100 € ——— */
+
+.panier-titre {
+  font-size: 1.3rem;
+  line-height: 1.2;
+  margin: 0 0 1.75rem;
+}
+
+.ligne-barre {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr) 7rem;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  padding: 1rem 0;
+  border-top: 1px solid var(--brume);
+}
+
+.ligne-barre:last-of-type {
+  border-bottom: 1px solid var(--brume);
+}
+
+.ligne-barre-nom {
+  display: block;
+  font-weight: 700;
+  font-family: var(--font-titre);
+}
+
+.ligne-barre-sous {
+  display: block;
+  color: var(--schiste);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
+/* La piste est une cote : un trait, un repère à chaque bout. */
+.piste {
+  position: relative;
+  display: flex;
+  height: 12px;
+  transform-origin: left center;
+  animation: allonger 250ms ease forwards;
+}
+
+.piste::before,
+.piste::after {
+  content: "";
+  position: absolute;
+  top: -6px;
+  bottom: -6px;
+  width: 1.5px;
+  background: currentColor;
+}
+
+.piste::before {
+  left: 0;
+}
+
+.piste::after {
+  right: 0;
+}
+
+/* Base nulle : la largeur de chaque segment ne dépend que de sa valeur (un svg vaut 300 px par défaut). */
+.segment {
+  flex-basis: 0;
+  min-width: 0;
+}
+
+.segment-plein {
+  background: currentColor;
+}
+
+.segment-hachure {
+  height: 100%;
+  opacity: 0;
+  animation: reveler 150ms ease 250ms forwards;
+}
+
+.couleur-martinique {
+  color: var(--martinique);
+}
+
+.couleur-hexagone {
+  color: var(--hexagone);
+}
+
+.couleur-neutre {
+  color: var(--encre);
+}
+
+/* Barre divergente : axe zéro, négatif à gauche, positif à droite. */
+.piste-signee {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 12px;
+}
+
+.moitie {
+  display: flex;
+  align-items: stretch;
+}
+
+.moitie-neg {
+  justify-content: flex-end;
+}
+
+.piste-signee::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  bottom: -6px;
+  width: 1.5px;
+  margin-left: -0.75px;
+  background: var(--encre);
+}
+
+.moitie-neg .barre-signee {
+  background: var(--schiste);
+}
+
+.moitie-pos .barre-signee {
+  background: var(--encre);
+}
+
+.barre-signee {
+  display: block;
+  height: 100%;
+}
+
+.renvoi {
+  font-size: 0.7em;
+}
+
+.renvois,
+.source,
+.sources-recit {
+  color: var(--schiste);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  line-height: 1.7;
+  margin: 1rem 0 0;
+}
+
+.sources-recit a + a::before {
+  content: " · ";
+}
+
+/* ——— Écrans ——— */
+
+.ecran {
+  margin: 0;
+  padding: var(--respiration) 0 0;
+}
+
+.ecran::before {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--brume);
   margin-bottom: 2rem;
 }
 
-/* Texte du graphe dans la colonne ; seul le tracé déborde plus large. */
-.graphe-principal {
-  overflow-x: visible;
+.intertitre {
+  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  line-height: 1.04;
+  margin: 0 0 1.25rem;
+  max-width: 20ch;
+  text-wrap: balance;
 }
 
-.graphe-sous-titre {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
-  color: var(--text);
+.chapo {
+  color: var(--schiste);
+  max-width: 62ch;
+  margin: 0 0 2.5rem;
 }
 
-.graphe-cadre {
-  width: min(var(--graphe-max), calc(100vw - 2rem));
-  max-width: calc(100vw - 2rem);
-  margin-inline: auto;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
+.sous-intertitre {
+  font-size: 1.1rem;
+  margin: 2.5rem 0 1rem;
+}
+
+.etiquette {
+  color: var(--schiste);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 1.5rem 0 0.25rem;
+}
+
+.mention {
+  color: var(--schiste);
+  font-size: 0.72rem;
+  line-height: 1.7;
+  margin: 1rem 0 0;
+  max-width: 70ch;
+}
+
+.grille-postes {
+  display: grid;
+  gap: 3.5rem 3rem;
+}
+
+.carte-poste {
+  min-width: 0;
+}
+
+.constat {
+  font-size: 1.1rem;
+  line-height: 1.35;
+  margin: 0 0 1rem;
+  max-width: 34ch;
 }
 
 .graphe-montage {
   width: 100%;
-  min-height: 280px;
+  min-height: 220px;
+  position: relative;
+  color: var(--encre);
+  --plot-background: var(--fond);
 }
 
 .graphe-montage svg {
   display: block;
-  /* Largeur = celle passée à Plot ; pas de réduction CSS des textes. */
-  max-width: none;
+  max-width: 100%;
   height: auto;
+  color: var(--encre);
+  /* Plot pose white sur le svg lui-même : sans cela l'infobulle reste blanche en sombre. */
+  --plot-background: var(--fond);
+  background: transparent;
 }
 
-.mention-illustration {
-  font-size: 0.9rem;
-  font-style: italic;
-  color: var(--text);
-  border-left: 3px solid var(--accent-3);
-  padding-left: 0.75rem;
-  margin: 1rem 0 0;
+.evenements {
+  list-style: none;
+  padding: 0;
+  margin: 3rem 0 0;
+  border-top: 1px solid var(--brume);
 }
 
-.selecteur-poste-groupe {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0.5rem 0 0;
+.evenement {
+  margin: 0;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--brume);
+  font-size: 0.95rem;
 }
 
-.selecteur-poste-bouton {
-  font: inherit;
-  cursor: pointer;
-  background: var(--jalon-bg);
-  color: var(--text-h);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 0.4rem 0.85rem;
-}
-
-.selecteur-poste-bouton[aria-pressed="true"] {
-  border-color: var(--accent-2);
-  background: rgba(69, 123, 157, 0.12);
-  font-weight: 600;
-}
-
-/* Le focus revient sur le bouton après chaque changement de poste : il doit
-   rester visible, sinon la navigation au clavier se perd. */
-.selecteur-poste-bouton:focus-visible {
-  outline: 2px solid var(--accent-2);
-  outline-offset: 2px;
-}
-
-.note-sans-ancre {
-  background: var(--code-bg);
-  border-left: 3px solid var(--accent-2);
-  padding: 1rem 1.25rem;
-  border-radius: 4px;
-}
-
-.jalon {
-  background: var(--jalon-bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 1rem 1.1rem;
-  margin: 0.75rem 0;
-}
-
-.jalon-ecart {
-  margin: 0.35rem 0;
-}
-
-.badge-mesure,
-.badge-estimation {
+.badge-registre {
   display: inline-block;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+  margin: 0 0 0.5rem;
   padding: 0.1rem 0.45rem;
-  border-radius: 3px;
-  margin-left: 0.35rem;
-  vertical-align: middle;
+  border: 1px solid var(--brume);
+  color: var(--schiste);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.badge-mesure {
-  background: rgba(42, 157, 143, 0.15);
-  color: var(--accent-3);
+.evenement .badge-registre {
+  margin: 0 0 0 0.6rem;
 }
 
-.badge-estimation {
-  background: rgba(69, 123, 157, 0.15);
-  color: var(--accent-2);
+.bloc-recit {
+  display: grid;
+  gap: 0.25rem;
+  border-top: 1px solid var(--brume);
+  padding: 1.5rem 0;
+  max-width: 68ch;
 }
 
-.explication ul {
-  padding-left: 1.2rem;
+.recit .bloc-recit:first-of-type {
+  margin-top: 2rem;
 }
 
-.explication li {
-  margin: 0.4rem 0;
+.registre-mesure .badge-registre {
+  color: var(--encre);
+  border-color: var(--encre);
 }
 
-.limite {
-  background: var(--code-bg);
-  border-left: 3px solid var(--border);
-  padding: 1rem 1.25rem;
-  border-radius: 4px;
-  font-size: 0.92rem;
+.texte-recit {
+  margin: 0;
 }
 
-.limite p {
-  margin: 0.5rem 0 0;
+.sous-bloc,
+.bloc-pourquoi,
+.ecarts-annuels {
+  margin-top: 1rem;
 }
 
-.limite p:first-of-type {
-  margin-top: 0;
+.ecarts-annuels {
+  margin-top: 2.5rem;
 }
 
-.provenance dt {
-  font-weight: 600;
-  color: var(--text-h);
-  margin-top: 0.75rem;
+/* ——— Gazole : lecture au clavier ——— */
+
+.mois-clavier {
+  position: relative;
+  display: flex;
+  margin-top: 0.35rem;
 }
 
-.provenance dd {
-  margin: 0.15rem 0 0;
+.mois-focus {
+  position: static;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 1.75rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
 }
 
-.provenance code {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  background: var(--code-bg);
-  padding: 2px 6px;
-  border-radius: 3px;
+.mois-focus:hover,
+.mois-focus:focus-visible {
+  background: color-mix(in srgb, var(--brume) 65%, transparent);
 }
 
-.provenance a {
-  color: var(--accent-2);
-  word-break: break-all;
+.infobulle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 0.35rem);
+  z-index: 3;
+  padding: 0.7rem 0.85rem;
+  background: var(--fond);
+  color: var(--encre);
+  border: 1px solid var(--encre);
+  border-radius: 2px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  text-align: left;
+  white-space: pre-line;
+  opacity: 0;
+  pointer-events: none;
 }
 
-.chargement {
-  text-align: center;
-  padding: 4rem 0;
-  color: var(--text);
+:root[data-theme="dark"] .infobulle {
+  border-color: var(--brume);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .infobulle {
+    border-color: var(--brume);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
+  }
+}
+
+.mois-focus:hover .infobulle,
+.mois-focus:focus-visible .infobulle {
+  opacity: 1;
+}
+
+.non-comparables {
+  max-width: 68ch;
+  padding-left: 1.1rem;
+  color: var(--schiste);
+}
+
+.methode p {
+  max-width: 62ch;
+}
+
+/* ——— Chargement et erreur ——— */
+
+.squelette {
+  padding: 2rem 0;
+}
+
+.squelette-bloc {
+  height: 1.1rem;
+  margin: 0.8rem 0;
+  background: var(--brume);
+}
+
+.squelette-titre {
+  height: 2.6rem;
+  width: min(24rem, 90%);
+}
+
+.squelette-ligne {
+  width: min(18rem, 70%);
+}
+
+.squelette-barre {
+  height: 1.35rem;
+  width: 100%;
+}
+
+.squelette-barre.court {
+  width: 72%;
 }
 
 .erreur {
-  background: var(--erreur-bg);
-  border: 1px solid var(--erreur-border);
-  border-radius: 8px;
-  padding: 2rem;
+  border: 1px solid var(--encre);
+  padding: 1.5rem;
   margin-top: 2rem;
 }
 
 .erreur h1 {
-  color: var(--accent);
-  font-size: 1.3rem;
-  margin-bottom: 1rem;
+  font-size: 1.4rem;
+  margin-top: 0;
 }
 
-.erreur p {
-  margin: 0.5rem 0;
+@keyframes allonger {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
 }
 
-.erreur-aide {
-  font-size: 0.9rem;
+@keyframes reveler {
+  to { opacity: 1; }
 }
 
-.erreur code {
-  font-family: var(--mono);
-  font-size: 0.85rem;
-  background: var(--code-bg);
-  padding: 2px 6px;
-  border-radius: 3px;
-}
-
-@media (max-width: 640px) {
-  #app {
-    padding: 1.25rem 1rem 3rem;
-  }
-
-  h1 {
-    font-size: 1.15rem;
-  }
-
-  .graphe-cadre {
-    width: 100%;
-    max-width: 100%;
-    left: auto;
+@media (prefers-reduced-motion: reduce) {
+  .piste,
+  .segment-hachure {
+    animation: none;
     transform: none;
-    margin-inline: 0;
+    opacity: 1;
+  }
+}
+
+/* ——— Tailles ——— */
+
+@media (min-width: 900px) {
+  .reponse-hero {
+    grid-template-columns: 5fr 7fr;
+    align-items: end;
+    gap: 4rem;
+  }
+
+  .grille-postes {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 899px) {
+  .nav-secondaire {
+    display: none;
+  }
+
+  .ligne-barre {
+    grid-template-columns: 1fr auto;
+  }
+
+  .ligne-barre > .piste,
+  .ligne-barre > .piste-signee {
+    grid-column: 1 / -1;
   }
 }

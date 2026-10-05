@@ -151,3 +151,158 @@ seeds:
         description: Date de la vérification de la source.
         data_tests:
           - not_null
+
+  - name: ecsp_niveaux
+    description: >
+      Écarts de niveau Martinique / France métropolitaine, indice de Fisher.
+      Grain : (annee_enquete, poste). Mesures d'enquête uniquement, pas une
+      estimation. L'alimentation 2022 y est à 40,2 % (Insee Première n° 1958) ;
+      le seed ecsp_alimentation_2022.csv conserve 40,0, arrondi de la même
+      mesure, et reste l'ancre de l'estimation mensuelle.
+    config:
+      column_types:
+        annee_enquete: integer
+        ecart_fisher_pct: double
+        precision_pct: double
+        consulte_le: date
+    columns:
+      - name: annee_enquete
+        description: Année de l'enquête de comparaison spatiale.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2010, 2015, 2022]
+      - name: poste
+        description: Poste comparé, code stable.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - ensemble
+                  - alimentation
+                  - communications
+                  - meubles_entretien
+                  - alcool_tabac
+                  - sante
+                  - logement
+                  - transports
+      - name: ecart_fisher_pct
+        description: Écart de Fisher publié, en pourcentage.
+        data_tests:
+          - not_null
+      - name: precision_pct
+        description: >
+          Pas de la décimale publiée : 0,1 si un chiffre après la virgule,
+          1 si l'Insee arrondit à l'unité.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [0.1, 1]
+      - name: source_url
+        description: Page Insee relue pour cette ligne.
+        data_tests:
+          - not_null
+      - name: consulte_le
+        description: Date de relecture de la page source.
+        data_tests:
+          - not_null
+      - name: remarque
+        description: >
+          Limite de comparabilité ou écart d'arrondi, jamais un second chiffre.
+        data_tests:
+          - not_null
+
+  - name: revenus_ecart_national
+    description: >
+      Écart des revenus martiniquais à la moyenne nationale, Île-de-France
+      incluse. Grain : (annee, indicateur).
+    config:
+      column_types:
+        annee: integer
+        ecart_moyenne_nationale_pct: double
+        consulte_le: date
+    columns:
+      - name: annee
+        description: Millésime publié pour l'indicateur.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2023, 2024]
+      - name: indicateur
+        description: Indicateur de revenu.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - salaire_net_moyen_prive
+                  - salaire_net_moyen_fonction_publique
+                  - revenu_salarial
+                  - revenu_activite_non_salaries
+      - name: ecart_moyenne_nationale_pct
+        description: Écart à la moyenne nationale, en pourcentage.
+        data_tests:
+          - not_null
+      - name: source_url
+        description: Page Insee relue pour cette ligne.
+        data_tests:
+          - not_null
+      - name: consulte_le
+        description: Date de relecture de la page source.
+        data_tests:
+          - not_null
+      - name: champ
+        description: Champ géographique de la moyenne de référence.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ["moyenne nationale, Île-de-France incluse"]
+
+  - name: ecsp_alimentation_formules
+    description: >
+      Écart alimentaire 2022 selon le panier de pondération (Paasche, panier
+      martiniquais ; Laspeyres, panier hexagonal), encadrant le Fisher de 40 %.
+      Grain : (annee_enquete, formule).
+    config:
+      column_types:
+        annee_enquete: integer
+        ecart_pct: double
+        consulte_le: date
+    columns:
+      - name: annee_enquete
+        description: Année de l'enquête de comparaison spatiale.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [2022]
+      - name: formule
+        description: Formule d'indice et panier de pondération.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - paasche_panier_martiniquais
+                  - laspeyres_panier_hexagonal
+      - name: ecart_pct
+        description: Écart publié, en pourcentage.
+        data_tests:
+          - not_null
+      - name: source_url
+        description: Page Insee relue pour cette ligne.
+        data_tests:
+          - not_null
+      - name: consulte_le
+        description: Date de relecture de la page source.
+        data_tests:
+          - not_null
+      - name: remarque
+        description: Libellé et précision de la source.
+        data_tests:
+          - not_null

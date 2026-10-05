@@ -2,16 +2,18 @@
  * Graphe carburants : ruban q10–q90, médiane et plafond martiniquais en escalier.
  * Un seul axe vertical en euros par litre.
  */
+import { formaterDecimaleFr, formaterMoisAxe } from "./axes-fr.ts";
 import * as Plot from "@observablehq/plot";
 import type { ResumeCarburants } from "./calculs-carburants.ts";
 import { formaterEurosLitre } from "./calculs-carburants.ts";
 import { formaterMoisUtc } from "./validation-carburants.ts";
 
-const COULEUR_RUBAN = "#457b9d33";
-const COULEUR_RUBAN_BORD = "#457b9d";
-const COULEUR_MEDIANE = "#457b9d";
-const COULEUR_PLAFOND = "#e63946";
-const COULEUR_INCOMPLET = "#6b7280";
+const COULEUR_RUBAN = "color-mix(in srgb, var(--hexagone) 20%, transparent)";
+const COULEUR_RUBAN_BORD = "var(--hexagone)";
+const COULEUR_MEDIANE = "var(--hexagone)";
+const COULEUR_PLAFOND = "var(--martinique)";
+const COULEUR_REPERE = "var(--schiste)";
+const COULEUR_INCOMPLET = "var(--schiste)";
 
 export const SEUIL_ETROIT_PX = 520;
 
@@ -37,7 +39,7 @@ export function calculerDispositionGrapheCarburants(
     largeur,
     hauteur: etroit ? 360 : 420,
     marginTop: 12,
-    marginRight: etroit ? 36 : 20,
+    marginRight: etroit ? 96 : 148,
     marginBottom: etroit ? 44 : 52,
     marginLeft: etroit ? 44 : 56,
     etroit,
@@ -83,6 +85,10 @@ interface MarqueInfobulle {
   q90: number;
 }
 
+export function texteInfobulleMois(d: MarqueInfobulle): string {
+  return `${formaterMoisUtc(d.date)}\nMédiane hexagone : ${formaterEurosLitre(d.mediane)}\nq10–q90 : ${formaterEurosLitre(d.q10)} – ${formaterEurosLitre(d.q90)}`;
+}
+
 /** Infobulle du mois le plus proche du pointeur ; sans pointerX, Plot les affiche toutes. */
 export function infobulleCarburants(marques: MarqueInfobulle[]) {
   return Plot.tip(
@@ -90,8 +96,9 @@ export function infobulleCarburants(marques: MarqueInfobulle[]) {
     Plot.pointerX({
       x: "date",
       y: "mediane",
-      title: (d: MarqueInfobulle) =>
-        `${formaterMoisUtc(d.date)}\nMédiane : ${formaterEurosLitre(d.mediane)}\nq10–q90 : ${formaterEurosLitre(d.q10)} – ${formaterEurosLitre(d.q90)}`,
+      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+      fontSize: 12,
+      title: (d: MarqueInfobulle) => texteInfobulleMois(d),
     }),
   );
 }
@@ -127,11 +134,16 @@ export function grapheCarburants(
     marginRight: disposition.marginRight,
     marginBottom: disposition.marginBottom,
     marginLeft: disposition.marginLeft,
-    x: { type: "utc", label: null },
+    x: {
+      type: "utc",
+      label: null,
+      tickFormat: (d: Date, i: number) => formaterMoisAxe(d, i === 0),
+    },
     y: {
       label: "€/L",
       domain: [domaineY.min, domaineY.max],
       grid: true,
+      tickFormat: (d: number) => formaterDecimaleFr(d.toFixed(1)),
     },
     color: { legend: false },
     marks: [
@@ -153,19 +165,52 @@ export function grapheCarburants(
         fillOpacity: 0.25,
         inset: 2,
       }),
+      Plot.ruleX([new Date(Date.UTC(2022, 3, 1))], {
+        stroke: COULEUR_REPERE,
+        strokeDasharray: "1.5 4",
+        strokeWidth: 1,
+      }),
       Plot.line(marques, {
         x: "date",
         y: "mediane",
         stroke: COULEUR_MEDIANE,
-        strokeWidth: 2,
+        strokeWidth: 1.5,
       }),
       Plot.line(escalier, {
         x: "date",
         y: "prix",
         stroke: COULEUR_PLAFOND,
-        strokeWidth: 2,
+        strokeWidth: 2.5,
         curve: "step-after",
       }),
+      Plot.text(
+        [{ date: marques[marques.length - 1].date, y: marques[marques.length - 1].mediane }],
+        {
+          x: "date",
+          y: "y",
+          text: () => "Hexagone\nmédiane",
+          textAnchor: "start",
+          dx: 8,
+          dy: -16,
+          fill: COULEUR_MEDIANE,
+          fontSize: 12,
+          fontWeight: "500",
+        },
+      ),
+      Plot.text(
+        [{ date: escalier[escalier.length - 1].date, y: escalier[escalier.length - 1].prix }],
+        {
+          x: "date",
+          y: "y",
+          text: () => "prix maximal\nfixé par arrêté\npréfectoral",
+          textAnchor: "start",
+          dx: 8,
+          dy: 20,
+          fill: COULEUR_PLAFOND,
+          fontSize: 12,
+          fontWeight: "500",
+        },
+      ),
       Plot.dot(
         marques.filter((m) => m.incomplet),
         {

@@ -2,14 +2,15 @@
  * Graphe principal : deux évolutions cumulées depuis avril 2022.
  * Aucun niveau d'indice territorial. Aucun second graphe redondant.
  */
+import { formaterMoisAxe } from "./axes-fr.ts";
 import * as Plot from "@observablehq/plot";
 import type { ResumeEcran } from "./calculs.ts";
 import { formaterPct } from "./calculs.ts";
 import { formaterMoisUtc } from "./validation.ts";
 
-const COULEUR_MQ = "#e63946";
-const COULEUR_FM = "#457b9d";
-const COULEUR_JALON = "#6b7280";
+const COULEUR_MQ = "var(--martinique)";
+const COULEUR_FM = "var(--hexagone)";
+const COULEUR_JALON = "var(--schiste)";
 
 /** Sous ce seuil, marges et labels sont recomposés pour l'écran étroit. */
 export const SEUIL_ETROIT_PX = 520;
@@ -204,7 +205,7 @@ export function grapheEvolutions(
         x: "periode",
         y: "evolution_france_metropolitaine_pct",
         stroke: COULEUR_FM,
-        strokeWidth: 2.5,
+        strokeWidth: 1.5,
       }),
       Plot.ruleX(jalonsDates, {
         x: "periode",
@@ -247,6 +248,136 @@ export function grapheEvolutions(
         fontWeight: "bold",
         fill: COULEUR_FM,
       }),
+    ],
+  });
+}
+
+export interface MarqueurContexte {
+  date: Date;
+  titre: string;
+}
+
+/**
+ * Décalages verticaux (px) de deux étiquettes de fin de courbe : si elles
+ * tombent à moins de `ecartMinPx` l'une de l'autre, on les écarte de part et
+ * d'autre de leur milieu, la plus haute vers le haut. Aucune valeur n'est modifiée.
+ */
+export function decalagesEtiquettes(
+  yMqPx: number,
+  yFmPx: number,
+  ecartMinPx: number,
+): { mq: number; fm: number } {
+  const ecart = Math.abs(yMqPx - yFmPx);
+  if (ecart >= ecartMinPx) return { mq: 0, fm: 0 };
+  const pousse = (ecartMinPx - ecart) / 2;
+  const mqEstHaut = yMqPx <= yFmPx;
+  return mqEstHaut ? { mq: -pousse, fm: pousse } : { mq: pousse, fm: -pousse };
+}
+
+/** Un poste, deux évolutions, échelle fournie par l'appelant (commune aux quatre). */
+export function graphePetit(
+  lignes: {
+    periode: Date;
+    evolution_martinique_pct: number;
+    evolution_france_metropolitaine_pct: number;
+  }[],
+  domaine: { min: number; max: number },
+  largeurConteneur: number,
+  marqueurs: MarqueurContexte[],
+): SVGSVGElement | HTMLElement {
+  const disposition = calculerDispositionGraphe(largeurConteneur);
+  const derniere = lignes[lignes.length - 1];
+  const libelleMq = `Martinique\n${formaterPct(derniere.evolution_martinique_pct)} %`;
+  const libelleFm = `Hexagone\n${formaterPct(derniere.evolution_france_metropolitaine_pct)} %`;
+  const ancre = lignes[0].periode;
+  const hauteur = disposition.etroit ? 240 : 280;
+  const margeHaut = 16;
+  const margeBas = 36;
+  const pxParPoint = (hauteur - margeHaut - margeBas) / (domaine.max - domaine.min);
+  const decalages = decalagesEtiquettes(
+    -derniere.evolution_martinique_pct * pxParPoint,
+    -derniere.evolution_france_metropolitaine_pct * pxParPoint,
+    30,
+  );
+
+  return Plot.plot({
+    width: disposition.largeur,
+    height: hauteur,
+    marginTop: margeHaut,
+    marginRight: 88,
+    marginBottom: margeBas,
+    marginLeft: disposition.etroit ? 36 : 44,
+    x: {
+      label: null,
+      ticks: [ancre, derniere.periode],
+      tickFormat: (d: Date) => formaterMoisAxe(d, true),
+    },
+    y: {
+      label: null,
+      grid: true,
+      domain: [domaine.min, domaine.max],
+      nice: false,
+      tickFormat: (d: number) => String(d),
+    },
+    marks: [
+      Plot.ruleY([0], { stroke: "var(--brume)", strokeWidth: 1 }),
+      Plot.ruleX([ancre], {
+        stroke: COULEUR_JALON,
+        strokeDasharray: "1.5 4",
+        strokeWidth: 1,
+      }),
+      Plot.lineY(lignes, {
+        x: "periode",
+        y: "evolution_martinique_pct",
+        stroke: COULEUR_MQ,
+        strokeWidth: 2.5,
+      }),
+      Plot.lineY(lignes, {
+        x: "periode",
+        y: "evolution_france_metropolitaine_pct",
+        stroke: COULEUR_FM,
+        strokeWidth: 1.5,
+      }),
+      Plot.dot(marqueurs, {
+        x: "date",
+        y: domaine.min,
+        fill: COULEUR_JALON,
+        r: 3.5,
+        title: (d: MarqueurContexte) =>
+          `${formaterMoisUtc(d.date)} — ${d.titre} Contexte, pas une cause.`,
+      }),
+      Plot.text(
+        [{ periode: derniere.periode, y: derniere.evolution_martinique_pct, texte: libelleMq }],
+        {
+          x: "periode",
+          y: "y",
+          text: "texte",
+          textAnchor: "start",
+          dx: 8,
+          dy: decalages.mq,
+          fill: COULEUR_MQ,
+          fontSize: 11,
+          fontWeight: "600",
+        },
+      ),
+      Plot.text(
+        [{
+          periode: derniere.periode,
+          y: derniere.evolution_france_metropolitaine_pct,
+          texte: libelleFm,
+        }],
+        {
+          x: "periode",
+          y: "y",
+          text: "texte",
+          textAnchor: "start",
+          dx: 8,
+          dy: decalages.fm,
+          fill: COULEUR_FM,
+          fontSize: 11,
+          fontWeight: "600",
+        },
+      ),
     ],
   });
 }
