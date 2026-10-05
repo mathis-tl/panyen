@@ -1,5 +1,15 @@
 # panyen — Brief de direction artistique
 
+> **AVENANT 5b (2026-10-05, décisions de Mathis) — il l'emporte sur tout ce qui suit.**
+> 1. **Thème clair seul.** Aucun thème sombre, aucune bascule, aucune règle `prefers-color-scheme: dark`. Les valeurs « sombre » ci-dessous sont abandonnées.
+> 2. **Typographie « étiquette de prix »** (voir § 3 remplacé) : Archivo (largeur étendue) pour les titres, Literata pour le texte. Plus de Schibsted Grotesk, d'Atkinson ni d'IBM Plex Mono, plus d'étiquettes en majuscules espacées.
+> 3. **Signature : la ligne de ticket** (étiquette, points de conduite, valeur) en plus de la règle du panier.
+> 4. **« Lecture » devient « Analyse »** pour le troisième registre du récit (Mesuré / Contexte / Analyse).
+> 5. **Écart 2022 alimentaire = 40,2 %** partout (Insee Première n° 1958), pas 40,0.
+> 6. **Un lecteur qui découvre doit tout comprendre** : chaque section a une question en langage simple, un « À retenir », un « Comment lire », sa source ; aucun terme technique sans définition (voir `SPEC.txt` § textes).
+
+---
+
 > Destiné à l'implémentation avec le skill `frontend-design` (github.com/anthropics/skills).
 > Inspiration principale : Reuters Graphics, « How the US economy can look pretty good but feel pretty bad » (27 août 2026).
 > Inspiration secondaire : Our World in Data, « Population with UN projections ».
@@ -17,25 +27,25 @@
 
 ## 2. Couleurs
 
-| Rôle | Nom | Thème clair | Thème sombre |
-|---|---|---|---|
-| Fond | Ardoise pâle / Nuit d'encre | `#F4F6F8` | `#121C27` |
-| Texte | Encre | `#14202B` (15,3:1) | `#E8EDF2` (14,6:1) |
-| Texte secondaire, axes | Gris schiste | `#4A5866` (6,7:1) | `#A3B1BF` (7,9:1) |
-| **Martinique** | Bleu profond | `#1D5FA6` (6,0:1) | `#7DB3F0` (7,8:1) |
-| **Hexagone** | Ambre | `#A35F00` (4,6:1) | `#F0B259` (9,2:1) |
-| Grille, filets | Brume | `#C9D2DB` | `#2E3C4A` |
+| Rôle | Nom | Valeur (thème clair seul) |
+|---|---|---|
+| Fond | Ardoise pâle | `#F4F6F8` |
+| Texte | Encre | `#14202B` (15,3:1) |
+| Texte secondaire, axes | Gris schiste | `#4A5866` (6,7:1) |
+| **Martinique** | Bleu profond | `#1D5FA6` (6,0:1) |
+| **Hexagone** | Ambre | `#A35F00` (4,6:1) |
+| Grille, filets | Brume | `#C9D2DB` |
 
-Contrastes calculés selon la méthode WCAG. Les deux couleurs de territoire passent le niveau AA pour du texte normal dans les deux thèmes, donc elles servent aussi aux libellés directs.
+Contrastes calculés selon la méthode WCAG. Les deux couleurs de territoire passent le niveau AA pour du texte normal, donc elles servent aussi aux libellés directs.
 
 **Daltonisme.** Écart perceptuel (ΔE) entre bleu et ambre, par simulation. Au-delà d'environ 20, les couleurs sont nettement distinctes. Il n'y a ni rouge ni vert.
 
-| Vision | Clair | Sombre |
-|---|---|---|
-| Normale | 101 | 91 |
-| Deutéranopie | 103 | 93 |
-| Protanopie | 91 | 87 |
-| Tritanopie | 72 | 71 |
+| Vision | Écart perceptuel |
+|---|---|
+| Normale | 101 |
+| Deutéranopie | 103 |
+| Protanopie | 91 |
+| Tritanopie | 72 |
 
 **Redondance.** La couleur n'est jamais seule. Chaque série porte son nom, et la Martinique a un trait de 2,5 px contre 1,5 px pour l'Hexagone. Les deux couleurs ont une luminosité proche : sans ces libellés et ces épaisseurs, on les confondrait en niveaux de gris.
 
@@ -43,21 +53,19 @@ Contrastes calculés selon la méthode WCAG. Les deux couleurs de territoire pas
 
 ---
 
-## 3. Typographie
+## 3. Typographie — « étiquette de prix » (remplace la version initiale)
 
-- **Titres :** Schibsted Grotesk (OFL, paquet `@fontsource/schibsted-grotesk`), graisses 600 à 700. Grotesque d'origine presse, sobre, sans le contraste d'un serif « magazine ».
-- **Texte :** Atkinson Hyperlegible Next (OFL, paquet `@fontsource/schibsted-grotesk`). Dessinée pour la lisibilité en basse vision.
-- **Chiffres :** IBM Plex Mono (OFL), graisse 500. Toutes les valeurs, axes et libellés numériques l'utilisent. Chiffres tabulaires par construction, donc alignés sans réglage.
+Objectif : sortir du look « site généré » (grotesque + police mono + petites étiquettes en majuscules espacées). Le site doit évoquer une enseigne et un ticket de caisse, pas un tableau de bord.
 
----
-
-**Hébergement.** Les trois polices sont servies par le site lui-même (paquets Fontsource, versions 5.3.0, licence OFL-1.1) : aucun appel à Google Fonts ni à un CDN au chargement.
-
----
+- **Titres :** Archivo variable (OFL, `@fontsource-variable/archivo`), axe de largeur étendu (`wdth` d'environ 112 à 125 si l'axe est livré), graisse 800, interlettrage serré, interligne 0,95 à 1,05. Un titre ressemble à un panneau de rayon : large, lourd, court.
+- **Texte :** Literata (OFL, `@fontsource-variable/literata`), 400, corps 18 px, interligne 1,6, serif conçue pour la lecture à l'écran. Italique pour les définitions.
+- **Chiffres :** Archivo avec `font-variant-numeric: tabular-nums` (à vérifier à l'intégration ; sinon, chiffres de Literata). Aucune police à chasse fixe.
+- **Étiquettes (navigation, légendes, badges) :** casse normale, graisse 700 ou 600, taille 14 à 15 px. **Interdit : majuscules espacées**, texte à chasse fixe, pastilles à bordure fine.
+- **Hébergement :** servi par le site (Fontsource 5.3.0, OFL-1.1), aucun appel à Google Fonts ni à un CDN.
 
 ## 4. Mise en page
 
-**Concept :** un relevé de caisse. Un ticket étroit en colonne, où chaque ligne est un constat suivi de sa preuve.
+**Concept :** un relevé de caisse. Chaque ligne est un constat suivi de sa preuve. **Ligne de ticket** : étiquette, points de conduite (ligne pointillée discrète en fond), valeur à droite ; les listes chiffrées (postes, années, revenus) l'utilisent, le total en ligne forte. Les points de conduite ne signifient pas « estimé » : seul le hachuré le signifie.
 
 ```
 MOBILE 375 px
@@ -65,7 +73,7 @@ MOBILE 375 px
 │ panyen                 ◐    │  ← nom + bascule thème
 │                             │
 │ Depuis 2022, l'écart        │  ← titre-réponse
-│ [état : voir § 8].          │    Schibsted 30/34
+│ [état : voir § 8].          │    Archivo 30/34
 │ Estimation, fin [mois] 2026 │  ← ligne gris schiste
 │                             │
 │ Pour 100 € dans l'Hexagone… │
@@ -116,7 +124,7 @@ Elle traduit le nom *panyen* (« panier ») en une image que tout le monde lit s
 
 | Écran | Type | Détails |
 |---|---|---|
-| **1. Écart 2022** | Barres horizontales « pour 100 € dans l'Hexagone » | Le total en haut, puis les quatre postes. Tout est plein, car tout est mesuré. La valeur est au bout de chaque barre (Plex Mono). |
+| **1. Écart 2022** | Barres horizontales « pour 100 € dans l'Hexagone » | Le total en haut, puis les quatre postes. Tout est plein, car tout est mesuré. La valeur est au bout de chaque barre (chiffres tabulaires). |
 | **2. Évolutions IPC** | 4 petits graphiques (alimentation, énergie, manufacturés, services), deux courbes chacun | Chaque indice est ramené à 100 en mars-avril 2022, sur son propre territoire. Même échelle pour les quatre, libellés « Martinique » et « Hexagone » en bout de courbe. Toutes les courbes sont pleines (mesures). Chaque graphique a un intertitre-constat, par paires, à la Reuters. En dessous : l'écart estimé année par année, 2022 en barre pleine, années suivantes hachurées. |
 | **3. Carburants** | Série mensuelle du gazole : ruban q10–q90 des stations métropolitaines, médiane, et plafond martiniquais en escalier | Même construction que l'écran livré après le correctif 4b (périodes d'effet du plafond). Ruban et médiane en ambre (Hexagone), plafond en **bleu** (Martinique) : plus aucun rouge. Libellés directs en bout de courbe, plafond nommé « prix maximal fixé par arrêté préfectoral ». Pas de hachure : les deux sont des données observées, mais de nature différente, et une phrase le dit. Dernière période incomplète signalée en toutes lettres. |
 | **4. Pourquoi c'est ressenti plus cher** (sous la réponse) | Deux blocs : (a) série longue des écarts de niveau mesurés par l'Insee, 2010 / 2015 / 2022 (ensemble 9,7 / 12,3 / 13,8 % ; alimentation 29,5 / 38,2 / 40,2 %), barres pleines ; (b) revenus 2024 : salaire net moyen privé −10,7 %, fonction publique +19,7 %, non-salariés −13,6 %, par rapport à la moyenne nationale | Tout est mesuré, donc plein. Mention « 2010-2015 : comparaison délicate » (Insee) sous (a), « moyenne nationale, Île-de-France incluse » sous (b). Aucune barre ne dit que la vie est chère à cause de ces chiffres : l'intertitre dit « coïncide avec ». Cette section vient après la réponse principale, jamais avant. |
@@ -140,7 +148,6 @@ Règles communes :
 
 - Ni défilement imposé ni blocs figés pendant le défilement.
 - Pas de compteur de chiffres qui défile.
-- Pas de transition lors du changement de thème.
 
 **« Réduire les animations » :** tout s'affiche dans son état final, sans aucun mouvement. Le contenu ne dépend jamais d'une animation pour exister.
 
@@ -150,7 +157,7 @@ Règles communes :
 
 **Titre-réponse, trois états** (choisi par le calcul, jamais à la main) :
 
-- « Depuis 2022, l'écart s'est creusé. » : variation estimée > +2 points ;
+- Le titre nomme son sujet (courses alimentaires, Martinique, Hexagone) : voir `SPEC.txt` pour les trois phrases. Creusé : variation estimée > +2 points ;
 - « Depuis 2022, l'écart s'est resserré. » : variation estimée < −2 points ;
 - « Depuis 2022, l'écart est resté à peu près le même. » : entre les deux. On ajoute la ligne « Il a atteint environ 42,5 % fin 2024 (estimation), avant de revenir vers 40,3 % en juillet 2026. »
 
@@ -189,5 +196,5 @@ Le seuil de 2 points est un choix provisoire : l'enquête de 2022 ne fournit pas
 ## Annexe B — Points à vérifier avant l'implémentation
 
 - **Base des indices :** depuis janvier 2026, les IPC Insee sont publiés en base 2025 avec la nomenclature eCoicop. Vérifier le raccord avec les séries antérieures et la correspondance exacte des quatre postes.
-- **Polices :** licence OFL-1.1 confirmée pour les trois paquets Fontsource (2026-10-05). À vérifier à l'intégration : poids livré et rendu à 375 px. Les chiffres tabulaires de ces deux polices n'ont pas été vérifiés, d'où IBM Plex Mono pour tous les chiffres.
+- **Polices :** Archivo et Literata, OFL-1.1 (paquets variables Fontsource 5.3.0). À vérifier à l'intégration : axes réellement livrés (`wdth`, `wght`), poids du bundle, rendu à 375 px, chiffres tabulaires.
 - **Choix tranchés sans information :** mois de fin de l'estimation ; échelle commune aux quatre petits graphiques (à revoir si l'énergie écrase les autres postes) ; libellé « prix maximal » pour les carburants (le prix payé en Martinique n'est pas forcément égal au plafond) ; attribution bleu = Martinique, ambre = Hexagone (arbitraire).

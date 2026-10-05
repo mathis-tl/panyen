@@ -3,7 +3,7 @@
 *Brouillon rédigé par IA le 2026-09-29, à relire et réécrire par Mathis. Chaque
 paragraphe porte un seul registre : **[Mesuré]** = calculé par le pipeline (colonne
 citée), **[Contexte]** = fait sourcé (lien vérifié dans `validation.md`),
-**[Lecture]** = interprétation assumée. Chiffres IPC au dernier mois commun,
+**[Analyse]** = interprétation assumée. Chiffres IPC au dernier mois commun,
 juillet 2026. Aucune citation de presse tant qu'elle n'a pas été recopiée depuis
 la page.*
 
@@ -59,7 +59,7 @@ alimentaires ont augmenté de 0,7 % en Martinique et de 1,5 % dans l'Hexagone.
 *`evolution_martinique_pct`, `evolution_france_metropolitaine_pct`, rapport des
 facteurs entre 2024-10 et 2025-12.*
 
-**[Lecture]** Le ralentissement coïncide nettement avec le protocole. Mais le
+**[Analyse]** Le ralentissement coïncide nettement avec le protocole. Mais le
 protocole ne couvre qu'une petite part du panier, et aucune étude indépendante
 n'a encore mesuré son effet sur l'indice global. On peut constater la
 coïncidence ; on ne peut pas encore parler de cause.
@@ -91,7 +91,7 @@ hausse des produits pétroliers : +17,8 % contre +29 %.
 *[Préfecture, 1er juillet 2026](https://www.martinique.gouv.fr/Actualites/Revision-des-prix-maximum-des-produits-petroliers-au-1er-juillet-2026-a-zero-heure) ·
 [Insee, bilan 2022](https://www.insee.fr/fr/statistiques/7621705?sommaire=7343444).*
 
-**[Lecture]** L'écart sur l'énergie tient d'abord à des règles différentes —
+**[Analyse]** L'écart sur l'énergie tient d'abord à des règles différentes —
 fiscalité, prix administrés — plus qu'à un rattrapage. Il ne dit pas que
 l'énergie coûte moins cher en Martinique : il dit seulement que son prix y a
 moins augmenté.
@@ -106,7 +106,7 @@ ménages martiniquais vivaient sous le seuil de pauvreté, contre 15 % dans
 l'Hexagone.
 *[Insee Analyses Martinique n° 80](https://www.insee.fr/fr/statistiques/8674292).*
 
-**[Lecture]** Quatre ans après la mesure de 2022, rien n'indique que l'écart
+**[Analyse]** Quatre ans après la mesure de 2022, rien n'indique que l'écart
 alimentaire se soit refermé. Il s'est creusé jusqu'à la crise, puis la hausse
 s'est ralentie : l'écart estimé est revenu à peu près à son niveau de 2022, pas
 en dessous. Seule une nouvelle enquête de
@@ -160,7 +160,7 @@ La moyenne masque donc un écart entre salariés du public et ménages du privé
 indépendants ou des personnes sans emploi.
 *Insee, disparités territoriales de salaires et de revenus d'activité.*
 
-**[Lecture]** Ces éléments coïncident avec le sentiment d'une vie plus chère et plus
+**[Analyse]** Ces éléments coïncident avec le sentiment d'une vie plus chère et plus
 difficile : un niveau de prix alimentaire supérieur de 40 %, qui ne s'est pas refermé
 depuis 2022, supporté par des revenus médians plus bas, davantage de pauvreté et de
 chômage. Cette coïncidence n'est pas une démonstration. Aucune enquête de perception n'a
