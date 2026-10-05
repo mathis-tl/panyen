@@ -37,10 +37,21 @@ export function nettoyagesEnAttente(): number {
   return registreEcran.enAttente();
 }
 
+function squelette(annonce: string): string {
+  return `
+    <div class="squelette" role="status" aria-live="polite">
+      <p class="sr-only">${annonce}</p>
+      <div class="squelette-bloc squelette-titre"></div>
+      <div class="squelette-bloc squelette-ligne"></div>
+      <div class="squelette-bloc squelette-barre"></div>
+      <div class="squelette-bloc squelette-barre court"></div>
+    </div>`;
+}
+
 /** Affiche l'état de chargement. */
 export function afficherChargement(conteneur: HTMLElement): void {
   nettoyerEcranCourant();
-  conteneur.innerHTML = `<p class="chargement">Chargement des données…</p>`;
+  conteneur.innerHTML = squelette("Chargement des données.");
 }
 
 /** HTML d'erreur — testable sans DOM. */

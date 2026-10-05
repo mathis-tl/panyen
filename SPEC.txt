@@ -1,98 +1,181 @@
-SPEC ACTIVE — INCRÉMENT 5a : socle visuel et écran principal
+SPEC ACTIVE — INCRÉMENT 5 : interface finale accessible (complet)
 
-La spec de l'incrément 4 (analyse et contexte) est close : voir l'historique git
-(`50b8a1c`). Cette spec ne couvre que la première tranche verticale de
-l'incrément 5 ; le reste est listé en non-objectifs.
+La spec de l'incrément 4 est close (historique git, `50b8a1c`). Cette spec couvre
+tout l'incrément 5 du ROADMAP en une seule boucle, découpée en phases internes
+avec une porte de vérification entre chacune. Pas de seconde spec intermédiaire.
 
 État de départ
 
-- `main` à `50b8a1c` (incrément 4 clos) ; aucune police chargée ; thème sombre
-  seul ; le plafond martiniquais est dessiné en rouge dans le graphe carburants.
-- Stack : Vite + TypeScript sans framework, `@observablehq/plot`, `hyparquet`,
-  hébergement statique. Parquet lus : `differentiel_ipc.parquet` (poste
-  alimentation seul porte `ecart_prix_estime_pct` et `nature_ecart`) et
-  `carburants.parquet`.
+- `main` à `f86f148`. Aucune police chargée ; thème sombre seul ; plafond
+  martiniquais dessiné en rouge ; infobulle du graphe carburants illisible en
+  thème sombre ; une page à deux vues (IPC, carburants) ; événements de contexte
+  seulement dans `dbt/seeds/evenements_contexte.csv`, non affichés.
+- Stack : Vite + TypeScript sans framework, `@observablehq/plot` 0.6.17 (ni
+  hachure publique ni clavier natifs), `hyparquet`. Hébergement statique.
+- Données publiées : `differentiel_ipc.parquet` (quatre postes ; seul
+  l'alimentation porte `ecart_prix_estime_pct`), `carburants.parquet`
+  (distribution métropole / plafond Martinique, périodes du plafond).
 - Direction artistique : `docs/prompts/panyen-brief-da.md` (corrigé le
-  2026-10-05). Veille des dépôts : `docs/prompts/prompt-recherche-github-interface.md`
-  et son second avis (Pico CSS archivé, Plot sans hachure ni clavier natifs).
+  2026-10-05). Récit validé par Mathis : `docs/analyse/recit.md`. Validation des
+  chiffres : `docs/analyse/validation.md` § 6.
 
 Objectif utilisateur
 
-Qu'une personne qui ne sait pas ce qu'est un indice des prix lise, en moins d'une
-minute, la réponse (creusé / resserré / à peu près le même), sa période, et que
-l'écart d'aujourd'hui est une estimation. Une seule page, deux thèmes.
+Qu'une personne qui ne sait pas ce qu'est un indice des prix comprenne, en moins
+d'une minute, la réponse (écart creusé / resserré / à peu près le même), sa
+période et sa limite (« estimation »), puis qu'elle puisse aller jusqu'à la
+raison pour laquelle la vie est ressentie plus chère (niveau, revenus), sans
+jamais confondre mesure, contexte et lecture.
 
-Périmètre de l'incrément 5a
+Périmètre — quatre phases, dans cet ordre
 
-1. Socle : polices Schibsted Grotesk, Atkinson Hyperlegible Next, IBM Plex Mono
-   servies par le site (paquets Fontsource, OFL-1.1) ; variables CSS de couleur
-   du brief, thème clair et thème sombre, bascule manuelle + `prefers-color-scheme`
-   par défaut ; `prefers-reduced-motion`.
-2. Titre-réponse à trois états calculé depuis le Parquet (alimentation) : creusé si
-   la variation estimée depuis l'ancre dépasse +2 points, resserré sous −2 points,
-   « à peu près le même » entre les deux, avec le pic estimé et le dernier mois
-   commun (« fin [mois] 2026 »). Le seuil est une constante nommée et testée.
-3. La règle du panier (écran principal) : barres « pour 100 € dans l'Hexagone à la
-   même date », Martinique 2022 mesuré en plein, Martinique aujourd'hui avec segment
-   hachuré, libellé « estimé ». Hachure = motif SVG fait chez nous. Aucune barre
-   n'affiche un niveau d'indice.
-4. Renvois en exposant vers la source (Insee ECSP 2022 ; indices Insee) et ligne
-   « Estimation, fin [mois] 2026 ».
-5. Graphe carburants : plafond martiniquais en bleu (plus de rouge) ; l'infobulle
-   devient lisible en thème clair et sombre ; focus clavier sur les mois.
-6. Nettoyages repris du backlog : `h1` court séparé du paragraphe de conclusion ;
-   squelette à la place du « Chargement… » nu.
+PHASE A — Données (seules modifications dbt/Parquet autorisées)
+
+A1. Seed `dbt/seeds/ecsp_niveaux.csv`, grain = (annee_enquete, poste). Contenu :
+    écart de niveau Martinique / Hexagone, indice de Fisher, aux enquêtes 2010,
+    2015 et 2022 pour l'ensemble et l'alimentation ; postes 2022 (communications,
+    meubles et entretien, alcool-tabac, santé, logement, transports).
+    Colonnes : `annee_enquete`, `poste`, `ecart_fisher_pct`, `precision_pct`
+    (décimale publiée ou arrondie), `source_url`, `consulte_le`, `remarque`
+    (ex. « comparaison 2010-2015 délicate »). Valeurs recopiées de
+    `docs/analyse/validation.md` § 6 ; chacune relue sur la page source à la
+    création du seed. Le seed `ecsp_alimentation_2022.csv` existant reste
+    l'ancre de l'estimation ; l'écart 40,0 / 40,2 (arrondi de la même mesure) est
+    expliqué dans le schéma.
+A2. Seed `dbt/seeds/revenus_ecart_national.csv`, grain = (annee, indicateur) :
+    salaire net moyen privé, fonction publique, revenu salarial, revenu d'activité
+    des non-salariés, par rapport à la moyenne nationale. Valeurs 2024 / 2023 de
+    `validation.md` § 6 ; `source_url`, `consulte_le`, `champ` (« moyenne
+    nationale, Île-de-France incluse »).
+A3. `evenements_contexte.csv` est publié lui aussi.
+A4. Publication : chaque seed finit en Parquet sous `web/public/data/`, avec les
+    mêmes garanties que les autres tables : tests dbt `not_null` et
+    `accepted_values`, grain en commentaire d'en-tête et dans `schema.yml`,
+    publication seulement si dbt est vert, provenance conservée dans le Parquet.
+    Réutiliser le mécanisme de publication existant plutôt que d'en écrire un
+    nouveau ; si c'est impossible, le dire avant d'agir.
+PORTE A : `make verify` vert, Parquet publiés relus (lignes, colonnes, SHA-256),
+les deux Parquet existants identiques.
+
+PHASE B — Socle
+
+B1. Paquets `@fontsource/schibsted-grotesk`, `@fontsource/atkinson-hyperlegible-next`,
+    `@fontsource/ibm-plex-mono` (OFL-1.1), servis par le site. Aucune autre
+    dépendance sans justification écrite dans le rapport.
+B2. Variables CSS du brief, thèmes clair et sombre, bascule manuelle +
+    `prefers-color-scheme` par défaut, `prefers-reduced-motion`, chiffres en
+    IBM Plex Mono.
+B3. Motif de hachure SVG réutilisable (estimé), contour plein de la même couleur.
+B4. Composant infobulle accessible (lisible dans les deux thèmes, apparition au
+    survol et au focus clavier), réutilisé par tous les graphes.
+B5. Squelette de chargement à la place de « Chargement… » ; état d'erreur visible.
+PORTE B : tests verts, build vert, captures du socle (deux thèmes, 375 / 1440 px).
+
+PHASE C — Écrans (brief DA § 4 à 7)
+
+C1. Écran principal : titre-réponse à trois états (creusé si variation estimée
+    depuis l'ancre > +2 points, resserré si < −2, sinon « à peu près le même »,
+    avec pic estimé et dernier mois commun) ; seuil = constante nommée testée ;
+    `h1` court distinct du paragraphe de conclusion ; ligne « Estimation, fin
+    [mois] 2026 ».
+C2. Règle du panier : barres « pour 100 € dans l'Hexagone à la même date »,
+    Martinique 2022 mesuré en plein, Martinique aujourd'hui avec segment hachuré
+    « estimé ». Aucune barre n'affiche un niveau d'indice.
+C3. Écran « Écart 2022 par poste » (barres horizontales, tout en plein, valeur au
+    bout) depuis `ecsp_niveaux`.
+C4. Écran IPC : quatre petits graphiques (alimentation, énergie, produits
+    manufacturés, services), deux courbes chacun, indices ramenés à 100 en
+    mars-avril 2022 sur leur propre territoire, même échelle (à réviser si
+    l'énergie écrase les autres, signalé), libellés directs en bout de courbe,
+    intertitre-constat par graphique ; sous eux, l'écart estimé année par année
+    (2022 plein, suivantes hachurées). Événements de contexte annotés sur les
+    courbes (marqueur + infobulle avec source), jamais en causalité.
+C5. Écran carburants : série du gazole (ruban q10–q90, médiane en ambre, plafond
+    martiniquais en bleu en escalier, libellé « prix maximal fixé par arrêté
+    préfectoral »), dernière période incomplète signalée, repère 2022 en pointillé
+    seul usage du pointillé ; infobulle et focus clavier par période.
+C6. Section « Pourquoi c'est ressenti plus cher » (sous la réponse) : bloc (a)
+    série 2010 / 2015 / 2022 des écarts de niveau, barres pleines, mention
+    « comparaison 2010-2015 délicate » ; bloc (b) revenus par rapport à la moyenne
+    nationale, avec champ et année. Intertitres en « coïncide avec », jamais « à
+    cause de ».
+C7. Récit : le texte validé de `recit.md` est intégré en trois registres visibles
+    ([Mesuré], [Contexte], [Lecture]). Les valeurs [Mesuré] sont lues dans les
+    Parquet (emplacements nommés remplacés à l'exécution, test qui vérifie que
+    chaque emplacement est résolu) ; chaque [Contexte] garde son URL. Un
+    emplacement non résolu fait échouer l'écran, il ne s'affiche jamais vide.
+C8. Section « Méthode » : évolution contre niveau, base 100 propre à chaque
+    territoire, ce que l'ECSP 2022 est, ce qui est estimé, limites connues
+    (comparabilité des enquêtes, pas d'intervalle de confiance, dernier mois
+    commun). Lien vers les sources.
+PORTE C : tests, build, captures de chaque écran dans les deux thèmes et les deux
+largeurs, relues une à une.
+
+PHASE D — Qualité (ROADMAP « Fini quand »)
+
+D1. Palette : contrastes recalculés sur les valeurs CSS finales ; simulation
+    daltonisme (deutéranopie, protanopie, tritanopie) ; niveaux de gris.
+D2. Revue d'animations : ≤ 300 ms, `transform`/`opacity`, aucun contenu masqué
+    tant qu'il n'est pas animé, état final immédiat sous `prefers-reduced-motion`.
+D3. Clavier : parcours Tab complet, focus visible, infobulles atteignables sans
+    souris ; lecteur d'écran : titres hiérarchisés, alternatives textuelles aux
+    graphes (résumé chiffré lu dans les Parquet).
+D4. Réseau : aucune requête vers un domaine tiers ; poids du bundle avant / après.
+D5. Aucun double axe, aucune légende séparée, libellés directs partout.
+PORTE D : rapport de qualité chiffré ; captures relues par Mathis.
 
 Contraintes
 
 - Règle des niveaux (CLAUDE.md) : on compare des évolutions entre territoires ;
-  l'écart de niveau vient de l'ECSP 2022 et tout prolongement est étiqueté
-  « estimation » partout où il apparaît. Un contre-exemple dans l'interface est un
-  bug bloquant.
-- Aucune valeur écrite à la main : tout chiffre est lu dans le Parquet.
-- Pas de dépendance serveur, de CDN tiers ni de police chargée depuis Google.
-- Dépendances nouvelles : seulement les trois paquets Fontsource ; toute autre
-  dépendance se justifie avant d'être ajoutée. Pas de framework de composants.
-- Contraste WCAG AA ; la couleur n'est jamais seule (libellés directs, épaisseur
-  de trait) ; animations ≤ 300 ms (`transform`/`opacity`) ; état final immédiat
-  sous `prefers-reduced-motion`.
-- Machine 8 Go : une commande lourde à la fois.
+  l'écart de niveau vient des enquêtes ECSP ; tout prolongement après 2022 est
+  étiqueté « estimation » partout où il apparaît. Un contre-exemple est un bug
+  bloquant.
+- Aucune valeur affichée écrite à la main dans le code du site : tout chiffre est
+  lu dans un Parquet (donc dans un seed tracé). Provenance (source, date de
+  consultation) conservée jusqu'à l'affichage.
+- Échec bruyant : une valeur absente ou un emplacement non résolu fait échouer
+  l'écran visiblement.
+- Pas de dépendance serveur, de CDN ni de police tierce. Pas de framework de
+  composants.
+- Un test dbt qui échoue empêche la publication des Parquet ; le site conserve la
+  dernière version saine.
+- Machine 8 Go : une commande lourde à la fois ; ne pas relancer
+  `make publier-carburants` (non concerné) ; les nouvelles publications de seeds
+  sont légères.
+- Aucune collecte, aucun accès réseau aux sources de données ; les valeurs des
+  seeds viennent de `validation.md` et sont relues sur les pages sources.
 
-Non-objectifs (incréments suivants)
+Non-objectifs
 
-- Écran « Écart 2022 par poste » : le seed ECSP ne contient que l'alimentation ;
-  l'étendre est un changement de données à décider séparément.
-- Section « Pourquoi c'est ressenti plus cher » (série 2010 / 2015 / 2022 et
-  revenus) : demande un seed et un schéma dédiés, donc une tranche 5b.
-- Quatre petits graphiques IPC restylés, intégration du récit et des événements
-  datés (`evenements_contexte.csv`), trois variantes d'écran : tranches suivantes.
 - Fraîcheur des données, planification, déploiement (incréments 6 et 7).
-- Renommage de la colonne `mois` de `fct_distribution_carburants_metropole`
-  (elle contient `debut_effet`) : à traiter ici seulement si le front l'exige.
+- Nouvelle série de revenus dans le pipeline au-delà des quatre indicateurs
+  ci-dessus ; inflation par niveau de revenu (non trouvée).
+- Raccourcir `make publier-carburants` (4,37 Go de RAM) ; points de méthode 4b de
+  `docs/limites-carburants.md`.
+- Bouclier Qualité Prix comme série de prix ; collecte chez les distributeurs.
+- Trois variantes d'écran du ROADMAP : remplacées par le brief DA (décision
+  Mathis, 2026-10-05).
 
 Vérification
 
-- `npm --prefix web run test` et `npm --prefix web run build` verts ; tests
-  unitaires nouveaux pour le seuil des trois états et pour le calcul de la
-  barre « à la même date ».
-- Capture à 375 px et 1440 px, thèmes clair et sombre : titre-réponse, règle du
-  panier, graphe carburants ; 0 erreur console ; infobulle lisible ; focus clavier
-  visible ; test avec `prefers-reduced-motion`.
-- Contrastes des deux couleurs de territoire recalculés sur les valeurs CSS finales.
-- Aucune police ni requête réseau vers un domaine tiers (onglet Réseau).
-- `make verify` vert si les données ou le pipeline sont touchés (sinon dit
-  explicitement : non lancé).
+- `make verify` vert (Phase A touche dbt) ; `npm --prefix web run test` et
+  `npm --prefix web run build` verts ; tests unitaires nouveaux : trois états du
+  titre aux frontières de ±2 points, barres « à la même date », résolution des
+  emplacements du récit, libellé selon le dernier mois commun.
+- Captures à 375 px et 1440 px, thèmes clair et sombre, pour chaque écran ; 0 erreur
+  console ; clavier ; `prefers-reduced-motion` ; onglet Réseau sans domaine tiers.
+- Empreintes SHA-256 avant / après : les deux Parquet existants identiques ;
+  nouveaux Parquet relus.
 
 Fini
 
-L'écran principal répond en moins d'une minute dans les deux thèmes, les
-estimations sont hachurées et étiquetées, le graphe carburants n'a plus de rouge
-et son infobulle se lit, les vérifications ci-dessus sont faites et les captures
-relues par Mathis. Aucun commit ni coche dans `ROADMAP.md` sans décision de Mathis.
+La page s'ouvre sans serveur applicatif, les filtres sont locaux, la palette est
+validée dans les deux thèmes, la revue d'animations est sans réserve, chaque
+chiffre affiché est tracé jusqu'à sa source, les estimations sont hachurées et
+étiquetées, et Mathis a relu les captures. Aucun commit ni coche dans
+`ROADMAP.md` sans décision de Mathis.
 
-À valider par Mathis avant de coder
-
-- Découpage en 5a / 5b : accepté ? (`ROADMAP.md` liste un seul incrément 5.)
-- Les trois variantes d'écran du ROADMAP sont remplacées par le brief DA :
-  accepté ?
-- Seuil de ±2 points pour les trois états du titre.
+Décisions déjà prises : bleu = Martinique, ambre = Hexagone ; série temporelle
+pour les carburants ; plafond en bleu ; polices Fontsource.
+À valider par Mathis pendant la boucle : seuil de ±2 points des trois états ;
+échelle commune des quatre graphiques IPC ; mois de fin de l'estimation affiché.

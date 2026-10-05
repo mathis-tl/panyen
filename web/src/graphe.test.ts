@@ -3,6 +3,7 @@ import {
   SEUIL_ETROIT_PX,
   calculerDispositionGraphe,
   calculerDomaineEvolution,
+  decalagesEtiquettes,
   jalonsRepereGraphe,
   libellesFinCourbes,
 } from "./graphe.ts";
@@ -100,5 +101,20 @@ describe("calculerDomaineEvolution", () => {
 
   it("refuse une série vide au lieu de produire un domaine muet", () => {
     expect(() => calculerDomaineEvolution([])).toThrow(/aucune valeur/i);
+  });
+});
+
+describe("decalagesEtiquettes", () => {
+  it("n'écarte pas deux étiquettes déjà distantes", () => {
+    expect(decalagesEtiquettes(-100, -60, 30)).toEqual({ mq: 0, fm: 0 });
+  });
+
+  it("écarte de part et d'autre deux étiquettes serrées, la plus haute vers le haut", () => {
+    const d = decalagesEtiquettes(-100, -96, 30);
+    expect(d.mq).toBeCloseTo(-13, 5);
+    expect(d.fm).toBeCloseTo(13, 5);
+    const inverse = decalagesEtiquettes(-96, -100, 30);
+    expect(inverse.mq).toBeCloseTo(13, 5);
+    expect(inverse.fm).toBeCloseTo(-13, 5);
   });
 });

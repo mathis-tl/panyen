@@ -1,0 +1,3 @@
+annee_enquete,formule,ecart_pct,source_url,consulte_le,remarque
+2022,paasche_panier_martiniquais,31,https://www.insee.fr/fr/statistiques/7649202,2026-10-05,"Analyses Martinique n° 63 : écart alimentaire pondéré par les habitudes de consommation martiniquaises (Paasche). Publié à l'unité."
+2022,laspeyres_panier_hexagonal,50,https://www.insee.fr/fr/statistiques/7649202,2026-10-05,"Analyses Martinique n° 63 : écart alimentaire pondéré par les habitudes de consommation de l'Hexagone (Laspeyres). Publié à l'unité."

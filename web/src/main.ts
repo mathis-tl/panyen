@@ -1,3 +1,8 @@
+import "@fontsource/schibsted-grotesk/600.css";
+import "@fontsource/schibsted-grotesk/700.css";
+import "@fontsource/atkinson-hyperlegible-next/400.css";
+import "@fontsource/atkinson-hyperlegible-next/700.css";
+import "@fontsource/ibm-plex-mono/500.css";
 import "./style.css";
 import { chargerDonnees } from "./chargement.ts";
 import { calculerResume, titreDuPoste } from "./calculs.ts";
@@ -5,25 +10,16 @@ import {
   afficherChargement,
   afficherErreur,
   afficherEcran,
-  nettoyerEcranCourant,
   type OptionsEcran,
 } from "./rendu.ts";
 import type { ResumeEcran } from "./calculs.ts";
 import type { CodePoste, LigneDifferentiel } from "./types.ts";
 import { identifiantBoutonPoste } from "./cycle-ecran.ts";
 import { chargerDonneesCarburants } from "./chargement-carburants.ts";
-import {
-  afficherChargementCarburants,
-  afficherErreurCarburants,
-  afficherEcranCarburants,
-  nettoyerEcranCarburantsCourant,
-  type OptionsEcranCarburants,
-} from "./rendu-carburants.ts";
-import {
-  listerCarburantsComparables,
-  titreCarburants,
-} from "./calculs-carburants.ts";
+import { type OptionsEcranCarburants } from "./rendu-carburants.ts";
 import type { LigneCarburant } from "./types-carburants.ts";
+import { chargerContexte } from "./chargement-contexte.ts";
+import { afficherPage } from "./page.ts";
 
 export type VueApplication = "ipc" | "carburants";
 
@@ -88,89 +84,22 @@ export async function demarrer(
   }
 }
 
-function creerSelecteurVue(
-  vue: VueApplication,
-  onChanger: (vue: VueApplication) => void,
-): HTMLElement {
-  const section = document.createElement("nav");
-  section.className = "selecteur-vue";
-  section.setAttribute("aria-label", "Choisir la vue");
-
-  for (const [id, label] of [
-    ["ipc", "Indices de prix (IPC)"],
-    ["carburants", "Carburants"],
-  ] as const) {
-    const bouton = document.createElement("button");
-    bouton.type = "button";
-    bouton.className = "selecteur-vue-bouton";
-    bouton.id = `bouton-vue-${id}`;
-    bouton.setAttribute("aria-pressed", vue === id ? "true" : "false");
-    bouton.textContent = label;
-    bouton.addEventListener("click", () => {
-      if (id !== vue) onChanger(id);
-    });
-    section.appendChild(bouton);
-  }
-
-  return section;
-}
-
-/** Point d'entrée navigateur avec choix IPC / Carburants. */
+/** Point d'entrée navigateur : une page, tous les écrans. */
 export async function demarrerApplication(
   conteneur: HTMLElement,
   options: OptionsDemarrage = {},
 ): Promise<void> {
-  conteneur.innerHTML = "";
-  let vue: VueApplication = options.vueInitiale ?? "ipc";
-
-  const zoneContenu = document.createElement("div");
-  zoneContenu.className = "zone-contenu";
-  conteneur.appendChild(zoneContenu);
-
-  const selecteur = creerSelecteurVue(vue, (suivant) => {
-    vue = suivant;
-    for (const bouton of selecteur.querySelectorAll("button")) {
-      const id = bouton.id.replace("bouton-vue-", "") as VueApplication;
-      bouton.setAttribute("aria-pressed", id === vue ? "true" : "false");
-    }
-    void chargerEtAfficher();
-  });
-  conteneur.insertBefore(selecteur, zoneContenu);
-
-  const chargerEtAfficher = async (): Promise<void> => {
-    nettoyerEcranCourant();
-    nettoyerEcranCarburantsCourant();
-
-    if (vue === "ipc") {
-      await demarrer(zoneContenu, options);
-    } else {
-      afficherChargementCarburants(zoneContenu);
-      try {
-        const lignes = await (options.chargerCarburants ?? chargerDonneesCarburants)();
-        const carburants = listerCarburantsComparables(lignes);
-        let carburant = carburants[0];
-        const afficher = options.afficherCarburants ?? afficherEcranCarburants;
-        const titrer = options.titrer ?? definirTitre;
-
-        const redessiner = (): void => {
-          afficher(zoneContenu, lignes, {
-            carburantSelectionne: carburant,
-            onChangerCarburant: (suivant) => {
-              carburant = suivant;
-              redessiner();
-            },
-          });
-          titrer(titreCarburants(carburant));
-        };
-
-        redessiner();
-      } catch (erreur: unknown) {
-        afficherErreurCarburants(zoneContenu, erreur);
-      }
-    }
-  };
-
-  await chargerEtAfficher();
+  afficherChargement(conteneur);
+  try {
+    const [ipc, carburants, contexte] = await Promise.all([
+      (options.charger ?? chargerDonnees)(),
+      (options.chargerCarburants ?? chargerDonneesCarburants)(),
+      chargerContexte(),
+    ]);
+    afficherPage(conteneur, { ipc, carburants, ...contexte });
+  } catch (erreur: unknown) {
+    afficherErreur(conteneur, erreur);
+  }
 }
 
 function lancerSiNavigateur(): void {

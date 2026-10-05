@@ -30,7 +30,7 @@ export interface OptionsEcranCarburants {
 
 export function afficherChargementCarburants(conteneur: HTMLElement): void {
   nettoyerEcranCarburantsCourant();
-  conteneur.innerHTML = `<p class="chargement">Chargement des données carburants…</p>`;
+  conteneur.innerHTML = `<div class="squelette" role="status"><p class="sr-only">Chargement des données carburants.</p><div class="squelette-bloc squelette-titre"></div><div class="squelette-bloc squelette-ligne"></div></div>`;
 }
 
 export function afficherErreurCarburants(
