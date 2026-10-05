@@ -1,79 +1,98 @@
-SPEC ACTIVE — INCRÉMENT 4 : analyse et contexte
+SPEC ACTIVE — INCRÉMENT 5a : socle visuel et écran principal
+
+La spec de l'incrément 4 (analyse et contexte) est close : voir l'historique git
+(`50b8a1c`). Cette spec ne couvre que la première tranche verticale de
+l'incrément 5 ; le reste est listé en non-objectifs.
 
 État de départ
 
-- L'incrément 3 est clos, poussé et vert au commit `5c4696e`.
-- Publiés : `web/public/data/differentiel_ipc.parquet` (quatre postes) et
-  `web/public/data/carburants.parquet` (distribution métropole / plafond
-  Martinique). Dernier mois commun IPC : 2026-07.
-- Le site montre des chiffres mais n'explique ni ce qui s'est passé ni pourquoi.
+- `main` à `50b8a1c` (incrément 4 clos) ; aucune police chargée ; thème sombre
+  seul ; le plafond martiniquais est dessiné en rouge dans le graphe carburants.
+- Stack : Vite + TypeScript sans framework, `@observablehq/plot`, `hyparquet`,
+  hébergement statique. Parquet lus : `differentiel_ipc.parquet` (poste
+  alimentation seul porte `ecart_prix_estime_pct` et `nature_ecart`) et
+  `carburants.parquet`.
+- Direction artistique : `docs/prompts/panyen-brief-da.md` (corrigé le
+  2026-10-05). Veille des dépôts : `docs/prompts/prompt-recherche-github-interface.md`
+  et son second avis (Pico CSS archivé, Plot sans hachure ni clavier natifs).
 
 Objectif utilisateur
 
-Comprendre ce que les chiffres montrent et le contexte humain, social et
-économique qui les entoure en Martinique depuis 2022, sans confondre donnée,
-fait rapporté et interprétation.
+Qu'une personne qui ne sait pas ce qu'est un indice des prix lise, en moins d'une
+minute, la réponse (creusé / resserré / à peu près le même), sa période, et que
+l'écart d'aujourd'hui est une estimation. Une seule page, deux thèmes.
 
-Constat de départ (lu dans le Parquet, avril 2022 → juillet 2026)
+Périmètre de l'incrément 5a
 
-- Alimentation : Martinique +19,6 %, Hexagone +19,4 %, différentiel +0,2 pt ;
-  écart ECSP de 40 % (2022) prolongé à environ 40 % — estimation.
-- Énergie : +6,8 % contre +15,3 %, −8,5 pts.
-- Produits manufacturés : +4,8 % contre +1,2 %, +3,6 pts.
-- Services : +8,5 % contre +13,2 %, −4,7 pts.
-Ces valeurs sont à relire dans le Parquet au moment de la rédaction ; elles ne
-sont jamais recopiées à la main dans le site.
-
-Déroulé
-
-1. Recherche externe : lancer le prompt
-   `docs/prompts/prompt-recherche-contexte.md` dans une IA de recherche. Archiver
-   sa réponse telle quelle, datée, dans `docs/analyse/recherche-brute.md`.
-2. Vérification : ouvrir chaque URL citée, contrôler chaque chiffre et chaque
-   citation. Résultat dans `docs/analyse/validation.md` : pour chaque élément,
-   vérifié / nuancé / rejeté, avec la raison. Un élément non vérifiable est
-   rejeté, pas adouci.
-3. Table d'événements : `dbt/seeds/evenements_contexte.csv`, grain = un événement
-   daté. Colonnes : `date_evenement`, `precision_date` (jour / mois, pour ne
-   jamais inventer un jour exact), `titre`, `type_evenement`
-   (mobilisation / mesure_publique / accord_prix / choc_exterieur / etude),
-   `postes_concernes`, `url_source`, `type_source`, `consulte_le`. Déclarée dans
-   `schema.yml` avec tests `not_null` et `accepted_values`. Pas encore affichée.
-4. Récit : `docs/analyse/recit.md`, rédigé par IA, chaque paragraphe étiqueté
-   [Mesuré], [Contexte] ou [Lecture]. [Mesuré] renvoie à la colonne du Parquet ;
-   [Contexte] porte son URL ; [Lecture] est une interprétation assumée.
-5. Relecture : Mathis relit et réécrit `recit.md`. L'incrément n'est pas clos
-   avant cette relecture.
+1. Socle : polices Schibsted Grotesk, Atkinson Hyperlegible Next, IBM Plex Mono
+   servies par le site (paquets Fontsource, OFL-1.1) ; variables CSS de couleur
+   du brief, thème clair et thème sombre, bascule manuelle + `prefers-color-scheme`
+   par défaut ; `prefers-reduced-motion`.
+2. Titre-réponse à trois états calculé depuis le Parquet (alimentation) : creusé si
+   la variation estimée depuis l'ancre dépasse +2 points, resserré sous −2 points,
+   « à peu près le même » entre les deux, avec le pic estimé et le dernier mois
+   commun (« fin [mois] 2026 »). Le seuil est une constante nommée et testée.
+3. La règle du panier (écran principal) : barres « pour 100 € dans l'Hexagone à la
+   même date », Martinique 2022 mesuré en plein, Martinique aujourd'hui avec segment
+   hachuré, libellé « estimé ». Hachure = motif SVG fait chez nous. Aucune barre
+   n'affiche un niveau d'indice.
+4. Renvois en exposant vers la source (Insee ECSP 2022 ; indices Insee) et ligne
+   « Estimation, fin [mois] 2026 ».
+5. Graphe carburants : plafond martiniquais en bleu (plus de rouge) ; l'infobulle
+   devient lisible en thème clair et sombre ; focus clavier sur les mois.
+6. Nettoyages repris du backlog : `h1` court séparé du paragraphe de conclusion ;
+   squelette à la place du « Chargement… » nu.
 
 Contraintes
 
-- Règle des niveaux : comparer des évolutions entre territoires, jamais des
-  niveaux d'indice. Tout prolongement de l'écart 2022 est une estimation.
-- Aucun chiffre ni citation sans source ouverte et vérifiée.
-- Aucune causalité affirmée sans étude qui la démontre (« coïncide avec »,
-  pas « a causé »).
-- Sujet engagé, faits irréprochables : l'orientation d'une source partie
-  prenante (distributeur, collectif, parti, syndicat) est signalée.
-- Témoignages : uniquement déjà publiés, cités mot pour mot avec leur source.
+- Règle des niveaux (CLAUDE.md) : on compare des évolutions entre territoires ;
+  l'écart de niveau vient de l'ECSP 2022 et tout prolongement est étiqueté
+  « estimation » partout où il apparaît. Un contre-exemple dans l'interface est un
+  bug bloquant.
+- Aucune valeur écrite à la main : tout chiffre est lu dans le Parquet.
+- Pas de dépendance serveur, de CDN tiers ni de police chargée depuis Google.
+- Dépendances nouvelles : seulement les trois paquets Fontsource ; toute autre
+  dépendance se justifie avant d'être ajoutée. Pas de framework de composants.
+- Contraste WCAG AA ; la couleur n'est jamais seule (libellés directs, épaisseur
+  de trait) ; animations ≤ 300 ms (`transform`/`opacity`) ; état final immédiat
+  sous `prefers-reduced-motion`.
+- Machine 8 Go : une commande lourde à la fois.
 
-Non-objectifs
+Non-objectifs (incréments suivants)
 
-- Intégration dans l'interface (incrément 5).
-- Nouvelles séries de données (revenus, pauvreté, salaires) dans le pipeline.
-- Recueil de témoignages par l'auteur.
-- Bouclier Qualité Prix comme série de prix (hors périmètre, cf. CLAUDE.md) ;
-  il peut apparaître comme événement de contexte.
+- Écran « Écart 2022 par poste » : le seed ECSP ne contient que l'alimentation ;
+  l'étendre est un changement de données à décider séparément.
+- Section « Pourquoi c'est ressenti plus cher » (série 2010 / 2015 / 2022 et
+  revenus) : demande un seed et un schéma dédiés, donc une tranche 5b.
+- Quatre petits graphiques IPC restylés, intégration du récit et des événements
+  datés (`evenements_contexte.csv`), trois variantes d'écran : tranches suivantes.
+- Fraîcheur des données, planification, déploiement (incréments 6 et 7).
+- Renommage de la colonne `mois` de `fct_distribution_carburants_metropole`
+  (elle contient `debut_effet`) : à traiter ici seulement si le front l'exige.
 
 Vérification
 
-- `uv run dbt build --project-dir dbt --profiles-dir dbt --select evenements_contexte`
-  vert.
-- Chaque URL de `evenements_contexte.csv` et de `recit.md` figure dans
-  `validation.md` avec le statut « vérifié » ou « nuancé ».
-- Chaque paragraphe de `recit.md` porte exactement un registre.
+- `npm --prefix web run test` et `npm --prefix web run build` verts ; tests
+  unitaires nouveaux pour le seuil des trois états et pour le calcul de la
+  barre « à la même date ».
+- Capture à 375 px et 1440 px, thèmes clair et sombre : titre-réponse, règle du
+  panier, graphe carburants ; 0 erreur console ; infobulle lisible ; focus clavier
+  visible ; test avec `prefers-reduced-motion`.
+- Contrastes des deux couleurs de territoire recalculés sur les valeurs CSS finales.
+- Aucune police ni requête réseau vers un domaine tiers (onglet Réseau).
+- `make verify` vert si les données ou le pipeline sont touchés (sinon dit
+  explicitement : non lancé).
 
 Fini
 
-Recherche archivée, validation complète, table d'événements testée, récit
-étiqueté relu et réécrit par Mathis. Aucun commit ni coche dans `ROADMAP.md`
-sans décision de Mathis.
+L'écran principal répond en moins d'une minute dans les deux thèmes, les
+estimations sont hachurées et étiquetées, le graphe carburants n'a plus de rouge
+et son infobulle se lit, les vérifications ci-dessus sont faites et les captures
+relues par Mathis. Aucun commit ni coche dans `ROADMAP.md` sans décision de Mathis.
+
+À valider par Mathis avant de coder
+
+- Découpage en 5a / 5b : accepté ? (`ROADMAP.md` liste un seul incrément 5.)
+- Les trois variantes d'écran du ROADMAP sont remplacées par le brief DA :
+  accepté ?
+- Seuil de ±2 points pour les trois états du titre.
