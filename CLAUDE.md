@@ -66,6 +66,8 @@ bloquant, pas un détail de présentation.
   - `011813783` France métropolitaine · Produits manufacturés · indice
   - `011813915` Martinique · Services · indice
   - `011813909` France métropolitaine · Services · indice
+  - `011814618` Martinique · Ensemble (Coicop 00) · indice — vérifié sur l'API le 2026-10-06, pas encore collecté (incrément 5c)
+  - `011814612` France métropolitaine · Ensemble (Coicop 00) · indice — idem ; six rangs d'écart avec la Martinique, règle des rangs respectée
   - `011813717` France entière (`FE`) · Alimentation · indice — lot historique, plus collecté
   - `011813728` Martinique · Alimentation · glissement annuel
   - `011813719` France · Alimentation · glissement annuel
