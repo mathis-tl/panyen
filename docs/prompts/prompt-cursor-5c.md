@@ -29,13 +29,14 @@ PHASES (porte entre chacune ; ne passe à la suivante qu'après la porte)
 A. Donnée : collecte des dix séries (un seul appel), référentiel, rebasage, ancre « ensemble »
    13,8 % lue dans `ecsp_niveaux`, mois commun unique, tests dbt rouge d'abord, `make publier`.
 B. Front : le poste « ensemble » est reconnu sans graphique de courbe ; rien ne casse.
-C. Page : les sept retouches C1 à C7 de la spec, textes mot pour mot.
+C. Page : les huit retouches C1 à C8 de la spec (C8 : plus aucun « métropol* » visible),
+   textes mot pour mot.
 D. Vérification finale.
 
 TDD (`tdd-adaptive`) : rouge puis vert pour les tests dbt de la phase A (cinq postes,
 ancre ensemble, mois commun, pas de trou), la barre estimée (échec si la ligne manque ou si
 la nature n'est pas estimation), « aucune barre estimée pour un autre poste », les
-libellés des revenus, l'absence de « — » dans `blocsRecit`, les deux cas de la conclusion.
+libellés des revenus, l'absence de « — » dans `blocsRecit`, l'absence de « métropol » dans tout texte affiché, les deux cas de la conclusion.
 Pas de TDD pour le CSS ni les textes.
 
 CONTRAT À NE PAS DÉGRADER

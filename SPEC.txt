@@ -144,6 +144,20 @@ C7. Conclusion après « Méthode et sources » et avant « Pour les techos » :
     échoue. Test sur les deux cas. « Des salaires du privé plus bas » est lu dans
     `revenus_ecart_national` (négatif), sinon la phrase est retirée. Les nombres ne
     sont pas recopiés à la main.
+C8. Vocabulaire (décision de Mathis, 2026-10-06) : « France métropolitaine » est
+    jugé péjoratif. Aucun texte visible ne l'emploie : ni la page, ni `<title>` et
+    `<meta description>` de `web/index.html` et de `web/techos.html`, ni les
+    `aria-label`, textes `sr-only`, libellés de graphes, infobulles, légendes, notes de
+    sources, récit, glossaire, Méthode, pied de page. On écrit « Hexagone » ou
+    « France hexagonale » ; l'adjectif « métropolitain / métropolitaine / métropole »
+    est remplacé de même (« les stations de l'Hexagone »). Titres de sources cités :
+    reformuler (« Insee, indice des prix à la consommation ») au lieu de recopier un
+    titre qui contient le mot. Exception : identifiants de code, noms de colonnes et de
+    fichiers Parquet, codes `FM`, `france_metropolitaine`, commentaires et `docs/`
+    (invisibles pour le visiteur). Test automatisé : un test vitest échoue si
+    l'un des textes affichés par `afficherPage` ou par `techos.ts` (jeu de données de
+    test) contient « métropol » (insensible à la casse), plus un `grep` final sur les
+    chaînes de `web/src` et sur les deux fichiers HTML.
 PORTE C : tests, `tsc`, build, captures 1440 et 375 px (barre estimée, mentions,
 revenus, conclusion), lues une à une.
 
@@ -151,7 +165,7 @@ PHASE D — Vérification finale
 
 `make verify` à 0 ; `npm --prefix web test` ; `tsc` dans `web/` ; navigateur à 375 et
 1440 px ; 0 erreur console ; aucun hôte réseau tiers ; empreintes avant / après
-(`differentiel_ipc.parquet` change, les autres non) ; `grep` : plus de « — » dans le
+(`differentiel_ipc.parquet` change, les autres non) ; `grep` : plus de « métropol » dans les textes visibles, plus de « — » dans le
 récit, plus de « Hexagone : la France » dans le glossaire.
 
 Contraintes
