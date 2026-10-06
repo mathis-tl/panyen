@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { demarrer } from "./main.ts";
+import { demarrerApplication } from "./main.ts";
 import { contenuErreur } from "./rendu.ts";
 
 describe("échec de chargement", () => {
@@ -13,10 +13,17 @@ describe("échec de chargement", () => {
 
   it("source simulée absente → erreur seule, aucun rendu partiel", async () => {
     const conteneur = { innerHTML: "" } as HTMLElement;
-    await demarrer(conteneur, {
+    await demarrerApplication(conteneur, {
       charger: async () => {
         throw new Error("Impossible de charger : 404");
       },
+      chargerCarburants: async () => [],
+      chargerContexte: async () => ({
+        niveaux: [],
+        formules: [],
+        revenus: [],
+        evenements: [],
+      }),
     });
     expect(conteneur.innerHTML).toContain("Données indisponibles");
     expect(conteneur.innerHTML).not.toContain("graphe");

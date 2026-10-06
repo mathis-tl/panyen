@@ -1,9 +1,9 @@
 /**
  * Cycle de vie de l'écran — pur, sans DOM ni réseau.
  *
- * Un écran est reconstruit à chaque changement de poste. Ce qui a été branché
- * en dehors du DOM (observateurs, frames en attente) doit être débranché avant
- * la reconstruction, sinon il survit à un arbre détaché et fuit.
+ * Ce qui a été branché en dehors du DOM (observateurs, frames en attente)
+ * doit être débranché avant le rendu suivant, sinon il survit à un arbre
+ * détaché et fuit.
  */
 
 export type Nettoyage = () => void;
@@ -40,9 +40,4 @@ export function creerRegistreNettoyage(): RegistreNettoyage {
     },
     enAttente: () => nettoyages.length,
   };
-}
-
-/** Identifiant DOM stable du bouton d'un poste, pour restaurer le focus. */
-export function identifiantBoutonPoste(poste: string): string {
-  return `bouton-poste-${poste}`;
 }

@@ -31,18 +31,6 @@ export function desPrixDuPoste(poste: CodePoste): string {
 }
 
 /**
- * Titre d'onglet du poste affiché.
- * Le mot « écart » n'apparaît que là où un écart de niveau est publié, donc
- * pour l'alimentation seule ; ailleurs le titre ne parle que d'évolution.
- */
-export function titreDuPoste(poste: CodePoste, ancreEcspDisponible: boolean): string {
-  const sujet = ancreEcspDisponible
-    ? `écart de prix ${COMPLEMENT_POSTE[poste]}`
-    : `évolution ${desPrixDuPoste(poste)}`;
-  return `panyen — ${sujet}, Martinique / France hexagonale`;
-}
-
-/**
  * Base conventionnelle du panier fictif.
  * Ce n'est pas un prix observé : c'est une échelle pédagogique.
  */
