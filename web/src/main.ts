@@ -1,8 +1,4 @@
-import "@fontsource/schibsted-grotesk/600.css";
-import "@fontsource/schibsted-grotesk/700.css";
-import "@fontsource/atkinson-hyperlegible-next/400.css";
-import "@fontsource/atkinson-hyperlegible-next/700.css";
-import "@fontsource/ibm-plex-mono/500.css";
+import "./polices.css";
 import "./style.css";
 import { chargerDonnees } from "./chargement.ts";
 import { calculerResume, titreDuPoste } from "./calculs.ts";

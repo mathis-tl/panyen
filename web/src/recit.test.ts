@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LigneFormule } from "./chargement-contexte.ts";
-import { exigerFormule, pctPublie } from "./recit.ts";
+import { exigerFormule, libelleRegistre, pctPublie } from "./recit.ts";
 
 const formules: LigneFormule[] = [
   {
@@ -12,6 +12,14 @@ const formules: LigneFormule[] = [
     remarque: "test",
   },
 ];
+
+describe("registres du récit", () => {
+  it("nomme le troisième registre Analyse", () => {
+    expect(libelleRegistre("mesure")).toBe("Mesuré");
+    expect(libelleRegistre("contexte")).toBe("Contexte");
+    expect(libelleRegistre("analyse")).toBe("Analyse");
+  });
+});
 
 describe("formules ECSP du récit", () => {
   it("lit la valeur seedée et l'affiche à l'unité", () => {

@@ -41,7 +41,7 @@ export function calculerDispositionGrapheCarburants(
     marginTop: 12,
     marginRight: etroit ? 96 : 148,
     marginBottom: etroit ? 44 : 52,
-    marginLeft: etroit ? 44 : 56,
+    marginLeft: etroit ? 72 : 84,
     etroit,
   };
 }
@@ -96,7 +96,7 @@ export function infobulleCarburants(marques: MarqueInfobulle[]) {
     Plot.pointerX({
       x: "date",
       y: "mediane",
-      fontFamily: '"IBM Plex Mono", ui-monospace, monospace',
+      fontFamily: '"Archivo Variable", sans-serif',
       fontSize: 12,
       title: (d: MarqueInfobulle) => texteInfobulleMois(d),
     }),
@@ -128,6 +128,7 @@ export function grapheCarburants(
   }));
 
   const plot = Plot.plot({
+    style: { fontFamily: '"Archivo Variable", sans-serif' },
     width: disposition.largeur,
     height: disposition.hauteur,
     marginTop: disposition.marginTop,
@@ -140,7 +141,7 @@ export function grapheCarburants(
       tickFormat: (d: Date, i: number) => formaterMoisAxe(d, i === 0),
     },
     y: {
-      label: "€/L",
+      label: "euros par litre",
       domain: [domaineY.min, domaineY.max],
       grid: true,
       tickFormat: (d: number) => formaterDecimaleFr(d.toFixed(1)),

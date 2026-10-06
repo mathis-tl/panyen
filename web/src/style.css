@@ -1,54 +1,35 @@
 /*
- * panyen — relevé de mesure.
- * Chaque barre est une cote d'ingénieur (repère de départ, repère d'arrivée) ;
- * chaque chiffre porte une légende en chasse fixe. Clair : planche blanche.
- * Sombre : fond profond, filet de lumière sur les seules surfaces flottantes.
+ * panyen — relevé de caisse.
+ * Titres enseigne (Archivo large), texte Literata, ligne de ticket.
+ * Thème clair seul.
  */
 :root {
   --fond: #f4f6f8;
   --encre: #14202b;
   --schiste: #4a5866;
-  --martinique: #1d5fa6;
-  --hexagone: #a35f00;
+  --martinique: #9d1520;
+  --hexagone: #1d5fa6;
+  --drapeau-rouge: #9d1520;
+  --drapeau-vert: #0b6a36;
+  --drapeau-noir: #231f1e;
   --brume: #c9d2db;
   --plot-background: var(--fond);
 
-  --font-titre: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
-  --font-texte: "Atkinson Hyperlegible Next", "Helvetica Neue", Arial, sans-serif;
-  --font-chiffres: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --font-titre: "Archivo Variable", sans-serif;
+  --font-texte: "Literata Variable", Georgia, serif;
+  --font-chiffres: "Archivo Variable", sans-serif;
 
   --mesure: 1120px;
   --gouttiere: clamp(1.25rem, 5vw, 3rem);
-  --respiration: clamp(5rem, 11vw, 9rem);
+  --respiration: clamp(4rem, 9vw, 7rem);
 
   color-scheme: light;
   color: var(--encre);
   background: var(--fond);
-  font: 400 17px/1.55 var(--font-texte);
+  font: 400 18px/1.6 var(--font-texte);
+  font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-}
-
-:root[data-theme="dark"] {
-  --fond: #121c27;
-  --encre: #e8edf2;
-  --schiste: #a3b1bf;
-  --martinique: #7db3f0;
-  --hexagone: #f0b259;
-  --brume: #2e3c4a;
-  color-scheme: dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --fond: #121c27;
-    --encre: #e8edf2;
-    --schiste: #a3b1bf;
-    --martinique: #7db3f0;
-    --hexagone: #f0b259;
-    --brume: #2e3c4a;
-    color-scheme: dark;
-  }
 }
 
 *,
@@ -61,6 +42,7 @@ body {
   margin: 0;
   background: var(--fond);
   color: var(--encre);
+  overflow-x: clip;
 }
 
 #app {
@@ -75,48 +57,48 @@ h1,
 h2,
 h3,
 h4,
-.nom {
+.nom,
+.etiquette-bloc,
+.nav-lien,
+.badge-registre,
+.ligne-barre-nom {
   font-family: var(--font-titre);
+  font-stretch: 112%;
   color: var(--encre);
 }
 
 h1,
-h2 {
-  font-weight: 700;
-  letter-spacing: -0.032em;
+h2,
+.nom {
+  font-weight: 800;
+  font-stretch: 120%;
+  letter-spacing: -0.03em;
+  line-height: 0.98;
 }
 
 h3,
-h4 {
-  font-weight: 600;
-  letter-spacing: -0.015em;
+h4,
+.etiquette-bloc,
+.nav-lien,
+.badge-registre {
+  font-weight: 700;
+  font-stretch: 112%;
+  letter-spacing: 0;
+  line-height: 1.25;
 }
 
 .chiffre,
-.ligne-estimation,
-.nav-lien,
-.bascule-theme,
-.badge-registre,
-.etiquette,
-.ligne-barre-sous,
-.renvois,
-.source,
-.sources-recit,
-.mention,
-.note-echelle,
-.note-incomplet,
-.limite-courte,
-.infobulle,
 .graphe-montage svg text {
   font-family: var(--font-chiffres);
-  font-weight: 500;
+  font-stretch: 100%;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .chiffre {
   text-align: right;
   white-space: nowrap;
-  font-size: 0.95rem;
-  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
 }
 
 a {
@@ -156,52 +138,107 @@ a:hover {
 .entete {
   display: flex;
   align-items: center;
-  gap: 1.25rem;
-  padding: 0.5rem 0 1.1rem;
-  border-bottom: 1px solid var(--brume);
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  width: 100vw;
+  margin-top: -1.25rem;
+  margin-left: calc(50% - 50vw);
+  padding: 0.85rem max(var(--gouttiere), calc((100vw - var(--mesure)) / 2)) 0.95rem;
+  background: #000;
+  color: #fff;
+  border-bottom: 0;
 }
 
 .nom {
-  font-weight: 700;
-  font-size: 1.2rem;
-  letter-spacing: -0.03em;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 1.7rem;
   text-decoration: none;
+}
+
+.drapeau {
+  display: block;
+  height: 0.85em;
+  width: auto;
+  box-shadow: 0 0 0 1px #fff;
+}
+
+.logo-panier {
+  display: block;
+  width: 1.05em;
+  height: 1.05em;
+  flex: 0 0 auto;
 }
 
 .nav-ecrans {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+  gap: 0.55rem 1.1rem;
   margin-left: auto;
 }
 
-.nav-lien,
-.bascule-theme {
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .nav-lien {
-  color: var(--schiste);
+  font-size: 15px;
   text-decoration: none;
 }
 
-.nav-lien:hover {
-  color: var(--encre);
+.entete .nom,
+.entete .nav-lien,
+.entete .nav-lien.nav-rouge,
+.entete .nav-lien.nav-vert,
+.entete .nav-lien.nav-noir,
+.entete .nav-lien:hover {
+  color: #fff;
 }
 
-.bascule-theme {
-  border: 1px solid var(--brume);
-  background: transparent;
-  color: var(--encre);
-  border-radius: 2px;
-  padding: 0.35rem 0.7rem;
-  cursor: pointer;
+.intro {
+  max-width: 38rem;
+  margin: 1.75rem 0 0;
 }
 
-.bascule-theme:hover {
-  border-color: var(--encre);
+.bandeau {
+  position: relative;
+  width: 100vw;
+  height: min(42vh, 520px);
+  min-height: 220px;
+  margin-left: calc(50% - 50vw);
+  overflow: hidden;
+  background: #000;
+}
+
+.bandeau-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1) contrast(1.12) sepia(0.15);
+}
+
+.bandeau-voile {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.bandeau-texte {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  width: min(var(--mesure), calc(100% - 2 * var(--gouttiere)));
+  margin: 0 auto;
+  padding-bottom: clamp(1.1rem, 3vw, 1.75rem);
+}
+
+.bandeau .intro {
+  margin: 0;
+  color: #ffde21;
+  font-family: var(--font-titre);
+  font-weight: 700;
+  font-stretch: 112%;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
 }
 
 /* ——— Réponse ——— */
@@ -213,27 +250,25 @@ a:hover {
 }
 
 .titre-reponse {
-  font-size: clamp(38px, 5.2vw, 68px);
-  line-height: 0.98;
-  margin: 0 0 1.5rem;
-  max-width: 11ch;
+  font-size: clamp(28px, 2.4vw, 36px);
+  margin: 0 0 1.1rem;
+  max-width: 34ch;
   text-wrap: balance;
 }
 
 .ligne-estimation,
-.limite-courte,
 .note-echelle,
-.note-incomplet {
+.note-incomplet,
+.note-energie,
+.legende-points,
+.intro-evenements {
   color: var(--schiste);
-  font-size: 0.78rem;
-  letter-spacing: 0.04em;
-  margin: 0.5rem 0 0;
+  margin: 0.75rem 0 0;
 }
 
 .ligne-estimation {
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--encre);
+  font-weight: 600;
 }
 
 .phrase-pic {
@@ -268,11 +303,10 @@ a:hover {
 }
 
 .ligne-barre {
-  display: grid;
-  grid-template-columns: 14rem minmax(0, 1fr) 7rem;
-  gap: 0.5rem 1rem;
-  align-items: center;
-  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.95rem 0;
   border-top: 1px solid var(--brume);
 }
 
@@ -280,26 +314,90 @@ a:hover {
   border-bottom: 1px solid var(--brume);
 }
 
+.ligne-ticket {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+}
+
+.ligne-etiquette {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ligne-points {
+  flex: 1 1 auto;
+  border-bottom: 1px dotted var(--brume);
+  transform: translateY(-0.28em);
+  min-width: 1.25rem;
+}
+
+.ligne-forte .ligne-barre-nom,
+.ligne-forte .chiffre {
+  font-weight: 800;
+}
+
+.ligne-forte .chiffre-repere {
+  font-weight: 650;
+}
+
 .ligne-barre-nom {
   display: block;
   font-weight: 700;
-  font-family: var(--font-titre);
+  font-size: 1.02rem;
 }
 
 .ligne-barre-sous {
   display: block;
   color: var(--schiste);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  line-height: 1.5;
+  font-family: var(--font-texte);
+  font-weight: 400;
+  font-stretch: 100%;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.rail {
+  position: relative;
+  width: 100%;
+}
+
+.echelle-prix {
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  margin-right: 5.6rem;
+}
+
+.jauge {
+  position: relative;
+  max-width: 100%;
+}
+
+.jauge .piste {
+  width: 100%;
+}
+
+.jauge .chiffre {
+  position: absolute;
+  left: calc(100% + 0.4rem);
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: left;
+}
+
+.chiffre-repere {
+  font-size: 0.9rem;
+  font-weight: 650;
 }
 
 /* La piste est une cote : un trait, un repère à chaque bout. */
 .piste {
   position: relative;
   display: flex;
-  height: 12px;
+  height: 14px;
+  max-width: 100%;
   transform-origin: left center;
   animation: allonger 250ms ease forwards;
 }
@@ -320,6 +418,16 @@ a:hover {
 
 .piste::after {
   right: 0;
+}
+
+.piste-repere {
+  height: 6px;
+}
+
+.piste-repere::before,
+.piste-repere::after {
+  top: -3px;
+  bottom: -3px;
 }
 
 /* Base nulle : la largeur de chaque segment ne dépend que de sa valeur (un svg vaut 300 px par défaut). */
@@ -399,10 +507,9 @@ a:hover {
 .source,
 .sources-recit {
   color: var(--schiste);
-  font-size: 0.72rem;
-  letter-spacing: 0.03em;
-  line-height: 1.7;
-  margin: 1rem 0 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin: 0.6rem 0 0;
 }
 
 .sources-recit a + a::before {
@@ -425,11 +532,93 @@ a:hover {
 }
 
 .intertitre {
-  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
-  line-height: 1.04;
-  margin: 0 0 1.25rem;
-  max-width: 20ch;
+  font-size: clamp(1.85rem, 3.6vw, 2.8rem);
+  margin: 0 0 1.15rem;
+  max-width: 22ch;
   text-wrap: balance;
+}
+
+.bloc-note {
+  margin: 1.15rem 0 0;
+  max-width: 40rem;
+}
+
+.etiquette-bloc {
+  font-size: 15px;
+  margin: 0 0 0.2rem;
+}
+
+.bloc-note .corps,
+.bloc-note p:last-child {
+  margin: 0;
+}
+
+.glose {
+  font-style: italic;
+  color: var(--schiste);
+}
+
+abbr {
+  text-decoration: none;
+}
+
+.lire-chiffres {
+  margin-top: 1.6rem;
+  max-width: 38rem;
+}
+
+.lire-chiffres p {
+  margin: 0.35rem 0 0;
+}
+
+.glossaire dt {
+  font-family: var(--font-titre);
+  font-weight: 700;
+  font-stretch: 112%;
+  margin-top: 0.9rem;
+}
+
+.glossaire dd {
+  margin: 0.15rem 0 0;
+  max-width: 40rem;
+}
+
+.pied {
+  margin-top: var(--respiration);
+  padding: 1.5rem 0 2.5rem;
+  border-top: 1px solid var(--brume);
+  color: var(--schiste);
+}
+
+.pied p {
+  margin: 0.4rem 0;
+  max-width: 42rem;
+}
+
+.legende-texture {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+  font-family: var(--font-titre);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.clef-plein,
+.clef-hachure {
+  display: inline-block;
+  width: 1.4rem;
+  height: 0.85rem;
+  margin-right: 0.35rem;
+  vertical-align: -0.1rem;
+  background: var(--martinique);
+}
+
+.clef-hachure {
+  background: transparent;
 }
 
 .chapo {
@@ -445,18 +634,16 @@ a:hover {
 
 .etiquette {
   color: var(--schiste);
-  font-size: 0.72rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 15px;
   margin: 1.5rem 0 0.25rem;
 }
 
-.mention {
+.mention,
+.source {
   color: var(--schiste);
-  font-size: 0.72rem;
-  line-height: 1.7;
+  line-height: 1.6;
   margin: 1rem 0 0;
-  max-width: 70ch;
+  max-width: 68ch;
 }
 
 .grille-postes {
@@ -493,11 +680,34 @@ a:hover {
   background: transparent;
 }
 
+#evolutions .intro-evenements,
+#evolutions .evenement,
+#evolutions .source {
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+#evolutions .intro-evenements {
+  margin-top: 1.25rem;
+}
+
+#evolutions .source {
+  margin-top: 0.75rem;
+}
+
 .evenements {
   list-style: none;
   padding: 0;
   margin: 3rem 0 0;
   border-top: 1px solid var(--brume);
+}
+
+#evolutions .evenements {
+  margin-top: 0.7rem;
+}
+
+#evolutions .evenement {
+  padding: 0.28rem 0;
 }
 
 .evenement {
@@ -509,13 +719,11 @@ a:hover {
 
 .badge-registre {
   display: inline-block;
-  margin: 0 0 0.5rem;
-  padding: 0.1rem 0.45rem;
-  border: 1px solid var(--brume);
+  margin: 0 0 0.35rem;
+  padding: 0;
+  border: 0;
   color: var(--schiste);
-  font-size: 0.66rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: 14px;
 }
 
 .evenement .badge-registre {
@@ -534,13 +742,80 @@ a:hover {
   margin-top: 2rem;
 }
 
-.registre-mesure .badge-registre {
+.registre-mesure .badge-registre,
+.registre-analyse .badge-registre {
   color: var(--encre);
-  border-color: var(--encre);
 }
 
 .texte-recit {
   margin: 0;
+}
+
+.titre-registre {
+  margin: 2rem 0 0.35rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  font-stretch: 120%;
+  line-height: 1.15;
+}
+
+.titre-mesure {
+  color: var(--drapeau-noir);
+}
+
+.titre-contexte {
+  color: var(--drapeau-vert);
+}
+
+.titre-analyse {
+  color: var(--drapeau-rouge);
+}
+
+.techos-renvoi {
+  margin-top: var(--respiration);
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--brume);
+}
+
+.lien-techos {
+  font-family: var(--font-titre);
+  font-weight: 800;
+  font-stretch: 120%;
+  font-size: 1.6rem;
+  letter-spacing: -0.03em;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+}
+
+.techos-renvoi p {
+  max-width: 42rem;
+  margin: 0.6rem 0 0;
+}
+
+.page-techos {
+  padding-top: 0.5rem;
+}
+
+.page-techos h1 {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  max-width: 16ch;
+  margin: 0.4rem 0 1.2rem;
+}
+
+.page-techos h2 {
+  font-size: 1.35rem;
+  margin: 2.2rem 0 0.6rem;
+}
+
+.page-techos p {
+  max-width: 62ch;
+  margin: 0.55rem 0 0;
+}
+
+.page-techos .retour {
+  display: inline-block;
+  margin-top: 2rem;
+  font-weight: 700;
 }
 
 .sous-bloc,
@@ -554,6 +829,60 @@ a:hover {
 }
 
 /* ——— Gazole : lecture au clavier ——— */
+
+.legende-gazole {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.85rem 0 0;
+  max-width: 40rem;
+  font-family: var(--font-titre);
+  font-weight: 600;
+  font-stretch: 112%;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.legende-gazole li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.echantillon {
+  flex: 0 0 1.7rem;
+  width: 1.7rem;
+  height: 0.85rem;
+}
+
+.echantillon-bande {
+  background: color-mix(in srgb, var(--hexagone) 20%, transparent);
+  box-shadow: inset 0 0 0 1px var(--hexagone);
+}
+
+.echantillon-barre {
+  background:
+    linear-gradient(var(--hexagone), var(--hexagone)) left center / 0.28rem 100% no-repeat,
+    linear-gradient(var(--hexagone), var(--hexagone)) center center / 0.28rem 100% no-repeat,
+    linear-gradient(var(--hexagone), var(--hexagone)) right center / 0.28rem 100% no-repeat;
+  opacity: 0.55;
+}
+
+.echantillon-mediane,
+.echantillon-plafond {
+  height: 0;
+  background: none;
+}
+
+.echantillon-mediane {
+  border-top: 2px solid var(--hexagone);
+}
+
+.echantillon-plafond {
+  border-top: 3px solid var(--martinique);
+}
 
 .mois-clavier {
   position: relative;
@@ -594,18 +923,6 @@ a:hover {
   white-space: pre-line;
   opacity: 0;
   pointer-events: none;
-}
-
-:root[data-theme="dark"] .infobulle {
-  border-color: var(--brume);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .infobulle {
-    border-color: var(--brume);
-    box-shadow: inset 0 1px 0 rgb(255 255 255 / 12%);
-  }
 }
 
 .mois-focus:hover .infobulle,
@@ -680,15 +997,27 @@ a:hover {
     transform: none;
     opacity: 1;
   }
+
+  .bandeau-video {
+    display: none;
+  }
+
+  .bandeau::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("/media/martinique-poster.jpg") center / cover no-repeat;
+    filter: grayscale(1) contrast(1.12) sepia(0.15);
+  }
 }
 
 /* ——— Tailles ——— */
 
 @media (min-width: 900px) {
   .reponse-hero {
-    grid-template-columns: 5fr 7fr;
-    align-items: end;
-    gap: 4rem;
+    grid-template-columns: 1.65fr 1fr;
+    align-items: start;
+    gap: 2.5rem;
   }
 
   .grille-postes {
@@ -696,17 +1025,45 @@ a:hover {
   }
 }
 
+@media (max-width: 1439px) {
+  .nav-ecrans {
+    min-width: 0;
+    flex: 1 1 16rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .bandeau-texte {
+    width: calc(100vw - 2 * var(--gouttiere));
+  }
+
+  .bandeau .intro {
+    max-width: none;
+    white-space: nowrap;
+    font-size: min(1.05rem, 1.02vw);
+    line-height: 1.25;
+  }
+}
+
+@media (min-width: 1440px) {
+  .entete {
+    flex-wrap: nowrap;
+  }
+
+  .nav-ecrans {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    gap: 0.35rem 0.65rem;
+  }
+
+  .nav-lien {
+    font-size: 13.5px;
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 899px) {
-  .nav-secondaire {
-    display: none;
-  }
-
-  .ligne-barre {
-    grid-template-columns: 1fr auto;
-  }
-
-  .ligne-barre > .piste,
-  .ligne-barre > .piste-signee {
-    grid-column: 1 / -1;
+  .titre-reponse {
+    max-width: none;
   }
 }

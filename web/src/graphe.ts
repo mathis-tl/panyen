@@ -11,6 +11,7 @@ import { formaterMoisUtc } from "./validation.ts";
 const COULEUR_MQ = "var(--martinique)";
 const COULEUR_FM = "var(--hexagone)";
 const COULEUR_JALON = "var(--schiste)";
+const FAMILLE_CHIFFRES = '"Archivo Variable", sans-serif';
 
 /** Sous ce seuil, marges et labels sont recomposés pour l'écran étroit. */
 export const SEUIL_ETROIT_PX = 520;
@@ -172,6 +173,7 @@ export function grapheEvolutions(
     : { textAnchor: "start" as const, dx: 8 };
 
   return Plot.plot({
+    style: { fontFamily: FAMILLE_CHIFFRES },
     // Titre/sous-titre déplacés dans le HTML (rendu.ts) pour éviter la troncature.
     width: disposition.largeur,
     height: disposition.hauteur,
@@ -301,6 +303,7 @@ export function graphePetit(
   );
 
   return Plot.plot({
+    style: { fontFamily: FAMILLE_CHIFFRES },
     width: disposition.largeur,
     height: hauteur,
     marginTop: margeHaut,

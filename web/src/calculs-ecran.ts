@@ -6,8 +6,11 @@ import { formaterPct } from "./calculs.ts";
 import type { LigneDifferentiel } from "./types.ts";
 import { formaterMoisUtc } from "./validation.ts";
 
-/** Seuil provisoire, en points, entre « creusé » et « à peu près le même ». */
+/** Seuil provisoire, en points, entre « creusé » et « n'a presque pas bougé ». */
 export const SEUIL_ETAT_ECART_POINTS = 2;
+
+/** Sous ce seuil, en points, les deux territoires ont augmenté à peu près autant. */
+export const SEUIL_AUTANT_POINTS = 1;
 
 export type EtatEcart = "creuse" | "resserre" | "stable";
 
@@ -37,16 +40,35 @@ export function etatEcart(variationPoints: number): EtatEcart {
   return "stable";
 }
 
-export function titreReponse(etat: EtatEcart): string {
-  if (etat === "creuse") return "Depuis 2022, l'écart s'est creusé.";
-  if (etat === "resserre") return "Depuis 2022, l'écart s'est resserré.";
-  return "Depuis 2022, l'écart est resté à peu près le même.";
+const MODELES_TITRE: Record<EtatEcart, string> = {
+  creuse:
+    "Depuis 2022, l'écart s'est creusé : les courses alimentaires coûtent environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone.",
+  resserre:
+    "Depuis 2022, l'écart s'est resserré : les courses alimentaires coûtent environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone.",
+  stable:
+    "Depuis 2022, l'écart n'a presque pas bougé : les courses alimentaires coûtent environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone.",
+};
+
+export function titreReponse(etat: EtatEcart, ecartFinEntier: string): string {
+  return resoudreEmplacements(MODELES_TITRE[etat], {
+    ecart_fin_entier: ecartFinEntier,
+  });
+}
+
+/** Écart estimé arrondi à l'unité, avec le signe typographique et le symbole %. */
+export function formaterEcartEntier(ecartPct: number): string {
+  if (!Number.isFinite(ecartPct)) {
+    throw new Error("Écart absent pour l'arrondi.");
+  }
+  const entier = Math.round(ecartPct);
+  const signe = entier < 0 ? "−" : "";
+  return `${signe}${Math.abs(entier)} %`;
 }
 
 export function libelleEstimation(dernierMoisCommun: string): string {
   const mois = dernierMoisCommun.trim();
   if (!mois) throw new Error("Dernier mois commun absent.");
-  return `Estimation, fin ${mois}`;
+  return `Estimation à fin ${mois}, dernier mois publié pour les deux territoires.`;
 }
 
 export function phrasePicEstime(
@@ -56,8 +78,40 @@ export function phrasePicEstime(
   moisActuel: string,
 ): string {
   return (
-    `Il a atteint environ ${formaterPct(ecartPicPct)} % fin ${moisPic} (estimation), ` +
+    `Selon l'estimation, l'écart a atteint environ ${formaterPct(ecartPicPct)} % en ${moisPic} ` +
     `avant de revenir vers ${formaterPct(ecartActuelPct)} % en ${moisActuel}.`
+  );
+}
+
+/**
+ * Constat d'un poste. « À peu près autant » si la valeur absolue du
+ * différentiel est strictement inférieure à 1 point.
+ */
+export function phraseConstat(
+  sujet: string,
+  differentielPoints: number,
+  evolutionMartinique: string,
+  evolutionHexagone: string,
+): string {
+  if (!Number.isFinite(differentielPoints)) {
+    throw new Error("Différentiel d'évolution absent.");
+  }
+  if (sujet.trim() === "") throw new Error("Sujet du constat absent.");
+  if (Math.abs(differentielPoints) < SEUIL_AUTANT_POINTS) {
+    return (
+      `Depuis avril 2022, ${sujet} ont augmenté à peu près autant ` +
+      `en Martinique (${evolutionMartinique} %) et dans l'Hexagone (${evolutionHexagone} %).`
+    );
+  }
+  if (differentielPoints > 0) {
+    return (
+      `Depuis avril 2022, ${sujet} ont plus augmenté en Martinique ` +
+      `(${evolutionMartinique} %) que dans l'Hexagone (${evolutionHexagone} %).`
+    );
+  }
+  return (
+    `Depuis avril 2022, ${sujet} ont moins augmenté en Martinique ` +
+    `(${evolutionMartinique} %) que dans l'Hexagone (${evolutionHexagone} %).`
   );
 }
 
@@ -150,6 +204,17 @@ export function ecartsAnnuels(lignes: LigneDifferentiel[]): EcartAnnuel[] {
     });
   }
   return annees;
+}
+
+/** Min et max des barres annuelles estimées, pas des mois sans barre. */
+export function phraseEstimationsAnnuelles(lignes: LigneDifferentiel[]): string {
+  const estimations = ecartsAnnuels(lignes).filter((annee) => annee.nature === "estimation");
+  if (estimations.length === 0) {
+    throw new Error("Aucune estimation annuelle à résumer.");
+  }
+  const min = Math.min(...estimations.map((annee) => annee.ecartPct));
+  const max = Math.max(...estimations.map((annee) => annee.ecartPct));
+  return `Les estimations annuelles vont de ${formaterPct(min)} % à ${formaterPct(max)} %.`;
 }
 
 /** Évolution entre deux mois, à l'intérieur de chaque territoire. */

@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  SEUIL_AUTANT_POINTS,
   SEUIL_ETAT_ECART_POINTS,
   barresMemeDate,
   ecartsAnnuels,
   etatEcart,
   eurosPourCentHexagone,
+  formaterEcartEntier,
   libelleEstimation,
+  phraseConstat,
+  phraseEstimationsAnnuelles,
+  phrasePicEstime,
   resoudreEmplacements,
   titreReponse,
 } from "./calculs-ecran.ts";
@@ -49,11 +54,15 @@ describe("trois états du titre", () => {
     expect(etatEcart(0)).toBe("stable");
   });
 
-  it("formule le titre selon l'état, sans chiffre écrit en dur", () => {
-    expect(titreReponse("creuse")).toBe("Depuis 2022, l'écart s'est creusé.");
-    expect(titreReponse("resserre")).toBe("Depuis 2022, l'écart s'est resserré.");
-    expect(titreReponse("stable")).toBe(
-      "Depuis 2022, l'écart est resté à peu près le même.",
+  it("formule le titre selon l'état, avec l'écart entier résolu", () => {
+    expect(titreReponse("creuse", "40 %")).toBe(
+      "Depuis 2022, l'écart s'est creusé : les courses alimentaires coûtent environ 40 % de plus en Martinique que dans l'Hexagone.",
+    );
+    expect(titreReponse("resserre", "38 %")).toBe(
+      "Depuis 2022, l'écart s'est resserré : les courses alimentaires coûtent environ 38 % de plus en Martinique que dans l'Hexagone.",
+    );
+    expect(titreReponse("stable", "40 %")).toBe(
+      "Depuis 2022, l'écart n'a presque pas bougé : les courses alimentaires coûtent environ 40 % de plus en Martinique que dans l'Hexagone.",
     );
   });
 });
@@ -119,8 +128,12 @@ describe("barres à la même date", () => {
 
 describe("libellé du dernier mois commun", () => {
   it("change quand le mois change", () => {
-    expect(libelleEstimation("juillet 2026")).toBe("Estimation, fin juillet 2026");
-    expect(libelleEstimation("juin 2026")).toBe("Estimation, fin juin 2026");
+    expect(libelleEstimation("juillet 2026")).toBe(
+      "Estimation à fin juillet 2026, dernier mois publié pour les deux territoires.",
+    );
+    expect(libelleEstimation("juin 2026")).toBe(
+      "Estimation à fin juin 2026, dernier mois publié pour les deux territoires.",
+    );
     expect(libelleEstimation("juillet 2026")).not.toBe(libelleEstimation("août 2025"));
   });
 
@@ -172,6 +185,88 @@ describe("écarts annuels", () => {
     expect(annees[0].ecartPct).toBe(40);
     expect(annees[1].nature).toBe("estimation");
     expect(annees[1].ecartPct).toBe(42.5);
+  });
+});
+
+describe("phrase du pic estimé", () => {
+  it("nomme l'écart, pas un « il »", () => {
+    expect(phrasePicEstime(42.733, "décembre 2024", 40.477, "juillet 2026")).toBe(
+      "Selon l'estimation, l'écart a atteint environ 42,7 % en décembre 2024 avant de revenir vers 40,5 % en juillet 2026.",
+    );
+  });
+});
+
+describe("estimations annuelles affichées", () => {
+  it("prend le min et le max des barres estimées, pas le creux d'un mois sans barre", () => {
+    const phrase = phraseEstimationsAnnuelles([
+      ligne({
+        periode: new Date(Date.UTC(2022, 3, 1)),
+        ecart_prix_estime_pct: 40.2,
+        nature_ecart: "mesure_ecsp_2022",
+      }),
+      ligne({
+        periode: new Date(Date.UTC(2023, 5, 1)),
+        ecart_prix_estime_pct: 36.1,
+        nature_ecart: "estimation_a_partir_ecsp_2022",
+      }),
+      ligne({
+        periode: new Date(Date.UTC(2023, 11, 1)),
+        ecart_prix_estime_pct: 41,
+        nature_ecart: "estimation_a_partir_ecsp_2022",
+      }),
+      ligne({
+        periode: new Date(Date.UTC(2024, 11, 1)),
+        ecart_prix_estime_pct: 42.7,
+        nature_ecart: "estimation_a_partir_ecsp_2022",
+      }),
+    ]);
+    expect(phrase).toBe("Les estimations annuelles vont de 41,0 % à 42,7 %.");
+    expect(phrase).not.toContain("36,1");
+    expect(phrase).not.toContain("40,2");
+  });
+});
+
+describe("écart entier du titre", () => {
+  it("arrondit à l'unité, y compris sur la frontière 0,5", () => {
+    expect(formaterEcartEntier(40.5)).toBe("41 %");
+    expect(formaterEcartEntier(40.49)).toBe("40 %");
+    expect(formaterEcartEntier(39.5)).toBe("40 %");
+    expect(formaterEcartEntier(0.5)).toBe("1 %");
+    expect(formaterEcartEntier(-1.5)).toBe("−1 %");
+    expect(formaterEcartEntier(0)).toBe("0 %");
+  });
+
+  it("refuse un écart absent", () => {
+    expect(() => formaterEcartEntier(Number.NaN)).toThrow(/arrondi/);
+  });
+});
+
+describe("à peu près autant", () => {
+  it("place le seuil dans une constante de 1 point", () => {
+    expect(SEUIL_AUTANT_POINTS).toBe(1);
+  });
+
+  it("dit à peu près autant strictement sous 1 point, et plus ou moins sur la frontière", () => {
+    const autant = phraseConstat("les prix de l'alimentation", 0.999, "12,0", "11,1");
+    expect(autant).toContain("à peu près autant");
+    expect(phraseConstat("les prix de l'alimentation", -0.999, "1,0", "1,9")).toContain(
+      "à peu près autant",
+    );
+    expect(phraseConstat("les prix de l'alimentation", 0, "3,0", "3,0")).toContain(
+      "à peu près autant",
+    );
+    expect(phraseConstat("les prix de l'alimentation", 1, "12,0", "11,0")).toContain(
+      "plus augmenté",
+    );
+    expect(phraseConstat("les prix de l'alimentation", 1, "12,0", "11,0")).not.toContain(
+      "à peu près autant",
+    );
+    expect(phraseConstat("les prix de l'alimentation", -1, "10,0", "11,0")).toContain(
+      "moins augmenté",
+    );
+    expect(phraseConstat("les prix de l'alimentation", -1, "10,0", "11,0")).not.toContain(
+      "à peu près autant",
+    );
   });
 });
 
