@@ -430,13 +430,16 @@ export function paragraphesConclusion(chiffres: ChiffresConclusion): TexteConclu
     chiffres.evoEnsMq > 0 && chiffres.evoEnsFm > 0
       ? `Les prix ont augmenté des deux côtés, de ${pct(chiffres.evoEnsMq)} en Martinique et de ${pct(chiffres.evoEnsFm)} dans l'Hexagone. `
       : `Les évolutions de l'ensemble sont de ${pct(chiffres.evoEnsMq)} en Martinique et de ${pct(chiffres.evoEnsFm)} dans l'Hexagone. `;
+  const hausseDesDeuxCotes = chiffres.evoEnsMq > 0 && chiffres.evoEnsFm > 0;
   const suite =
     sensEvolution < 0
-      ? chiffres.evoEnsMq > 0
+      ? hausseDesDeuxCotes
         ? "L'écart se resserre parce que les prix ont davantage monté dans l'Hexagone. Ils n'ont pas baissé en Martinique."
-        : "L'écart se resserre parce que les prix ont davantage monté dans l'Hexagone."
+        : "L'écart se resserre : l'évolution est plus élevée dans l'Hexagone."
       : sensEvolution > 0
-        ? "L'écart se creuse parce que les prix ont davantage monté en Martinique."
+        ? hausseDesDeuxCotes
+          ? "L'écart se creuse parce que les prix ont davantage monté en Martinique."
+          : "L'écart se creuse : l'évolution est plus élevée en Martinique."
         : "L'écart estimé ne bouge pas : les deux évolutions sont égales.";
   const ensemble =
     `${mouvements}Pour l'ensemble des produits, l'écart estimé passe de ${pct(chiffres.ecartEns2022)} à ${pct(chiffres.ecartEnsFin)}. ${suite}`;

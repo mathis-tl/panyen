@@ -224,6 +224,7 @@ describe("conclusion", () => {
       ),
     );
     expect(texte).not.toContain("des deux côtés");
+    expect(texte).not.toContain("monté");
     expect(texte).toContain("-1,0 %");
     expect(texte).toContain("2,0 %");
   });
