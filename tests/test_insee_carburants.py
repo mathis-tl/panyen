@@ -71,6 +71,34 @@ def test_collecter_carburants_ecrit_brut(brut, monkeypatch):
     assert cible.read_bytes() == XML_ECHANTILLON
 
 
+def test_cli_carburants_depuis_explicite_n_est_pas_remplace(brut, monkeypatch):
+    appels = []
+
+    def faux_urlopen(requete, timeout=0):
+        appels.append(requete.full_url)
+        return FauxReponse(XML_ECHANTILLON)
+
+    monkeypatch.setattr(urllib.request, "urlopen", faux_urlopen)
+    insee_ipc.principal(["--carburants", "--depuis", "2022-04", "--dry-run"])
+    assert appels == [
+        "https://bdm.insee.fr/series/sdmx/data/SERIES_BDM/000442588?startPeriod=2022-04"
+    ]
+    assert not brut.exists()
+
+
+def test_cli_carburants_sans_depuis_part_de_janvier(brut, monkeypatch):
+    appels = []
+
+    def faux_urlopen(requete, timeout=0):
+        appels.append(requete.full_url)
+        return FauxReponse(XML_ECHANTILLON)
+
+    monkeypatch.setattr(urllib.request, "urlopen", faux_urlopen)
+    insee_ipc.principal(["--carburants", "--dry-run"])
+    assert appels == [URL_CARBURANTS]
+    assert not brut.exists()
+
+
 def test_collecter_carburants_sans_ecrasement(brut, monkeypatch):
     def faux_urlopen(_requete, timeout=0):
         return FauxReponse(XML_ECHANTILLON)

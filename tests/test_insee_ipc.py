@@ -166,6 +166,13 @@ def test_erreur_reseau_sans_fichier(monkeypatch, brut, horloge):
     assert not brut.exists() or list(brut.iterdir()) == []
 
 
+def test_cli_ipc_sans_depuis_part_d_avril(monkeypatch, brut, horloge):
+    appels = brancher_transport(monkeypatch)
+    insee_ipc.principal(["--dry-run"])
+    assert len(appels) == 1
+    assert appels[0]["url"] == URL_ATTENDUE
+
+
 def test_cli_depuis_et_dry_run(monkeypatch, brut, horloge, capsys):
     appels = brancher_transport(monkeypatch)
     insee_ipc.principal(["--depuis", "2022-04", "--dry-run"])
