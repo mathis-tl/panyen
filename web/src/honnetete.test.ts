@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import type { LigneFormule, LigneNiveau, LigneRevenu } from "./chargement-contexte.ts";
+import type { LigneEvenement, LigneFormule, LigneNiveau, LigneRevenu } from "./chargement-contexte.ts";
 import {
   exigerEstimationPoste,
-  phraseConclusion,
+  exigerMobilisation,
+  paragraphesConclusion,
   POSTES_PROLONGES,
+  type ChiffresConclusion,
 } from "./calculs-ecran.ts";
+import { calculerPanierIllustratif, formaterEuros } from "./calculs.ts";
 import { afficherPage, etiquetteRevenu, type DonneesPage } from "./page.ts";
 import { POSTES_PUBLIES, type CodePoste, type LigneDifferentiel } from "./types.ts";
 import type { LigneCarburant } from "./types-carburants.ts";
@@ -171,19 +174,120 @@ describe("estimation des deux postes", () => {
 });
 
 describe("conclusion", () => {
-  it("choisit la phrase selon l'ancre et retire le salaire s'il n'est pas négatif", () => {
-    const auDessus = phraseConclusion(40.35, 40.2, -8);
-    expect(auDessus).toContain("revenu vers son niveau de départ, pas en dessous");
-    expect(auDessus).toContain("des salaires du privé plus bas");
+  it("reste au-dessus de l'ancre, écarte le salaire nul, et ne juge pas les mesures", () => {
+    const auDessus = texteConclusion(paragraphesConclusion(chiffresConclusion()));
+    expect(auDessus).toContain("Il n'est pas passé sous la mesure de 2022.");
+    expect(auDessus).toContain("Les salaires du privé en Martinique sont de 8,0 % sous la moyenne nationale.");
+    expect(auDessus).toContain("davantage monté dans l'Hexagone");
+    expect(auDessus).toContain("Ils n'ont pas baissé en Martinique.");
+    expect(auDessus).toContain("Notre analyse");
+    expect(auDessus).toContain("Illustration arithmétique, pas une mesure.");
+    expect(auDessus).toContain("ne prouve ni qu'elles ont fonctionné, ni qu'elles ont échoué");
     expect(auDessus).not.toMatch(/métropol/i);
+    expect(auDessus).not.toMatch(/largement/i);
+    expect(auDessus).not.toMatch(/moins chère/i);
+    expect(auDessus).not.toMatch(/de plus en plus/i);
 
-    const enDessous = phraseConclusion(39, 40.2, -8);
-    expect(enDessous).toContain("passé sous son niveau de départ");
-    expect(enDessous).not.toContain("revenu vers son niveau de départ");
+    const enDessous = texteConclusion(
+      paragraphesConclusion(chiffresConclusion({ ecartAlimFin: 39, evoAlimMq: 18, evoAlimFm: 20 })),
+    );
+    expect(enDessous).toContain("Il est passé sous la mesure de 2022.");
+    expect(enDessous).not.toContain("n'est pas passé sous");
 
-    const sansSalaire = phraseConclusion(40.35, 40.2, 0);
+    const sansSalaire = texteConclusion(paragraphesConclusion(chiffresConclusion({ salairePrivePct: 0 })));
     expect(sansSalaire).not.toContain("salaires du privé");
-    expect(sansSalaire).toContain("Des prix plus élevés qu'en Hexagone coïncident");
+  });
+
+  it("dit que l'ensemble se creuse quand la Martinique a davantage monté", () => {
+    const texte = texteConclusion(
+      paragraphesConclusion(
+        chiffresConclusion({ evoEnsMq: 12, evoEnsFm: 9, ecartEnsFin: 15, ecartEns2022: 13.8 }),
+      ),
+    );
+    expect(texte).toContain("davantage monté en Martinique");
+    expect(texte).not.toContain("davantage monté dans l'Hexagone");
+  });
+
+  it("dit que l'écart ensemble ne bouge pas quand les évolutions sont égales", () => {
+    const texte = texteConclusion(
+      paragraphesConclusion(
+        chiffresConclusion({ evoEnsMq: 10, evoEnsFm: 10, ecartEnsFin: 13.8, ecartEns2022: 13.8 }),
+      ),
+    );
+    expect(texte).toContain("les deux évolutions sont égales");
+  });
+
+  it("retire « des deux côtés » si une évolution de l'ensemble n'est pas une hausse", () => {
+    const texte = texteConclusion(
+      paragraphesConclusion(
+        chiffresConclusion({ evoEnsMq: -1, evoEnsFm: 2, ecartEnsFin: 12, ecartEns2022: 13.8 }),
+      ),
+    );
+    expect(texte).not.toContain("des deux côtés");
+    expect(texte).toContain("-1,0 %");
+    expect(texte).toContain("2,0 %");
+  });
+
+  it("échoue si le sens de l'écart contredit les évolutions", () => {
+    expect(() =>
+      paragraphesConclusion(
+        chiffresConclusion({ evoEnsMq: 10, evoEnsFm: 12.7, ecartEnsFin: 15, ecartEns2022: 13.8 }),
+      ),
+    ).toThrow(/contredit/);
+  });
+
+  it("échoue si un chiffre manque", () => {
+    expect(() => paragraphesConclusion(chiffresConclusion({ ecartAlimFin: Number.NaN }))).toThrow(
+      /absent/,
+    );
+  });
+
+  it("calcule les euros avec le panier illustratif", () => {
+    const ancre = lignesIpc().find(
+      (ligne) => ligne.poste === "alimentation" && ligne.nature_ecart === "mesure_ecsp_2022",
+    )!;
+    const fin = lignesIpc()
+      .filter((ligne) => ligne.poste === "alimentation")
+      .at(-1)!;
+    const depart = calculerPanierIllustratif(ancre);
+    const actuel = calculerPanierIllustratif(fin);
+    const texte = texteConclusion(
+      paragraphesConclusion(
+        chiffresConclusion({
+          eurosMq2022: depart.martinique,
+          eurosFm2022: depart.metropole,
+          eurosFmFin: actuel.metropole,
+          eurosMqFin: actuel.martinique,
+        }),
+      ),
+    );
+    expect(texte).toContain(formaterEuros(depart.martinique));
+    expect(texte).toContain(formaterEuros(actuel.metropole));
+    expect(texte).toContain(formaterEuros(actuel.martinique));
+    expect(texte).toContain(
+      formaterEuros(actuel.martinique - actuel.metropole),
+    );
+  });
+});
+
+describe("mobilisation", () => {
+  it("retient seulement le 1er septembre 2024", () => {
+    const trouve = exigerMobilisation([evenementMobilisation()]);
+    expect(trouve.mois).toBe("septembre 2024");
+    expect(trouve.url).toBe("https://exemple.test/mobilisation");
+  });
+
+  it("échoue si la mobilisation manque ou si octobre est la seule ligne", () => {
+    expect(() => exigerMobilisation([])).toThrow(/Mobilisation/);
+    expect(() =>
+      exigerMobilisation([
+        {
+          ...evenementMobilisation(),
+          date_evenement: new Date(Date.UTC(2024, 9, 10)),
+          titre: "Nuit d'émeutes",
+        },
+      ]),
+    ).toThrow(/Mobilisation/);
   });
 });
 
@@ -219,8 +323,12 @@ describe("page affichée", () => {
     expect(visible).toContain("Salaire net moyen, privé en Martinique, 2024");
     expect(visible).toContain("Île-de-France");
     expect(visible).toContain("août 2026, estimé");
-    expect(visible).toContain("revenu vers son niveau de départ, pas en dessous");
-    expect(visible).toContain("des salaires du privé plus bas");
+    expect(visible).toContain("Il n'est pas passé sous la mesure de 2022.");
+    expect(visible).toContain("Notre analyse");
+    expect(visible).toContain("Illustration arithmétique, pas une mesure.");
+    expect(visible).toContain("septembre 2024");
+    expect(visible).toContain("Les salaires du privé en Martinique sont de 8,0 % sous la moyenne nationale.");
+    expect(hrefs(racine)).toContain("https://exemple.test/mobilisation");
 
     const pourquoi = parId(racine, "pourquoi");
     expect(pourquoi).not.toBeNull();
@@ -268,6 +376,56 @@ function moisCouverts(): Date[] {
   return dates;
 }
 
+function chiffresConclusion(partiel: Partial<ChiffresConclusion> = {}): ChiffresConclusion {
+  return {
+    evoAlimMq: 19.6,
+    evoAlimFm: 19.4,
+    ecartAlimFin: 40.35,
+    ancreAlim: 40.2,
+    eurosMq2022: 140.2,
+    eurosFm2022: 100,
+    eurosFmFin: 119.4,
+    eurosMqFin: 167.44,
+    evoEnsMq: 10,
+    evoEnsFm: 12.7,
+    ecartEns2022: 13.8,
+    ecartEnsFin: 11.1,
+    salairePrivePct: -8,
+    moisMobilisation: "septembre 2024",
+    ...partiel,
+  };
+}
+
+function texteConclusion(conclusion: ReturnType<typeof paragraphesConclusion>): string {
+  return [
+    conclusion.alimentation,
+    conclusion.illustration,
+    conclusion.ensemble,
+    conclusion.analyseAvantLien,
+    conclusion.libelleLien,
+    conclusion.analyseApresLien,
+  ].join(" ");
+}
+
+function evenementMobilisation(): LigneEvenement {
+  return {
+    date_evenement: new Date(Date.UTC(2024, 8, 1)),
+    precision_date: "mois",
+    titre: "Début de la mobilisation publique contre la vie chère",
+    type_evenement: "mobilisation",
+    postes_concernes: "alimentation",
+    url_source: "https://exemple.test/mobilisation",
+    type_source: "etude",
+    consulte_le: "2026-09-29",
+  };
+}
+
+function hrefs(noeud: Noeud): string[] {
+  const sortie = noeud.href ? [noeud.href] : [];
+  for (const enfant of noeud.enfants) sortie.push(...hrefs(enfant));
+  return sortie;
+}
+
 function lignesIpc(): LigneDifferentiel[] {
   const dates = moisCouverts();
   const fin = dates[dates.length - 1];
@@ -285,10 +443,20 @@ function lignesIpc(): LigneDifferentiel[] {
         collecte_utc: new Date(Date.UTC(2026, 9, 6)),
         idbank_martinique: poste === "ensemble" ? "011814618" : "011813726",
         idbank_france_metropolitaine: poste === "ensemble" ? "011814612" : "011813720",
-        facteur_martinique: 1,
-        facteur_france_metropolitaine: 1,
-        evolution_martinique_pct: 1,
-        evolution_france_metropolitaine_pct: 1,
+        facteur_martinique: index === dates.length - 1 && poste === "alimentation" ? 1.196 : 1,
+        facteur_france_metropolitaine: index === dates.length - 1 && poste === "alimentation" ? 1.194 : 1,
+        evolution_martinique_pct:
+          index === dates.length - 1 && poste === "ensemble"
+            ? 10
+            : index === dates.length - 1 && poste === "alimentation"
+              ? 19.6
+              : 1,
+        evolution_france_metropolitaine_pct:
+          index === dates.length - 1 && poste === "ensemble"
+            ? 12.7
+            : index === dates.length - 1 && poste === "alimentation"
+              ? 19.4
+              : 1,
         differentiel_evolution_points: 0,
         coefficient_ecart: 1,
         ancre_ecsp_disponible: ancre,
@@ -320,7 +488,7 @@ function donneesPage(ipc = lignesIpc()): DonneesPage {
     niveaux: niveaux(),
     formules: formules(),
     revenus: revenus(),
-    evenements: [],
+    evenements: [evenementMobilisation()],
   };
 }
 

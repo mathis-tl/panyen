@@ -11,9 +11,10 @@ import {
   formaterEcartEntier,
   formaterEurosPanier,
   exigerEstimationPoste,
+  exigerMobilisation,
   formaterPointsPct,
   libelleEstimation,
-  phraseConclusion,
+  paragraphesConclusion,
   phraseConstat,
   phraseEstimationsAnnuelles,
   phrasePicEstime,
@@ -22,6 +23,7 @@ import {
   titreReponse,
 } from "./calculs-ecran.ts";
 import {
+  calculerPanierIllustratif,
   calculerResume,
   formaterPct,
   prixDuPoste,
@@ -137,7 +139,7 @@ export function afficherPage(conteneur: HTMLElement, donnees: DonneesPage): void
     sectionPourquoi(donnees.niveaux, donnees.revenus, donnees.ipc),
     sectionRecit(donnees),
     sectionMethode(alimentation),
-    sectionConclusion(donnees.ipc, donnees.revenus),
+    sectionConclusion(donnees.ipc, donnees.revenus, donnees.evenements),
     renvoiTechos(),
     pied(donnees.ipc, alimentation),
   );
@@ -798,28 +800,63 @@ function sectionMethode(
   return section;
 }
 
-function sectionConclusion(ipc: LigneDifferentiel[], revenus: LigneRevenu[]): HTMLElement {
+function sectionConclusion(
+  ipc: LigneDifferentiel[],
+  revenus: LigneRevenu[],
+  evenements: LigneEvenement[],
+): HTMLElement {
   const alimentaire = exigerEstimationPoste(ipc, "alimentation");
+  const ensemble = exigerEstimationPoste(ipc, "ensemble");
+  const mesures = ipc.filter(
+    (ligne) => ligne.poste === "alimentation" && ligne.nature_ecart === "mesure_ecsp_2022",
+  );
+  if (mesures.length !== 1) throw new Error("Mesure alimentaire 2022 absente.");
   if (
     alimentaire.ecart_prix_estime_pct === null ||
-    alimentaire.ecart_ecsp_2022_pct === null
+    alimentaire.ecart_ecsp_2022_pct === null ||
+    ensemble.ecart_prix_estime_pct === null ||
+    ensemble.ecart_ecsp_2022_pct === null
   ) {
-    throw new Error("Conclusion impossible : écart alimentaire absent.");
+    throw new Error("Conclusion impossible : écart absent.");
   }
+  const depart = calculerPanierIllustratif(mesures[0]);
+  const fin = calculerPanierIllustratif(alimentaire);
+  const mobilisation = exigerMobilisation(evenements);
   const prive = exigerRevenu(revenus, "salaire_net_moyen_prive");
+  const textes = paragraphesConclusion({
+    evoAlimMq: alimentaire.evolution_martinique_pct,
+    evoAlimFm: alimentaire.evolution_france_metropolitaine_pct,
+    ecartAlimFin: alimentaire.ecart_prix_estime_pct,
+    ancreAlim: alimentaire.ecart_ecsp_2022_pct,
+    eurosFm2022: depart.metropole,
+    eurosMq2022: depart.martinique,
+    eurosFmFin: fin.metropole,
+    eurosMqFin: fin.martinique,
+    evoEnsMq: ensemble.evolution_martinique_pct,
+    evoEnsFm: ensemble.evolution_france_metropolitaine_pct,
+    ecartEns2022: ensemble.ecart_ecsp_2022_pct,
+    ecartEnsFin: ensemble.ecart_prix_estime_pct,
+    salairePrivePct: prive.ecart_moyenne_nationale_pct,
+    moisMobilisation: mobilisation.mois,
+  });
   const section = el("section", "conclusion");
   section.append(
-    el(
-      "p",
-      "conclusion-texte",
-      phraseConclusion(
-        alimentaire.ecart_prix_estime_pct,
-        alimentaire.ecart_ecsp_2022_pct,
-        prive.ecart_moyenne_nationale_pct,
-      ),
-    ),
+    el("p", "conclusion-texte", textes.alimentation),
+    el("p", "conclusion-texte", textes.illustration),
+    el("p", "conclusion-texte", textes.ensemble),
+    paragrapheAnalyse(textes.analyseAvantLien, textes.libelleLien, textes.analyseApresLien, mobilisation.url),
   );
   return section;
+}
+
+function paragrapheAnalyse(avant: string, libelle: string, apres: string, url: string): HTMLElement {
+  const p = el("p", "conclusion-texte");
+  p.append(document.createTextNode(avant));
+  const lien = document.createElement("a");
+  lien.href = url;
+  lien.textContent = libelle;
+  p.append(lien, document.createTextNode(apres));
+  return p;
 }
 
 function renvoiTechos(): HTMLElement {

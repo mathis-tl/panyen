@@ -1095,3 +1095,11 @@ abbr {
   font-stretch: 112%;
   line-height: 1.45;
 }
+
+.conclusion .conclusion-texte + .conclusion-texte {
+  margin-top: 1.25rem;
+}
+
+.conclusion .conclusion-texte a {
+  color: inherit;
+}

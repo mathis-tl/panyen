@@ -2,7 +2,8 @@
  * Calculs de l'écran : titre, barres à la même date, emplacements du récit.
  * Aucun niveau d'indice. Aucun chiffre écrit en dur.
  */
-import { formaterPct } from "./calculs.ts";
+import { formaterEuros, formaterPct } from "./calculs.ts";
+import type { LigneEvenement } from "./chargement-contexte.ts";
 import type { LigneDifferentiel } from "./types.ts";
 import { formaterMoisUtc } from "./validation.ts";
 
@@ -320,26 +321,142 @@ export function exigerEstimationPoste(
   return fin;
 }
 
-/** Phrase de conclusion. Le salaire privé n'entre que s'il est négatif. */
-export function phraseConclusion(
-  ecartFin: number,
-  ancre: number,
-  salairePrivePct: number,
-): string {
-  if (
-    !Number.isFinite(ecartFin) ||
-    !Number.isFinite(ancre) ||
-    !Number.isFinite(salairePrivePct)
-  ) {
-    throw new Error("Conclusion impossible : écart ou salaire absent.");
+export interface ChiffresConclusion {
+  evoAlimMq: number;
+  evoAlimFm: number;
+  ecartAlimFin: number;
+  ancreAlim: number;
+  eurosFm2022: number;
+  eurosMq2022: number;
+  eurosFmFin: number;
+  eurosMqFin: number;
+  evoEnsMq: number;
+  evoEnsFm: number;
+  ecartEns2022: number;
+  ecartEnsFin: number;
+  salairePrivePct: number;
+  moisMobilisation: string;
+}
+
+export interface TexteConclusion {
+  alimentation: string;
+  illustration: string;
+  ensemble: string;
+  analyseAvantLien: string;
+  libelleLien: string;
+  analyseApresLien: string;
+}
+
+const TITRE_MOBILISATION = "Début de la mobilisation publique contre la vie chère";
+
+/** La ligne du 1er septembre 2024, grain mois. Toute autre mobilisation est ignorée. */
+export function exigerMobilisation(evenements: LigneEvenement[]): { mois: string; url: string } {
+  const trouves = evenements.filter((evenement) => {
+    const date = evenement.date_evenement;
+    return (
+      date.getUTCFullYear() === 2024 &&
+      date.getUTCMonth() === 8 &&
+      date.getUTCDate() === 1 &&
+      evenement.titre === TITRE_MOBILISATION &&
+      evenement.precision_date === "mois"
+    );
+  });
+  if (trouves.length !== 1) {
+    throw new Error("Mobilisation de septembre 2024 absente.");
   }
-  const premiere =
-    ecartFin >= ancre
-      ? "Depuis 2022, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous."
-      : "Depuis 2022, l'écart alimentaire estimé est passé sous son niveau de départ.";
-  const milieu =
-    salairePrivePct < 0
-      ? "Des prix plus élevés qu'en Hexagone, et des salaires du privé plus bas que la moyenne française, coïncident avec le sentiment d'une vie plus chère."
-      : "Des prix plus élevés qu'en Hexagone coïncident avec le sentiment d'une vie plus chère.";
-  return `${premiere} ${milieu} Ce n'est pas une preuve. Seule une nouvelle enquête de l'Insee pourra dire où en est vraiment le niveau.`;
+  const trouve = trouves[0];
+  if (trouve.url_source.trim() === "") {
+    throw new Error("Mobilisation de septembre 2024 sans lien.");
+  }
+  return { mois: formaterMoisUtc(trouve.date_evenement), url: trouve.url_source };
+}
+
+function exigerNombre(valeur: number, nom: string): void {
+  if (!Number.isFinite(valeur)) {
+    throw new Error(`Conclusion impossible : ${nom} absent.`);
+  }
+}
+
+function pct(valeur: number): string {
+  return `${formaterPct(valeur)} %`;
+}
+
+function euros(valeur: number): string {
+  return formaterEuros(valeur);
+}
+
+/**
+ * Quatre paragraphes. Les euros sont déjà ceux du panier illustratif.
+ * Le sens de l'écart « ensemble » doit suivre les deux évolutions.
+ */
+export function paragraphesConclusion(chiffres: ChiffresConclusion): TexteConclusion {
+  const champs: Array<[number, string]> = [
+    [chiffres.evoAlimMq, "évolution alimentaire Martinique"],
+    [chiffres.evoAlimFm, "évolution alimentaire Hexagone"],
+    [chiffres.ecartAlimFin, "écart alimentaire"],
+    [chiffres.ancreAlim, "ancre alimentaire"],
+    [chiffres.eurosFm2022, "euros Hexagone 2022"],
+    [chiffres.eurosMq2022, "euros Martinique 2022"],
+    [chiffres.eurosFmFin, "euros Hexagone fin"],
+    [chiffres.eurosMqFin, "euros Martinique fin"],
+    [chiffres.evoEnsMq, "évolution ensemble Martinique"],
+    [chiffres.evoEnsFm, "évolution ensemble Hexagone"],
+    [chiffres.ecartEns2022, "écart ensemble 2022"],
+    [chiffres.ecartEnsFin, "écart ensemble fin"],
+    [chiffres.salairePrivePct, "salaire privé"],
+  ];
+  for (const [valeur, nom] of champs) exigerNombre(valeur, nom);
+  if (chiffres.moisMobilisation.trim() === "") {
+    throw new Error("Conclusion impossible : mois de mobilisation absent.");
+  }
+
+  const sensEvolution = Math.sign(chiffres.evoEnsMq - chiffres.evoEnsFm);
+  const sensEcart = Math.sign(chiffres.ecartEnsFin - chiffres.ecartEns2022);
+  if (sensEvolution !== sensEcart) {
+    throw new Error("Conclusion impossible : l'écart ensemble contredit les évolutions.");
+  }
+
+  const alimentation =
+    `Depuis avril 2022, les prix alimentaires ont augmenté de ${pct(chiffres.evoAlimMq)} en Martinique et de ${pct(chiffres.evoAlimFm)} dans l'Hexagone. ` +
+    `L'écart estimé est de ${pct(chiffres.ecartAlimFin)}, contre ${pct(chiffres.ancreAlim)} mesurés en 2022. ` +
+    (chiffres.ecartAlimFin >= chiffres.ancreAlim
+      ? "Il n'est pas passé sous la mesure de 2022."
+      : "Il est passé sous la mesure de 2022.");
+
+  const illustration =
+    `Ces pourcentages s'appliquent à des prix plus hauts. Pour ${euros(chiffres.eurosFm2022)} dans l'Hexagone en 2022, l'illustration donne ${euros(chiffres.eurosMq2022)} en Martinique ; au dernier mois, ${euros(chiffres.eurosFmFin)} dans l'Hexagone et ${euros(chiffres.eurosMqFin)} en Martinique, soit ${euros(chiffres.eurosMqFin - chiffres.eurosFmFin)} d'écart au lieu de ${euros(chiffres.eurosMq2022 - chiffres.eurosFm2022)}. Illustration arithmétique, pas une mesure.`;
+
+  const mouvements =
+    chiffres.evoEnsMq > 0 && chiffres.evoEnsFm > 0
+      ? `Les prix ont augmenté des deux côtés, de ${pct(chiffres.evoEnsMq)} en Martinique et de ${pct(chiffres.evoEnsFm)} dans l'Hexagone. `
+      : `Les évolutions de l'ensemble sont de ${pct(chiffres.evoEnsMq)} en Martinique et de ${pct(chiffres.evoEnsFm)} dans l'Hexagone. `;
+  const suite =
+    sensEvolution < 0
+      ? chiffres.evoEnsMq > 0
+        ? "L'écart se resserre parce que les prix ont davantage monté dans l'Hexagone. Ils n'ont pas baissé en Martinique."
+        : "L'écart se resserre parce que les prix ont davantage monté dans l'Hexagone."
+      : sensEvolution > 0
+        ? "L'écart se creuse parce que les prix ont davantage monté en Martinique."
+        : "L'écart estimé ne bouge pas : les deux évolutions sont égales.";
+  const ensemble =
+    `${mouvements}Pour l'ensemble des produits, l'écart estimé passe de ${pct(chiffres.ecartEns2022)} à ${pct(chiffres.ecartEnsFin)}. ${suite}`;
+
+  const salaire =
+    chiffres.salairePrivePct < 0
+      ? `Les salaires du privé en Martinique sont de ${pct(Math.abs(chiffres.salairePrivePct))} sous la moyenne nationale. `
+      : "";
+  const analyseAvantLien =
+    `Notre analyse : un écart alimentaire estimé de ${pct(chiffres.ecartAlimFin)} reste un écart de prix important. ${salaire}` +
+    `Ces chiffres ne mesurent pas le pouvoir d'achat au fil du temps. Ils sont cohérents avec la mobilisation de `;
+  const analyseApresLien =
+    ` contre la vie chère. Ce site ne mesure pas l'effet des mesures publiques. L'évolution de l'écart ne prouve ni qu'elles ont fonctionné, ni qu'elles ont échoué. Seule une nouvelle enquête de l'Insee dira où en est le niveau.`;
+
+  return {
+    alimentation,
+    illustration,
+    ensemble,
+    analyseAvantLien,
+    libelleLien: chiffres.moisMobilisation,
+    analyseApresLien,
+  };
 }
