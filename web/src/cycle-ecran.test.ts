@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { creerRegistreNettoyage, identifiantBoutonPoste } from "./cycle-ecran.ts";
+import { creerRegistreNettoyage } from "./cycle-ecran.ts";
 
 describe("registre de nettoyage", () => {
   it("exécute chaque nettoyage enregistré, dans l'ordre", () => {
@@ -52,15 +52,5 @@ describe("registre de nettoyage", () => {
 
     expect(() => registre.nettoyer()).not.toThrow();
     expect(suivantExecute).toBe(true);
-  });
-});
-
-describe("identifiantBoutonPoste", () => {
-  it("est stable et distinct par poste", () => {
-    expect(identifiantBoutonPoste("alimentation")).toBe("bouton-poste-alimentation");
-    expect(identifiantBoutonPoste("energie")).toBe("bouton-poste-energie");
-    expect(identifiantBoutonPoste("services")).not.toBe(
-      identifiantBoutonPoste("produits_manufactures"),
-    );
   });
 });

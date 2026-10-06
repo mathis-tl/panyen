@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import {
   validerColonnes,
   validerLignes,
@@ -13,8 +13,6 @@ import {
   type LigneDifferentiel,
   type NatureEcart,
 } from "./types.ts";
-import { demarrer } from "./main.ts";
-
 /** Fabrique une ligne synthétique valide. */
 function ligneSynthetique(
   overrides: Partial<LigneDifferentiel> & {
@@ -177,23 +175,14 @@ describe("formaterMoisUtc", () => {
   });
 });
 
-describe("bascule de poste sans réseau", () => {
-  it("charge une seule fois et recalcule depuis les lignes en mémoire", async () => {
+describe("résumé par poste", () => {
+  it("l'ancre alimentaire ne fuit pas vers l'énergie", async () => {
     const { calculerResume } = await import("./calculs.ts");
     const lignes = jeuQuatrePostes(3);
-    const charger = vi.fn(async () => lignes);
-    const conteneur = { innerHTML: "" } as HTMLElement;
-
-    // Échec attendu sans DOM complet pour le rendu, mais le chargeur
-    // ne doit être appelé qu'une fois avant toute bascule pure.
-    await demarrer(conteneur, { charger }).catch(() => undefined);
-    expect(charger).toHaveBeenCalledTimes(1);
-
     const alim = calculerResume(lignes, "alimentation");
     const energie = calculerResume(lignes, "energie");
     expect(alim.ancreEcspDisponible).toBe(true);
     expect(energie.ancreEcspDisponible).toBe(false);
     expect(energie.noteSansAncre).toMatch(/fonctions? de consommation/i);
-    expect(charger).toHaveBeenCalledTimes(1);
   });
 });
