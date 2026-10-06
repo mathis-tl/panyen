@@ -13,9 +13,9 @@ with ancre as (
 )
 
 select 'volumetrie_ancre' as motif
-where (select count(*) from ancre) != 8
-   or (select count(distinct ancre.idbank) from ancre) != 8
-   or (select count(distinct ancre.poste) from ancre) != 4
+where (select count(*) from ancre) != 10
+   or (select count(distinct ancre.idbank) from ancre) != 10
+   or (select count(distinct ancre.poste) from ancre) != 5
 
 union all
 

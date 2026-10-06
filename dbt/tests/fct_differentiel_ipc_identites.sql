@@ -48,7 +48,8 @@ union all
 select 'formules_ecsp' as motif
 from facture
 cross join ecsp
-where facture.ancre_ecsp_disponible
+where facture.poste = 'alimentation'
+  and facture.ancre_ecsp_disponible
   and (
       abs(
           facture.ecart_prix_estime_pct
@@ -61,6 +62,29 @@ where facture.ancre_ecsp_disponible
       ) > 1e-9
       or abs(facture.ecart_ecsp_2022_pct - ecsp.ecart_fisher_pct) > 1e-9
       or facture.source_ecsp != ecsp.source_ecsp
+  )
+
+union all
+
+select 'formules_ecsp_ensemble' as motif
+from facture
+inner join {{ ref("ecsp_niveaux") }} as ecsp_niveaux
+    on ecsp_niveaux.annee_enquete = 2022
+    and ecsp_niveaux.poste = 'ensemble'
+where facture.poste = 'ensemble'
+  and facture.ancre_ecsp_disponible
+  and (
+      abs(
+          facture.ecart_prix_estime_pct
+          - (
+              (
+                  1 + facture.ecart_ecsp_2022_pct / 100
+              ) * facture.coefficient_ecart
+              - 1
+          ) * 100
+      ) > 1e-9
+      or abs(facture.ecart_ecsp_2022_pct - ecsp_niveaux.ecart_fisher_pct) > 1e-9
+      or facture.source_ecsp != ecsp_niveaux.source_url
   )
 
 union all

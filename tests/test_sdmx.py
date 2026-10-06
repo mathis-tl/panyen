@@ -22,6 +22,11 @@ SERIES_ACTIVES = (
     ("011813909", "FM", "services", "IPC services France métropolitaine"),
 )
 
+SERIES_CINQ_POSTES = SERIES_ACTIVES + (
+    ("011814618", "D972", "ensemble", "IPC ensemble Martinique"),
+    ("011814612", "FM", "ensemble", "IPC ensemble France métropolitaine"),
+)
+
 
 def _obs(
     periode: str = "2022-04",
@@ -144,18 +149,29 @@ def xml_alimentaire_metropole() -> str:
 
 
 def xml_huit_postes(exclure: frozenset[str] | None = None) -> str:
+    return _xml_series(SERIES_ACTIVES, exclure)
+
+
+def xml_dix_postes(exclure: frozenset[str] | None = None) -> str:
+    return _xml_series(SERIES_CINQ_POSTES, exclure)
+
+
+def _xml_series(
+    series: tuple[tuple[str, str, str, str], ...],
+    exclure: frozenset[str] | None = None,
+) -> str:
     exclus = exclure or frozenset()
-    series = [
+    rendus = [
         _serie(
             idbank=idbank,
             ref_area=ref_area,
             titre=titre,
             observations=[_obs(valeur="100.0"), _obs("2022-05", "101.0")],
         )
-        for idbank, ref_area, _poste, titre in SERIES_ACTIVES
+        for idbank, ref_area, _poste, titre in series
         if idbank not in exclus
     ]
-    return xml_alimentaire(series)
+    return xml_alimentaire(rendus)
 
 
 def test_deux_series_et_plusieurs_observations(tmp_path: Path) -> None:
@@ -541,6 +557,32 @@ def test_repertoire_historique_et_metropolitain(tmp_path: Path) -> None:
         "011813717",
         "011813720",
     }
+
+
+def test_dix_series_postes_acceptees(tmp_path: Path) -> None:
+    brut = ecrire_brut(tmp_path, NOM_POSTES, xml_dix_postes())
+    observations = parser_fichier(brut, racine=tmp_path)
+
+    assert len(observations) == 20
+    assert {obs.idbank for obs in observations} == {s[0] for s in SERIES_CINQ_POSTES}
+    assert {obs.poste for obs in observations} == {
+        "alimentation",
+        "energie",
+        "produits_manufactures",
+        "services",
+        "ensemble",
+    }
+    assert {obs.lot_collecte for obs in observations} == {
+        "cinq_postes_france_metropolitaine"
+    }
+
+
+def test_neuf_series_postes_refuse(tmp_path: Path) -> None:
+    brut = ecrire_brut(
+        tmp_path, NOM_POSTES, xml_dix_postes(exclure=frozenset({"011814612"}))
+    )
+    with pytest.raises(ErreurSdmx, match="lot non conforme"):
+        parser_fichier(brut, racine=tmp_path)
 
 
 def test_huit_series_postes_acceptees(tmp_path: Path) -> None:

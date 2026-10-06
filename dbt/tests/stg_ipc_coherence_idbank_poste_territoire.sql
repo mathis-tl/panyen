@@ -1,4 +1,4 @@
--- Le triplet (idbank, poste, code_territoire) ne prend que les neuf
+-- Le triplet (idbank, poste, code_territoire) ne prend que les onze
 -- combinaisons du référentiel.
 select
     fichier_source,
@@ -16,4 +16,6 @@ where not (
     or (idbank = '011813783' and poste = 'produits_manufactures' and code_territoire = 'FM')
     or (idbank = '011813915' and poste = 'services' and code_territoire = 'D972')
     or (idbank = '011813909' and poste = 'services' and code_territoire = 'FM')
+    or (idbank = '011814618' and poste = 'ensemble' and code_territoire = 'D972')
+    or (idbank = '011814612' and poste = 'ensemble' and code_territoire = 'FM')
 )

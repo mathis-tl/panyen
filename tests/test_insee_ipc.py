@@ -18,7 +18,7 @@ XML_MINUSCULE = b"<message>ipc-postes-brut</message>"
 URL_ATTENDUE = (
     "https://bdm.insee.fr/series/sdmx/data/SERIES_BDM/"
     "011813726+011813720+011813873+011813867+011813789+011813783"
-    "+011813915+011813909?startPeriod=2022-04"
+    "+011813915+011813909+011814618+011814612?startPeriod=2022-04"
 )
 ACCEPT = "application/vnd.sdmx.structurespecificdata+xml;version=2.1"
 INSTANT = datetime(2026, 9, 2, 15, 1, 2, tzinfo=timezone.utc)
@@ -32,6 +32,8 @@ IDBANKS_ACTIFS = (
     "011813783",
     "011813915",
     "011813909",
+    "011814618",
+    "011814612",
 )
 
 
@@ -80,7 +82,7 @@ def brancher_transport(monkeypatch, contenu=XML_MINUSCULE, erreur=None):
     return appels
 
 
-def test_un_seul_appel_huit_series_depuis_avril_2022(monkeypatch, brut, horloge):
+def test_un_seul_appel_dix_series_depuis_avril_2022(monkeypatch, brut, horloge):
     appels = brancher_transport(monkeypatch)
     insee_ipc.collecter()
     assert len(appels) == 1

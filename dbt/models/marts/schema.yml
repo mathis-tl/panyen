@@ -5,16 +5,16 @@ models:
     description: >
       Différentiel d'évolution Martinique–France métropolitaine par poste,
       une ligne par (poste, periode). Joint les facteurs déjà rebasés
-      intra-territoire et la mesure ECSP 2022 pour l'alimentation seulement.
-      Aucun niveau d'indice brut n'est exposé. Aucune ancre ECSP hors
-      alimentation.
+      intra-territoire et la mesure ECSP 2022 pour l'alimentation et
+      l'ensemble. Aucun niveau d'indice brut n'est exposé. Aucune ancre
+      ECSP hors ces deux postes.
     columns:
       - name: periode
         description: Premier jour du mois commun.
         data_tests:
           - not_null
       - name: dernier_mois_commun
-        description: Dernier mois commun unique, partagé par les quatre postes.
+        description: Dernier mois commun unique, partagé par les cinq postes.
         data_tests:
           - not_null
       - name: poste
@@ -28,12 +28,13 @@ models:
                   - energie
                   - produits_manufactures
                   - services
+                  - ensemble
       - name: libelle_poste
         description: Libellé d'affichage accentué du poste.
         data_tests:
           - not_null
       - name: fichier_source
-        description: Fichier brut du lot quatre postes retenu.
+        description: Fichier brut du lot cinq postes retenu.
         data_tests:
           - not_null
       - name: collecte_utc
@@ -74,21 +75,21 @@ models:
         data_tests:
           - not_null
       - name: ancre_ecsp_disponible
-        description: Vrai seulement si le seed ECSP a apparié (alimentation).
+        description: Vrai si une ancre ECSP 2022 est jointe (alimentation ou ensemble).
         data_tests:
           - not_null
       - name: ecart_ecsp_2022_pct
         description: >
-          Mesure Fisher ECSP 2022 pour l'alimentation ; NULL sinon.
+          Mesure Fisher ECSP 2022 pour l'alimentation ou l'ensemble ; NULL sinon.
       - name: ecart_prix_estime_pct
         description: >
-          Écart de prix estimé pour l'alimentation ; NULL hors ancre.
+          Écart de prix estimé pour l'alimentation et l'ensemble ; NULL hors ancre.
       - name: source_ecsp
-        description: URL Insee de l'ECSP 2022 ; NULL hors alimentation.
+        description: URL Insee de l'ancre ECSP 2022 ; NULL hors alimentation et ensemble.
       - name: nature_ecart
         description: >
           mesure_ecsp_2022 ou estimation_a_partir_ecsp_2022 pour
-          l'alimentation ; NULL sinon.
+          l'alimentation et l'ensemble ; NULL sinon.
         data_tests:
           - accepted_values:
               arguments:
@@ -275,6 +276,14 @@ unit_tests:
             date '2022-04-01' as periode_ancrage,
             40.0 as ecart_fisher_pct,
             'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp
+      - input: ref("ecsp_niveaux")
+        format: sql
+        rows: |
+          select
+            2022 as annee_enquete,
+            'ensemble' as poste,
+            13.8 as ecart_fisher_pct,
+            'https://www.insee.fr/fr/statistiques/7648939' as source_url
     expect:
       format: sql
       rows: |
@@ -360,6 +369,14 @@ unit_tests:
             date '2022-04-01' as periode_ancrage,
             40.0 as ecart_fisher_pct,
             'https://www.insee.fr/fr/statistiques/7649202' as source_ecsp
+      - input: ref("ecsp_niveaux")
+        format: sql
+        rows: |
+          select
+            2022 as annee_enquete,
+            'ensemble' as poste,
+            13.8 as ecart_fisher_pct,
+            'https://www.insee.fr/fr/statistiques/7648939' as source_url
     expect:
       format: sql
       rows: |

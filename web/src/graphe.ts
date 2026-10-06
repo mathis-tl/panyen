@@ -63,7 +63,7 @@ export function libellesFinCourbes(
 ): { martinique: string; franceMetropolitaine: string } {
   return {
     martinique: `Martinique\n${formaterPct(evoMq)} %`,
-    franceMetropolitaine: `France métropolitaine\n${formaterPct(evoFm)} %`,
+    franceMetropolitaine: `Hexagone\n${formaterPct(evoFm)} %`,
   };
 }
 

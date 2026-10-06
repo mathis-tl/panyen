@@ -17,6 +17,7 @@ const COMPLEMENT_POSTE: Record<CodePoste, string> = {
   energie: "de l'énergie",
   produits_manufactures: "des produits manufacturés",
   services: "des services",
+  ensemble: "de l'ensemble",
 };
 
 /** « les prix de l'énergie », sujet d'une phrase. */
@@ -38,7 +39,7 @@ export function titreDuPoste(poste: CodePoste, ancreEcspDisponible: boolean): st
   const sujet = ancreEcspDisponible
     ? `écart de prix ${COMPLEMENT_POSTE[poste]}`
     : `évolution ${desPrixDuPoste(poste)}`;
-  return `panyen — ${sujet}, Martinique / France métropolitaine`;
+  return `panyen — ${sujet}, Martinique / France hexagonale`;
 }
 
 /**
@@ -195,7 +196,7 @@ export function expliquerPourcentageVsPoints(
   return (
     `Un pourcentage d'évolution mesure la variation ${desPrixDuPoste(actuelle.poste)} ` +
     `à l'intérieur d'un territoire depuis avril 2022. ` +
-    `Ainsi ${evoMq} % en Martinique et ${evoFm} % en France métropolitaine ` +
+    `Ainsi ${evoMq} % en Martinique et ${evoFm} % dans l'Hexagone ` +
     `sont deux évolutions comparables, pas deux niveaux d'indice. ` +
     `Leur différence s'exprime en points de pourcentage : ${diff} point, ` +
     `ce qui n'est pas ${diff} % d'écart de prix.`
@@ -254,19 +255,19 @@ function formulerConclusionSansAncre(actuelle: LigneDifferentiel): string {
   if (Math.abs(diff) < SEUIL_PROCHE_ANCRE_POINTS) {
     return (
       `Depuis avril 2022, ${prix} ont évolué à un rythme ` +
-      `presque parallèle en Martinique et en France métropolitaine.`
+      `presque parallèle en Martinique et dans l'Hexagone.`
     );
   }
   if (diff > 0) {
     return (
       `Depuis avril 2022, ${prix} ont augmenté davantage ` +
-      `en Martinique qu'en France métropolitaine ` +
+      `en Martinique que dans l'Hexagone ` +
       `(différentiel : ${formaterPointsSignes(diff)} point).`
     );
   }
   return (
     `Depuis avril 2022, ${prix} ont augmenté moins vite ` +
-    `en Martinique qu'en France métropolitaine ` +
+    `en Martinique que dans l'Hexagone ` +
     `(différentiel : ${formaterPointsSignes(diff)} point).`
   );
 }
@@ -343,7 +344,7 @@ export function calculerResume(
     `En ${dernierMoisCommun}, l'évolution cumulée depuis avril 2022 est de ` +
     `${formaterPct(actuelle.evolution_martinique_pct)} % en Martinique et ` +
     `${formaterPct(actuelle.evolution_france_metropolitaine_pct)} % ` +
-    `en France métropolitaine ` +
+    `dans l'Hexagone ` +
     `(différentiel : ${formaterPointsSignes(actuelle.differentiel_evolution_points)} point). ` +
     `Minimum du différentiel : ${formaterPointsSignes(extremums.minimum.differentiel_evolution_points)} point ` +
     `en ${formaterMoisUtc(extremums.minimum.periode)} ; ` +

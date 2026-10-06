@@ -22,7 +22,9 @@ series as (
             ('produits_manufactures', '011813789', 'D972'),
             ('produits_manufactures', '011813783', 'FM'),
             ('services', '011813915', 'D972'),
-            ('services', '011813909', 'FM')
+            ('services', '011813909', 'FM'),
+            ('ensemble', '011814618', 'D972'),
+            ('ensemble', '011814612', 'FM')
     ) as attendu(poste, idbank, code_territoire)
 ),
 

@@ -638,6 +638,15 @@ abbr {
   margin: 1.5rem 0 0.25rem;
 }
 
+.mention-champ,
+.mention-prolongement,
+.mention-estimation {
+  border-left: 3px solid var(--encre);
+  padding-left: 0.9rem;
+  margin: 1rem 0 0;
+  max-width: 68ch;
+}
+
 .mention,
 .source {
   color: var(--schiste);
@@ -1066,4 +1075,23 @@ abbr {
   .titre-reponse {
     max-width: none;
   }
+}
+
+.conclusion {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  background: #000;
+  color: #ffde21;
+  font-family: var(--font-titre);
+  padding: clamp(2.5rem, 6vw, 4.5rem) var(--gouttiere);
+}
+
+.conclusion .conclusion-texte {
+  max-width: 40rem;
+  margin: 0 auto;
+  color: #ffde21;
+  font-family: var(--font-titre);
+  font-weight: 560;
+  font-stretch: 112%;
+  line-height: 1.45;
 }

@@ -4,7 +4,7 @@
  */
 import {
   COLONNES_ATTENDUES,
-  POSTES_ATTENDUS,
+  POSTES_PUBLIES,
   type CodePoste,
   type LigneDifferentiel,
   type NatureEcart,
@@ -46,20 +46,20 @@ export function regrouperParPoste(
   return groupes;
 }
 
-/** Valide le contenu des lignes typées (quatre postes). */
+/** Valide le contenu des lignes typées (cinq postes publiés). */
 export function validerLignes(lignes: LigneDifferentiel[]): void {
   if (lignes.length === 0) {
     throw new ErreurValidation("Le fichier ne contient aucune ligne.");
   }
 
   const groupes = regrouperParPoste(lignes);
-  for (const poste of POSTES_ATTENDUS) {
+  for (const poste of POSTES_PUBLIES) {
     if (!groupes.has(poste)) {
       throw new ErreurValidation(`Poste manquant : ${poste}.`);
     }
   }
   for (const poste of groupes.keys()) {
-    if (!(POSTES_ATTENDUS as readonly string[]).includes(poste)) {
+    if (!(POSTES_PUBLIES as readonly string[]).includes(poste)) {
       throw new ErreurValidation(`Poste inattendu : ${poste}.`);
     }
   }
@@ -67,7 +67,7 @@ export function validerLignes(lignes: LigneDifferentiel[]): void {
   let periodesReference: string | null = null;
   let dernierMoisCommun: number | null = null;
 
-  for (const poste of POSTES_ATTENDUS) {
+  for (const poste of POSTES_PUBLIES) {
     const duPoste = groupes.get(poste)!;
     validerPeriodesPoste(poste, duPoste);
     validerEcspPoste(poste, duPoste);
@@ -119,8 +119,10 @@ function validerPeriodesPoste(poste: CodePoste, lignes: LigneDifferentiel[]): vo
   }
 }
 
+const POSTES_AVEC_ANCRE = new Set<CodePoste>(["alimentation", "ensemble"]);
+
 function validerEcspPoste(poste: CodePoste, lignes: LigneDifferentiel[]): void {
-  if (poste === "alimentation") {
+  if (POSTES_AVEC_ANCRE.has(poste)) {
     for (const ligne of lignes) {
       if (!ligne.ancre_ecsp_disponible) {
         throw new ErreurValidation(

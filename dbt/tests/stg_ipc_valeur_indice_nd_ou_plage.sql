@@ -1,4 +1,5 @@
--- Valeur nulle seulement si ND ; sinon l'indice reste dans la plage 50–200.
+-- Valeur nulle seulement si ND ; sinon l'indice reste dans la plage 50–200,
+-- y compris les séries ensemble 011814618 et 011814612.
 select
     fichier_source,
     idbank,

@@ -8,6 +8,7 @@ import {
 import {
   COLONNES_ATTENDUES,
   POSTES_ATTENDUS,
+  POSTES_PUBLIES,
   type CodePoste,
   type LigneDifferentiel,
   type NatureEcart,
@@ -22,7 +23,7 @@ function ligneSynthetique(
   } = {},
 ): LigneDifferentiel {
   const poste = (overrides.poste ?? "alimentation") as CodePoste;
-  const avecAncre = poste === "alimentation";
+  const avecAncre = poste === "alimentation" || poste === "ensemble";
   return {
     periode: new Date(Date.UTC(2022, 3, 1)),
     dernier_mois_commun: new Date(Date.UTC(2022, 3, 1)),
@@ -34,7 +35,9 @@ function ligneSynthetique(
           ? "Énergie"
           : poste === "produits_manufactures"
             ? "Produits manufacturés"
-            : "Services",
+            : poste === "ensemble"
+              ? "Ensemble"
+              : "Services",
     fichier_source: "data/raw/insee/ipc.xml",
     collecte_utc: new Date(Date.UTC(2026, 8, 1)),
     idbank_martinique: "011813726",
@@ -56,13 +59,13 @@ function ligneSynthetique(
   };
 }
 
-/** Jeu valide à quatre postes, N mois chacun. */
+/** Jeu valide à cinq postes publiés, N mois chacun. */
 function jeuQuatrePostes(n: number): LigneDifferentiel[] {
   const dernier = new Date(Date.UTC(2022, 3 + n - 1, 1));
   const lignes: LigneDifferentiel[] = [];
-  for (const poste of POSTES_ATTENDUS) {
+  for (const poste of POSTES_PUBLIES) {
     for (let i = 0; i < n; i++) {
-      const avecAncre = poste === "alimentation";
+      const avecAncre = poste === "alimentation" || poste === "ensemble";
       lignes.push(
         ligneSynthetique({
           poste,
@@ -104,8 +107,20 @@ describe("validerColonnes", () => {
 });
 
 describe("validerLignes", () => {
-  it("accepte un jeu à quatre postes", () => {
+  it("accepte un jeu à cinq postes et garde quatre courbes", () => {
+    expect(POSTES_ATTENDUS).toEqual([
+      "alimentation",
+      "energie",
+      "produits_manufactures",
+      "services",
+    ]);
+    expect(POSTES_PUBLIES).toContain("ensemble");
     expect(() => validerLignes(jeuQuatrePostes(5))).not.toThrow();
+  });
+
+  it("refuse l'absence du poste ensemble", () => {
+    const lignes = jeuQuatrePostes(3).filter((l) => l.poste !== "ensemble");
+    expect(() => validerLignes(lignes)).toThrow(/Poste manquant.*ensemble/);
   });
 
   it("refuse zéro ligne", () => {

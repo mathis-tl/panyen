@@ -3,7 +3,8 @@
 Grain : (fichier_source, idbank, periode).
 Cette table décrit les observations SDMX ; elle ne compare jamais les niveaux
 d'indice entre territoires. poste et lot_collecte distinguent les lots
-alimentaires historiques du lot actif à quatre postes.
+alimentaires historiques, de l'ancien lot à quatre postes et du lot actif
+à cinq postes.
 """
 
 from __future__ import annotations

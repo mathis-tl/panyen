@@ -1,5 +1,5 @@
--- nature_ecart : mesure uniquement à l'ancre pour l'alimentation ;
--- estimation ensuite ; NULL hors alimentation.
+-- nature_ecart : mesure uniquement à l'ancre pour l'alimentation et
+-- l'ensemble ; estimation ensuite ; NULL pour les autres postes.
 with facture as (
     select
         periode,
@@ -20,7 +20,7 @@ select
 from facture
 cross join ecsp
 where (
-    facture.poste = 'alimentation'
+    facture.poste in ('alimentation', 'ensemble')
     and (
         facture.nature_ecart not in (
             'mesure_ecsp_2022',
@@ -38,6 +38,6 @@ where (
     )
 )
    or (
-       facture.poste != 'alimentation'
+       facture.poste not in ('alimentation', 'ensemble')
        and facture.nature_ecart is not null
    )

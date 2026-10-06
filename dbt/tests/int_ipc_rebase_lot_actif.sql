@@ -1,9 +1,9 @@
--- Le lot aval est unique, quatre postes, le plus récent ; jamais un repli
--- sur un ancien lot alimentaire.
+-- Le lot aval est unique, cinq postes, le plus récent ; jamais un repli
+-- sur un ancien lot alimentaire ou sur le lot quatre postes.
 with fichier_attendu as (
     select stg_ipc.fichier_source
     from {{ ref("stg_ipc") }} as stg_ipc
-    where stg_ipc.lot_collecte = 'quatre_postes_france_metropolitaine'
+    where stg_ipc.lot_collecte = 'cinq_postes_france_metropolitaine'
     order by stg_ipc.collecte_utc desc, stg_ipc.fichier_source desc
     limit 1
 ),
@@ -41,9 +41,9 @@ where observes.fichier_source != (
 
 union all
 
-select 'lot_non_quatre_postes' as motif
+select 'lot_non_cinq_postes' as motif
 from observes
-where observes.lot_collecte != 'quatre_postes_france_metropolitaine'
+where observes.lot_collecte != 'cinq_postes_france_metropolitaine'
    or observes.perimetre_reference != 'france_metropolitaine'
 
 union all

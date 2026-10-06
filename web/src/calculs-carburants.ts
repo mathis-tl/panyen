@@ -113,8 +113,8 @@ export function calculerResumeCarburants(
   const dernierMoisIncomplet = !dernier.moisComplet;
 
   const phrase = dernierMoisIncomplet
-    ? `Distribution métropolitaine du ${libelle ?? carburant} par rapport au plafond réglementaire martiniquais — dernier mois incomplet (${formaterMoisUtc(dernier.date)}).`
-    : `Distribution métropolitaine du ${libelle ?? carburant} par rapport au plafond réglementaire martiniquais depuis ${formaterMoisUtc(distributions[0].date)}.`;
+    ? `Distribution des stations de l'Hexagone pour le ${libelle ?? carburant}, par rapport au plafond réglementaire martiniquais — dernier mois incomplet (${formaterMoisUtc(dernier.date)}).`
+    : `Distribution des stations de l'Hexagone pour le ${libelle ?? carburant}, par rapport au plafond réglementaire martiniquais depuis ${formaterMoisUtc(distributions[0].date)}.`;
 
   return {
     carburant,
@@ -135,5 +135,5 @@ export function formaterEurosLitre(valeur: number): string {
 }
 
 export function titreCarburants(carburant: string): string {
-  return `panyen — carburants ${carburant}, métropole / Martinique`;
+  return `panyen — carburants ${carburant}, Hexagone / Martinique`;
 }

@@ -7,7 +7,7 @@ import {
   type CodePoste,
   type LigneDifferentiel,
   type NatureEcart,
-  POSTES_ATTENDUS,
+  POSTES_PUBLIES,
 } from "./types.ts";
 import { validerColonnes, validerLignes } from "./validation.ts";
 
@@ -115,7 +115,7 @@ function asBoolean(v: unknown): boolean {
 
 function asPoste(v: unknown): CodePoste {
   const texte = asString(v);
-  if ((POSTES_ATTENDUS as readonly string[]).includes(texte)) {
+  if ((POSTES_PUBLIES as readonly string[]).includes(texte)) {
     return texte as CodePoste;
   }
   throw new Error(`Poste inconnu : ${texte}`);
