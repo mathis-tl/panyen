@@ -60,8 +60,8 @@ VÉRIFICATION FINALE
 `make verify`, `npm --prefix web test`, `tsc` dans `web/`, `npm --prefix web run build`,
 puis aperçu navigateur à 375 et 1440 px : chaque section modifiée, 0 erreur console,
 aucun hôte tiers. **Regarde les captures.** Arrête le serveur ensuite. Empreintes dans
-`apres.sha` : `carburants.parquet`, Parquet de contexte et `uv.lock` identiques ;
-`differentiel_ipc.parquet` change.
+`apres.sha` : `carburants.parquet`, `uv.lock` et les Parquet de contexte identiques,
+sauf `ecsp_niveaux.parquet` (remarque mise à jour) ; `differentiel_ipc.parquet` change.
 
 SEULS MOTIFS DE STOP AVANT LA FIN
 

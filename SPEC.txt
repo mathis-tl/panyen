@@ -86,7 +86,10 @@ A5. Tests dbt (rouge d'abord) : cinq postes attendus au lieu de quatre, ancre
     pas de niveau d'indice exposé. Ajuster `schema.yml` (grain, descriptions).
 A6. Publication : `make publier` (pas `make publier-carburants`). Consigner avant /
     après : lignes, colonnes, SHA-256, écart « ensemble » estimé au dernier mois commun.
-PORTE A : `make verify` vert ; `carburants.parquet` et les Parquet de contexte
+A7. Republier les seeds de contexte (`make publier-contexte`) : la remarque de la ligne
+    2022 / alimentation de `ecsp_niveaux.parquet` contient encore l'ancienne mention
+    « 40,0 ». Seul ce Parquet de contexte change (remarque), consigner son SHA-256.
+PORTE A : `make verify` vert ; `carburants.parquet` et les autres Parquet de contexte
 identiques ; le Parquet IPC contient cinq postes.
 
 PHASE B — Front : accepter le cinquième poste sans changer les courbes
