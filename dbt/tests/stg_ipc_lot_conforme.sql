@@ -14,6 +14,8 @@ with par_fichier as (
         bool_or(idbank = '011813783') as a_783,
         bool_or(idbank = '011813915') as a_915,
         bool_or(idbank = '011813909') as a_909,
+        bool_or(idbank = '011814618') as a_618,
+        bool_or(idbank = '011814612') as a_612,
         count(distinct idbank) as n_idbanks
     from {{ ref("stg_ipc") }}
     group by fichier_source
@@ -28,6 +30,7 @@ where n_lots != 1
             and a_726 and a_717
             and not a_720 and not a_873 and not a_867
             and not a_789 and not a_783 and not a_915 and not a_909
+            and not a_618 and not a_612
         )
         or (
             lot_collecte = 'alimentation_france_metropolitaine'
@@ -35,12 +38,21 @@ where n_lots != 1
             and a_726 and a_720
             and not a_717 and not a_873 and not a_867
             and not a_789 and not a_783 and not a_915 and not a_909
+            and not a_618 and not a_612
         )
         or (
             lot_collecte = 'quatre_postes_france_metropolitaine'
             and n_idbanks = 8
             and a_726 and a_720 and a_873 and a_867
             and a_789 and a_783 and a_915 and a_909
+            and not a_717 and not a_618 and not a_612
+        )
+        or (
+            lot_collecte = 'cinq_postes_france_metropolitaine'
+            and n_idbanks = 10
+            and a_726 and a_720 and a_873 and a_867
+            and a_789 and a_783 and a_915 and a_909
+            and a_618 and a_612
             and not a_717
         )
     )

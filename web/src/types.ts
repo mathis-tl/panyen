@@ -21,6 +21,7 @@ export const COLONNES_ATTENDUES = [
   "nature_ecart",
 ] as const;
 
+/** Postes dessinés en courbes. L'ensemble n'en fait pas partie. */
 export const POSTES_ATTENDUS = [
   "alimentation",
   "energie",
@@ -28,7 +29,10 @@ export const POSTES_ATTENDUS = [
   "services",
 ] as const;
 
-export type CodePoste = (typeof POSTES_ATTENDUS)[number];
+/** Postes publiés dans le Parquet, y compris l'ensemble estimé. */
+export const POSTES_PUBLIES = [...POSTES_ATTENDUS, "ensemble"] as const;
+
+export type CodePoste = (typeof POSTES_PUBLIES)[number];
 
 export type NatureEcart = "mesure_ecsp_2022" | "estimation_a_partir_ecsp_2022";
 

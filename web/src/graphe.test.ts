@@ -44,11 +44,12 @@ describe("calculerDispositionGraphe", () => {
 });
 
 describe("libellesFinCourbes", () => {
-  it("écrit les noms complets Martinique et France métropolitaine", () => {
+  it("écrit les noms complets Martinique et Hexagone", () => {
     const libelles = libellesFinCourbes(12.3, 8.1);
     expect(libelles.martinique).toContain("Martinique");
     expect(libelles.martinique).toContain(formaterPct(12.3));
-    expect(libelles.franceMetropolitaine).toContain("France métropolitaine");
+    expect(libelles.franceMetropolitaine).toContain("Hexagone");
+    expect(libelles.franceMetropolitaine.toLowerCase()).not.toContain("métropol");
     expect(libelles.franceMetropolitaine).not.toContain("métrop.");
     expect(libelles.franceMetropolitaine).toContain(formaterPct(8.1));
   });

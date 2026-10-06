@@ -129,7 +129,7 @@ function creerReponse(resume: ResumeCarburants): HTMLElement {
 function creerGraphe(resume: ResumeCarburants): HTMLElement {
   const section = creerElement("section", "graphe-principal graphe-carburants");
   const titre = document.createElement("h2");
-  titre.textContent = "Distribution métropolitaine et plafond martiniquais";
+  titre.textContent = "Distribution des stations de l'Hexagone et plafond martiniquais";
   section.appendChild(titre);
 
   const conteneur = document.createElement("div");
@@ -164,7 +164,7 @@ function creerLegende(): HTMLElement {
   const section = creerElement("section", "legende-carburants");
   section.innerHTML = `
     <ul class="legende-liste">
-      <li><span class="legende-echantillon legende-ruban"></span> Ruban q10–q90 (stations métropolitaines déclarées)</li>
+      <li><span class="legende-echantillon legende-ruban"></span> Ruban q10–q90 (stations de l'Hexagone déclarées)</li>
       <li><span class="legende-echantillon legende-iqr"></span> Repère q25–q75</li>
       <li><span class="legende-echantillon legende-mediane"></span> Médiane</li>
       <li><span class="legende-echantillon legende-plafond"></span> Plafond réglementaire Martinique (dates d'effet exactes)</li>
@@ -201,13 +201,13 @@ function creerExplication(): HTMLElement {
   const section = creerElement("section", "explication-carburants");
   section.innerHTML = `
     <h2>Deux régimes de prix</h2>
-    <p>Le flux national couvre uniquement la <strong>France métropolitaine</strong> :
+    <p>Le flux national couvre uniquement l'<strong>Hexagone</strong> :
     chaque point est le prix déclaré par une station, agrégé en distribution mensuelle.
     En Martinique, le prix affiché est un <strong>maximum réglementaire uniforme</strong>
     fixé par arrêté préfectoral — pas une moyenne ni une observation des prix
     effectivement payés sur l'île.</p>
     <p>Ce graphique ne dit pas si les automobilistes martiniquais paient plus ou
-    moins que le plafond ; il situe la distribution métropolitaine par rapport à
+    moins que le plafond ; il situe la distribution des stations de l'Hexagone par rapport à
     la règle administrative martiniquaise.</p>`;
   return section;
 }
@@ -220,8 +220,8 @@ function creerProvenance(resume: ResumeCarburants): HTMLElement {
     <h2>Provenance</h2>
     <ul>
       <li>Période : ${formaterMoisUtc(resume.periodeDebut)} → ${formaterMoisUtc(resume.periodeFin)}</li>
-      <li>Stations métropolitaines (dernier mois) : ${dernierDist.nombreStations.toLocaleString("fr-FR")}</li>
-      <li>Médiane métropolitaine (dernier mois) : ${formaterEurosLitre(dernierDist.mediane)}</li>
+      <li>Stations de l'Hexagone (dernier mois) : ${dernierDist.nombreStations.toLocaleString("fr-FR")}</li>
+      <li>Médiane des stations de l'Hexagone (dernier mois) : ${formaterEurosLitre(dernierDist.mediane)}</li>
       <li>Plafond martiniquais actuel : ${formaterEurosLitre(dernierPlafond.prixMax)} (${echapperTexte(dernierPlafond.referenceActe)})</li>
       <li>Collecte nationale : ${resume.collecteUtc.toISOString().slice(0, 10)}</li>
       <li><a href="${echapperTexte(dernierPlafond.urlSource)}" rel="noopener">Acte martiniquais de référence</a></li>

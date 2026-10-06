@@ -1,4 +1,4 @@
-"""Collecte les indices IPC Insee (quatre postes) et écrit la réponse brute.
+"""Collecte les indices IPC Insee (cinq postes) et écrit la réponse brute.
 
 Ce collecteur ne parse rien et ne corrige rien : il télécharge et il range. Le
 brut est un journal, pas un état — c'est ce qui permet de rejouer une exécution
@@ -16,9 +16,9 @@ from pathlib import Path
 import urllib.request
 
 # Base 2025, ensemble des ménages. Ordre déterministe : par poste
-# (alimentation, énergie, produits manufacturés, services), Martinique puis
-# France métropolitaine. Voir docs/SOURCES.md. L'idbank France entière
-# 011813717 n'est plus collecté ; le XML historique le conserve.
+# (alimentation, énergie, produits manufacturés, services, ensemble),
+# Martinique puis France métropolitaine. Voir docs/SOURCES.md. L'idbank
+# France entière 011813717 n'est plus collecté ; le XML historique le conserve.
 SERIES = {
     "011813726": {
         "poste": "alimentation",
@@ -60,6 +60,16 @@ SERIES = {
         "code_territoire": "FM",
         "libelle": "FM · services · indice",
     },
+    "011814618": {
+        "poste": "ensemble",
+        "code_territoire": "D972",
+        "libelle": "D972 · ensemble · indice",
+    },
+    "011814612": {
+        "poste": "ensemble",
+        "code_territoire": "FM",
+        "libelle": "FM · ensemble · indice",
+    },
 }
 
 RACINE = Path(__file__).resolve().parent.parent
@@ -97,7 +107,7 @@ def nom_brut_carburants(instant: datetime) -> str:
 
 
 def collecter(depuis: str = DEPUIS_DEFAUT, *, dry_run: bool = False) -> Path | None:
-    """Télécharge les huit séries IPC. Écrit le brut, sauf en dry-run."""
+    """Télécharge les dix séries IPC. Écrit le brut, sauf en dry-run."""
     requete = urllib.request.Request(url_collecte(depuis), headers=ENTETES)
     contenu = urllib.request.urlopen(requete, timeout=TIMEOUT_S).read()
     if not contenu:
@@ -153,7 +163,7 @@ def principal(argv: list[str] | None = None) -> None:
     parseur = argparse.ArgumentParser(
         description=(
             "Collecte brute des indices IPC Insee "
-            "(quatre postes, France métropolitaine et Martinique)."
+            "(cinq postes, France métropolitaine et Martinique)."
         )
     )
     parseur.add_argument(

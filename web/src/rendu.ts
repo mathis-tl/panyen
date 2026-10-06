@@ -14,7 +14,7 @@ import { creerPlanificateurRedessin } from "./planifier-redessin.ts";
 import { creerRegistreNettoyage, identifiantBoutonPoste } from "./cycle-ecran.ts";
 import { formaterMoisUtc } from "./validation.ts";
 
-const LIBELLES_SELECTEUR: Record<CodePoste, string> = {
+const LIBELLES_SELECTEUR: Record<(typeof POSTES_ATTENDUS)[number], string> = {
   alimentation: "Alimentation",
   energie: "Énergie",
   produits_manufactures: "Produits manufacturés",
@@ -169,9 +169,9 @@ function creerAncre(resume: ResumeEcran): HTMLElement {
     <p>En mars-avril 2022, l'enquête de comparaison spatiale de l'Insee a
     <strong>mesuré</strong> un écart alimentaire d'environ
     <strong>${formaterPct(ancre.ecart_ecsp_2022_pct as number)} %</strong>
-    entre la Martinique et la France métropolitaine.</p>
+    entre la Martinique et l'Hexagone.</p>
     <p>Si un panier comparable coûtait
-    <strong>${formaterEuros(panierAncre.metropole)}</strong> en métropole
+    <strong>${formaterEuros(panierAncre.metropole)}</strong> dans l'Hexagone
     en avril 2022, l'écart ECSP correspondrait, de façon simplifiée, à
     <strong>${formaterEuros(panierAncre.martinique)}</strong> en Martinique.</p>
     <p class="mention-illustration">Illustration mécanique à partir des indices
@@ -303,7 +303,7 @@ function creerCarteDifferentiel(
     </p>
     <p>Évolutions cumulées depuis avril 2022 :
       Martinique <strong>${formaterPct(ligne.evolution_martinique_pct)} %</strong>,
-      France métropolitaine
+      Hexagone
       <strong>${formaterPct(ligne.evolution_france_metropolitaine_pct)} %</strong>.
     </p>`;
   return article;
@@ -326,13 +326,13 @@ function creerCarteJalon(
     </p>
     <p>Évolutions cumulées depuis avril 2022 :
       Martinique <strong>${formaterPct(ligne.evolution_martinique_pct)} %</strong>,
-      France métropolitaine
+      Hexagone
       <strong>${formaterPct(ligne.evolution_france_metropolitaine_pct)} %</strong>
       (différentiel :
       <strong>${formaterPointsSignes(ligne.differentiel_evolution_points)} point</strong>).
     </p>
     <p>Panier illustratif :
-      ${formaterEuros(panier.metropole)} en métropole /
+      ${formaterEuros(panier.metropole)} dans l'Hexagone /
       ${formaterEuros(panier.martinique)} en Martinique.</p>`;
   return article;
 }
@@ -395,7 +395,7 @@ function creerProvenance(resume: ResumeEcran): HTMLElement {
       <dd><code>${echapperTexte(derniere.fichier_source)}</code></dd>
       <dt>Série Martinique</dt>
       <dd>${echapperTexte(derniere.idbank_martinique)}</dd>
-      <dt>Série France métropolitaine</dt>
+      <dt>Série Hexagone</dt>
       <dd>${echapperTexte(derniere.idbank_france_metropolitaine)}</dd>
       <dt>Source ECSP</dt>
       <dd>${

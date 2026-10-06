@@ -286,3 +286,60 @@ export function formaterPointsPct(n: number): string {
   const signe = n > 0 ? "+" : n < 0 ? "−" : "";
   return `${signe}${formaterPct(Math.abs(n))} %`;
 }
+
+/** Seuls ces deux postes sont prolongés après la mesure de 2022. */
+export const POSTES_PROLONGES = ["alimentation", "ensemble"] as const;
+
+export type PosteProlonge = (typeof POSTES_PROLONGES)[number];
+
+/**
+ * Dernière ligne d'un poste prolongé. Échoue si elle manque, si elle n'est pas
+ * une estimation, ou si elle n'est pas au dernier mois commun.
+ */
+export function exigerEstimationPoste(
+  lignes: LigneDifferentiel[],
+  poste: string,
+): LigneDifferentiel {
+  if (!(POSTES_PROLONGES as readonly string[]).includes(poste)) {
+    throw new Error(`Aucune barre estimée pour le poste ${poste}.`);
+  }
+  const duPoste = lignes
+    .filter((ligne) => ligne.poste === poste)
+    .sort((a, b) => a.periode.getTime() - b.periode.getTime());
+  if (duPoste.length === 0) throw new Error(`Série absente : ${poste}.`);
+  const fin = duPoste[duPoste.length - 1];
+  if (
+    fin.nature_ecart !== "estimation_a_partir_ecsp_2022" ||
+    fin.ecart_prix_estime_pct === null
+  ) {
+    throw new Error(`Estimation absente ou non étiquetée : ${poste}.`);
+  }
+  if (fin.periode.getTime() !== fin.dernier_mois_commun.getTime()) {
+    throw new Error(`L'estimation ${poste} n'est pas au dernier mois commun.`);
+  }
+  return fin;
+}
+
+/** Phrase de conclusion. Le salaire privé n'entre que s'il est négatif. */
+export function phraseConclusion(
+  ecartFin: number,
+  ancre: number,
+  salairePrivePct: number,
+): string {
+  if (
+    !Number.isFinite(ecartFin) ||
+    !Number.isFinite(ancre) ||
+    !Number.isFinite(salairePrivePct)
+  ) {
+    throw new Error("Conclusion impossible : écart ou salaire absent.");
+  }
+  const premiere =
+    ecartFin >= ancre
+      ? "Depuis 2022, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous."
+      : "Depuis 2022, l'écart alimentaire estimé est passé sous son niveau de départ.";
+  const milieu =
+    salairePrivePct < 0
+      ? "Des prix plus élevés qu'en Hexagone, et des salaires du privé plus bas que la moyenne française, coïncident avec le sentiment d'une vie plus chère."
+      : "Des prix plus élevés qu'en Hexagone coïncident avec le sentiment d'une vie plus chère.";
+  return `${premiere} ${milieu} Ce n'est pas une preuve. Seule une nouvelle enquête de l'Insee pourra dire où en est vraiment le niveau.`;
+}

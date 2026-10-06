@@ -10,11 +10,14 @@ import {
   eurosPourCentHexagone,
   formaterEcartEntier,
   formaterEurosPanier,
+  exigerEstimationPoste,
   formaterPointsPct,
   libelleEstimation,
+  phraseConclusion,
   phraseConstat,
   phraseEstimationsAnnuelles,
   phrasePicEstime,
+  POSTES_PROLONGES,
   resoudreEmplacements,
   titreReponse,
 } from "./calculs-ecran.ts";
@@ -44,7 +47,6 @@ import { creerEntete } from "./entete.ts";
 const registre = creerRegistreNettoyage();
 
 const GLOSSAIRE = [
-  { cle: "hexagone", terme: "Hexagone", definition: "la France métropolitaine." },
   {
     cle: "poste",
     terme: "Poste",
@@ -60,7 +62,7 @@ const GLOSSAIRE = [
     cle: "ecsp",
     terme: "Enquête de comparaison spatiale des prix (ECSP)",
     definition:
-      "enquête de l'Insee qui relève, au même moment, les prix des mêmes produits dans deux territoires. Celle de mars-avril 2022 est la seule qui donne l'écart de niveau actuel.",
+      "enquête de l'Insee qui relève, au même moment, les prix des mêmes produits dans deux territoires. Celle de mars-avril 2022 est la seule qui mesure l'écart de niveau.",
   },
   {
     cle: "mediane",
@@ -84,7 +86,6 @@ const MOTS_GLOSE: { cle: string; motif: RegExp }[] = [
   { cle: "indice", motif: /indices? des prix/i },
   { cle: "arrete", motif: /arrêté préfectoral|arrêté/i },
   { cle: "mois", motif: /dernier mois commun/i },
-  { cle: "hexagone", motif: /Hexagone/ },
   { cle: "mediane", motif: /médiane|médian/i },
   { cle: "poste", motif: /postes?/i },
 ];
@@ -99,6 +100,15 @@ const LIBELLES_NIVEAU: Record<string, string> = {
   logement: "Logement",
   transports: "Transports",
 };
+
+const PHRASE_SEULS_PROLONGES =
+  "Seuls l'alimentation et l'ensemble sont prolongés après 2022 : ce sont les deux séries de prix que panyen suit chaque mois. Les autres postes restent la photo de 2022.";
+
+const PHRASE_ESTIMATION =
+  "Estimation : on prolonge la mesure de 2022 avec les hausses de prix de chaque territoire. Ce n'est pas une nouvelle enquête. Elle est moins sûre à mesure qu'on s'éloigne de 2022 : les habitudes d'achat changent, et l'Insee ne donne pas de marge d'erreur pour l'enquête de 2022.";
+
+const PHRASE_CHAMP_ENSEMBLE =
+  "L'indice des prix et l'enquête ne couvrent pas exactement les mêmes dépenses : l'enquête de 2022 laisse de côté le fioul, le gaz de ville et les transports ferroviaires, et des produits peu consommés d'un côté ou de l'autre.";
 
 const LIBELLES_REVENU: Record<string, string> = {
   salaire_net_moyen_prive: "Salaire net moyen, privé",
@@ -124,9 +134,10 @@ export function afficherPage(conteneur: HTMLElement, donnees: DonneesPage): void
     sectionNiveaux(donnees.niveaux),
     sectionEvolutions(donnees.ipc, donnees.evenements),
     sectionCarburants(donnees.carburants),
-    sectionPourquoi(donnees.niveaux, donnees.revenus),
+    sectionPourquoi(donnees.niveaux, donnees.revenus, donnees.ipc),
     sectionRecit(donnees),
     sectionMethode(alimentation),
+    sectionConclusion(donnees.ipc, donnees.revenus),
     renvoiTechos(),
     pied(donnees.ipc, alimentation),
   );
@@ -173,7 +184,7 @@ function entete(): HTMLElement {
 
 function intro(): HTMLElement {
   return paragraphe(
-    "Panye compare les prix des courses en Martinique et dans l'Hexagone (la France métropolitaine). En 2022, l'Insee a mesuré l'écart. Depuis, a-t-il changé ?",
+    "Panye compare les prix des courses en Martinique et dans l'Hexagone. En 2022, l'Insee a mesuré l'écart. Depuis, a-t-il changé ?",
     "intro",
   );
 }
@@ -570,7 +581,11 @@ function sectionCarburants(lignes: LigneCarburant[]): HTMLElement {
   return section;
 }
 
-function sectionPourquoi(niveaux: LigneNiveau[], revenus: LigneRevenu[]): HTMLElement {
+function sectionPourquoi(
+  niveaux: LigneNiveau[],
+  revenus: LigneRevenu[],
+  ipc: LigneDifferentiel[],
+): HTMLElement {
   const section = creerSection(
     "pourquoi",
     "Ce qui coïncide avec le sentiment d'une vie plus chère",
@@ -586,13 +601,18 @@ function sectionPourquoi(niveaux: LigneNiveau[], revenus: LigneRevenu[]): HTMLEl
       "Même lecture que plus haut : +40 % veut dire 140 € contre 100 €. La barre fine, en dessous, est 100 € dans l'Hexagone.",
     ),
   );
-  for (const poste of ["alimentation", "ensemble"] as const) {
+  for (const poste of POSTES_PROLONGES) {
     const lignes = niveaux
       .filter((n) => n.poste === poste)
       .sort((a, b) => a.annee_enquete - b.annee_enquete);
     if (lignes.length === 0) throw new Error(`Historique ECSP absent : ${poste}.`);
+    const estimation = exigerEstimationPoste(ipc, poste);
+    if (estimation.ecart_prix_estime_pct === null) {
+      throw new Error(`Estimation absente ou non étiquetée : ${poste}.`);
+    }
     const euros = lignes.map((n) => eurosPourCentHexagone(n.ecart_fisher_pct));
-    const max = Math.max(...euros, 100);
+    const eurosEstime = eurosPourCentHexagone(estimation.ecart_prix_estime_pct);
+    const max = Math.max(...euros, eurosEstime, 100);
     const bloc = el("div", "sous-bloc");
     bloc.append(el("p", "etiquette-bloc", libelleNiveau(poste)));
     lignes.forEach((ligne, index) => {
@@ -605,8 +625,25 @@ function sectionPourquoi(niveaux: LigneNiveau[], revenus: LigneRevenu[]): HTMLEl
         ),
       );
     });
+    bloc.append(
+      ligneBarrePrix(
+        `${formaterMoisUtc(estimation.periode)}, estimé`,
+        formaterPointsPct(estimation.ecart_prix_estime_pct),
+        eurosEstime,
+        max,
+        false,
+        true,
+      ),
+    );
+    if (poste === "ensemble") {
+      bloc.append(paragraphe(PHRASE_CHAMP_ENSEMBLE, "mention-champ"));
+    }
     historique.append(bloc);
   }
+  historique.append(
+    paragraphe(PHRASE_SEULS_PROLONGES, "mention-prolongement"),
+    paragraphe(PHRASE_ESTIMATION, "mention-estimation"),
+  );
   const delicate = niveaux.find((n) => n.remarque.toLowerCase().includes("délicate"));
   if (!delicate) throw new Error("Mention de comparabilité 2010-2015 absente du Parquet.");
   historique.append(paragraphe(delicate.remarque, "mention"));
@@ -619,7 +656,7 @@ function sectionPourquoi(niveaux: LigneNiveau[], revenus: LigneRevenu[]): HTMLEl
   }
   const blocRevenus = el("div", "bloc-pourquoi");
   blocRevenus.append(
-    el("h3", "sous-intertitre", "Les revenus, comparés à la moyenne de la France"),
+    el("h3", "sous-intertitre", "Les revenus en Martinique"),
     blocNote(
       "Comment lire",
       "Salaire net moyen : ce qu'un salarié touche en moyenne après cotisations. Revenu d'activité des non-salariés : indépendants, artisans, agriculteurs. Les barres vont à gauche si le revenu est plus bas que la moyenne nationale, à droite s'il est plus haut.",
@@ -640,7 +677,7 @@ function sectionPourquoi(niveaux: LigneNiveau[], revenus: LigneRevenu[]): HTMLEl
   for (const revenu of revenus) {
     blocRevenus.append(
       ligneBarreSignee(
-        `${libelleRevenu(revenu.indicateur)}, ${revenu.annee}`,
+        etiquetteRevenu(revenu.indicateur, revenu.annee),
         revenu.ecart_moyenne_nationale_pct,
         maxRevenu,
         formaterPointsPct(revenu.ecart_moyenne_nationale_pct),
@@ -724,6 +761,19 @@ function sectionMethode(
       `Seul l'écart de 2022 est mesuré. Les mois suivants sont estimés. Le dernier mois affiché est le dernier mois commun : ${alimentaire.resume.dernierMoisCommun}. Les enquêtes de 2010, 2015 et 2022 ne sont pas strictement comparables. L'enquête de 2022 ne publie pas d'intervalle de confiance : le seuil de ±2 points qui sépare « creusé », « resserré » et « n'a presque pas bougé » est un choix éditorial, que rien ne mesure.`,
     ),
   );
+  section.append(el("h3", "sous-intertitre", "Pourquoi une estimation n'est pas une mesure"));
+  const limites = el("ul", "limites-estimation");
+  for (const texte of [
+    "Pas de marge d'erreur pour l'enquête de 2022.",
+    "Les paniers de 2022 vieillissent.",
+    "Pour l'ensemble, l'indice et l'enquête ne couvrent pas exactement les mêmes dépenses.",
+    "L'ancre est arrondie à 0,1 point.",
+    "Seuls l'alimentation et l'ensemble sont prolongés après 2022.",
+    "Le seuil de ±2 points du titre ne vaut que pour l'alimentation.",
+  ]) {
+    limites.append(el("li", "", texte));
+  }
+  section.append(limites);
   section.append(el("h3", "sous-intertitre", "Les sources"));
   section.append(
     sourceAvecLien(
@@ -745,6 +795,30 @@ function sectionMethode(
     liste.append(el("dt", "", entree.terme), el("dd", "", entree.definition));
   }
   section.append(liste);
+  return section;
+}
+
+function sectionConclusion(ipc: LigneDifferentiel[], revenus: LigneRevenu[]): HTMLElement {
+  const alimentaire = exigerEstimationPoste(ipc, "alimentation");
+  if (
+    alimentaire.ecart_prix_estime_pct === null ||
+    alimentaire.ecart_ecsp_2022_pct === null
+  ) {
+    throw new Error("Conclusion impossible : écart alimentaire absent.");
+  }
+  const prive = exigerRevenu(revenus, "salaire_net_moyen_prive");
+  const section = el("section", "conclusion");
+  section.append(
+    el(
+      "p",
+      "conclusion-texte",
+      phraseConclusion(
+        alimentaire.ecart_prix_estime_pct,
+        alimentaire.ecart_ecsp_2022_pct,
+        prive.ecart_moyenne_nationale_pct,
+      ),
+    ),
+  );
   return section;
 }
 
@@ -841,6 +915,7 @@ function ligneBarrePrix(
   montant: number,
   max: number,
   forte = false,
+  estime = false,
 ): HTMLElement {
   if (!Number.isFinite(montant) || montant < 0 || !Number.isFinite(max) || max <= 0) {
     throw new Error("Barre de prix impossible : montant ou échelle absente.");
@@ -856,7 +931,7 @@ function ligneBarrePrix(
   if (sous) textes.append(el("span", "ligne-barre-sous", sous));
   const echelle = el("div", "echelle-prix");
   echelle.append(
-    rangeePrix(montant / max, formaterEurosPanier(montant), "martinique"),
+    rangeePrix(montant / max, formaterEurosPanier(montant), "martinique", estime),
     rangeePrix(100 / max, "100 €", "hexagone"),
   );
   ligne.append(textes, echelle);
@@ -867,15 +942,27 @@ function rangeePrix(
   part: number,
   etiquette: string,
   couleur: "martinique" | "hexagone",
+  estime = false,
 ): HTMLElement {
   const partBornee = Math.min(1, Math.max(0, part));
   const rangee = el("div", `rangee-prix couleur-${couleur}`);
   const jauge = el("div", "jauge");
   jauge.style.width = `${partBornee * 100}%`;
   const piste = el("div", couleur === "hexagone" ? "piste piste-repere" : "piste");
-  const plein = el("span", "segment segment-plein");
-  plein.style.flexGrow = "1";
-  piste.append(plein);
+  if (estime) piste.classList.add("piste-estimee");
+  if (estime && couleur === "martinique") {
+    const hachure = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    hachure.setAttribute("class", "segment segment-hachure");
+    hachure.setAttribute("aria-hidden", "true");
+    hachure.style.flexGrow = "1";
+    hachure.innerHTML =
+      `<rect width="100%" height="100%" fill="url(#hachure-estime)" stroke="var(--martinique)" stroke-width="1.5"></rect>`;
+    piste.append(hachure);
+  } else {
+    const plein = el("span", "segment segment-plein");
+    plein.style.flexGrow = "1";
+    piste.append(plein);
+  }
   const chiffre = el(
     "span",
     couleur === "hexagone" ? "chiffre chiffre-repere" : "chiffre",
@@ -956,7 +1043,7 @@ function ligneBarreSignee(nom: string, valeur: number, maxAbs: number, etiquette
   const ligne = el("div", "ligne-barre ligne-barre-signee couleur-neutre");
   const ticket = el("div", "ligne-ticket");
   const textes = el("div", "ligne-etiquette");
-  textes.append(el("span", "ligne-barre-nom", nom), el("span", "ligne-barre-sous", "mesuré"));
+  textes.append(el("span", "ligne-barre-nom", nom), el("span", "ligne-barre-sous", "mesuré, par rapport à la moyenne de la France"));
   ticket.append(textes, el("span", "ligne-points"), el("span", "chiffre", etiquette));
   const piste = el("div", "piste-signee");
   piste.setAttribute("role", "img");
@@ -1013,6 +1100,10 @@ function libelleRevenu(indicateur: string): string {
   const libelle = LIBELLES_REVENU[indicateur];
   if (!libelle) throw new Error(`Indicateur de revenu sans libellé : ${indicateur}.`);
   return libelle;
+}
+
+export function etiquetteRevenu(indicateur: string, annee: number): string {
+  return `${libelleRevenu(indicateur)} en Martinique, ${annee}`;
 }
 
 function exigerNiveau(niveaux: LigneNiveau[], poste: string): LigneNiveau {

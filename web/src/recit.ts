@@ -59,6 +59,31 @@ export function pctPublie(ligne: LigneFormule): string {
   return `${Math.round(ligne.ecart_pct)} %`;
 }
 
+/**
+ * Dernier paragraphe d'analyse. Les deux affirmations sur le niveau (revenu vers
+ * l'ancre, revenus du privé sous la moyenne) suivent les données : elles changent
+ * ou disparaissent si l'écart estimé passe sous l'ancre ou si le salaire devient positif.
+ */
+export function phraseAnalyseNiveau(
+  ecartFin: number,
+  ancre: number,
+  salairePrivePct: number,
+): string {
+  if (!Number.isFinite(ecartFin) || !Number.isFinite(ancre) || !Number.isFinite(salairePrivePct)) {
+    throw new Error("Analyse impossible : écart ou salaire absent.");
+  }
+  const debut =
+    ecartFin >= ancre
+      ? "Quatre ans après la mesure de 2022, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous."
+      : "Quatre ans après la mesure de 2022, l'écart alimentaire estimé est passé sous son niveau de départ.";
+  const niveau =
+    ecartFin >= ancre
+      ? "un niveau alimentaire supérieur de {ecart_alimentaire_2022}, qui ne s'est pas refermé"
+      : "un niveau alimentaire supérieur de {ecart_alimentaire_2022} en 2022";
+  const revenus = salairePrivePct < 0 ? ", et des revenus du privé inférieurs à la moyenne nationale" : "";
+  return `${debut} Ces éléments coïncident avec le sentiment d'une vie plus chère : ${niveau}${revenus}. Cette coïncidence n'est pas une démonstration. Seule une nouvelle enquête de comparaison spatiale pourra dire où en est le niveau.`;
+}
+
 export function blocsRecit(
   lignesToutes: LigneDifferentiel[],
   niveaux: LigneNiveau[],
@@ -238,7 +263,7 @@ export function blocsRecit(
     {
       registre: "analyse",
       texte: resoudreEmplacements(
-        "L'écart sur l'énergie tient d'abord à des règles différentes — fiscalité, prix administrés. Il ne dit pas que l'énergie coûte moins cher en Martinique : il dit seulement que son prix y a moins augmenté.",
+        "L'écart sur l'énergie tient d'abord à des règles différentes : la fiscalité et les prix administrés. Il ne dit pas que l'énergie coûte moins cher en Martinique : il dit seulement que son prix y a moins augmenté.",
         valeurs,
       ),
       sources: [],
@@ -246,7 +271,11 @@ export function blocsRecit(
     {
       registre: "analyse",
       texte: resoudreEmplacements(
-        "Quatre ans après la mesure de 2022, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous. Ces éléments coïncident avec le sentiment d'une vie plus chère : un niveau alimentaire supérieur de {ecart_alimentaire_2022}, qui ne s'est pas refermé, et des revenus du privé inférieurs à la moyenne nationale. Cette coïncidence n'est pas une démonstration. Seule une nouvelle enquête de comparaison spatiale pourra dire où en est le niveau.",
+        phraseAnalyseNiveau(
+          fin.ecart_prix_estime_pct,
+          jalons.ancre.ecart_ecsp_2022_pct,
+          prive.ecart_moyenne_nationale_pct,
+        ),
         valeurs,
       ),
       sources: [],

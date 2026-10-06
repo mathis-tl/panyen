@@ -2,8 +2,9 @@
 
 Ce module ne télécharge rien et ne modifie jamais le brut : il lit, il structure,
 il échoue bruyamment. Il accepte les lots alimentaires historiques
-({011813726, 011813717} ou {011813726, 011813720}) et le lot actif des huit
-séries (quatre postes). Il ne compare pas les niveaux d'indice entre territoires.
+({011813726, 011813717} ou {011813726, 011813720}), l'ancien lot de huit
+séries (quatre postes) et le lot actif de dix séries (cinq postes). Il ne
+compare pas les niveaux d'indice entre territoires.
 """
 
 from __future__ import annotations
@@ -14,7 +15,7 @@ from pathlib import Path
 import re
 from xml.etree import ElementTree as ET
 
-# idbank → (poste, code_territoire). Neuf entrées : huit actives + FE historique.
+# idbank → (poste, code_territoire). Onze entrées : dix du lot actif + FE historique.
 IDBANK_REFERENTIEL: dict[str, tuple[str, str]] = {
     "011813726": ("alimentation", "D972"),
     "011813717": ("alimentation", "FE"),
@@ -25,13 +26,23 @@ IDBANK_REFERENTIEL: dict[str, tuple[str, str]] = {
     "011813783": ("produits_manufactures", "FM"),
     "011813915": ("services", "D972"),
     "011813909": ("services", "FM"),
+    "011814618": ("ensemble", "D972"),
+    "011814612": ("ensemble", "FM"),
 }
 
-IDBANKS_ACTIFS = frozenset(
-    idbank
-    for idbank, (_poste, territoire) in IDBANK_REFERENTIEL.items()
-    if territoire != "FE"
+IDBANKS_QUATRE_POSTES = frozenset(
+    {
+        "011813726",
+        "011813720",
+        "011813873",
+        "011813867",
+        "011813789",
+        "011813783",
+        "011813915",
+        "011813909",
+    }
 )
+IDBANKS_CINQ_POSTES = IDBANKS_QUATRE_POSTES | frozenset({"011814618", "011814612"})
 
 # Préfixe de fichier → ensemble d'idbanks → (lot_collecte, perimetre_reference)
 LOTS_PAR_PREFIXE: dict[str, dict[frozenset[str], tuple[str, str]]] = {
@@ -46,8 +57,12 @@ LOTS_PAR_PREFIXE: dict[str, dict[frozenset[str], tuple[str, str]]] = {
         ),
     },
     "ipc_postes_": {
-        IDBANKS_ACTIFS: (
+        IDBANKS_QUATRE_POSTES: (
             "quatre_postes_france_metropolitaine",
+            "france_metropolitaine",
+        ),
+        IDBANKS_CINQ_POSTES: (
+            "cinq_postes_france_metropolitaine",
             "france_metropolitaine",
         ),
     },

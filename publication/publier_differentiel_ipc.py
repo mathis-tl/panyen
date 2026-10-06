@@ -1,4 +1,4 @@
-"""Orchestrateur de publication Parquet du différentiel IPC (quatre postes).
+"""Orchestrateur de publication Parquet du différentiel IPC (cinq postes).
 
 Ordre strict : vérifier → exporter → valider → remplacer (os.replace en dernier).
 """

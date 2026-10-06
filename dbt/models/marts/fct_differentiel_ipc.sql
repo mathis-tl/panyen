@@ -1,8 +1,10 @@
 -- Grain : une ligne par (poste, periode).
 -- Apparie les facteurs d'évolution déjà rebasés intra-territoire et
--- intra-poste, puis joint éventuellement la mesure ECSP 2022 (alimentation
--- seulement). Aucun niveau d'indice brut n'est exposé ni comparé. Aucune ancre
--- ECSP n'est inventée hors alimentation.
+-- intra-poste, puis joint l'ancre ECSP 2022 de l'alimentation
+-- (seed ecsp_alimentation_2022) et de l'ensemble (seed ecsp_niveaux,
+-- annee_enquete = 2022, poste = 'ensemble'). Aucun niveau d'indice brut
+-- n'est exposé ni comparé. Aucune ancre ECSP n'est inventée pour les
+-- autres postes.
 
 with rebase as (
     select
@@ -39,7 +41,8 @@ libelles as (
             ('alimentation', 'Alimentation'),
             ('energie', 'Énergie'),
             ('produits_manufactures', 'Produits manufacturés'),
-            ('services', 'Services')
+            ('services', 'Services'),
+            ('ensemble', 'Ensemble')
     ) as libelle(poste, libelle_poste)
 ),
 
@@ -67,6 +70,29 @@ apparie as (
         and martinique.poste = france_metropolitaine.poste
     inner join libelles
         on martinique.poste = libelles.poste
+),
+
+ancres as (
+    select
+        ecsp_alimentation_2022.poste,
+        ecsp_alimentation_2022.ecart_fisher_pct,
+        ecsp_alimentation_2022.source_ecsp,
+        ecsp_alimentation_2022.periode_ancrage
+    from {{ ref("ecsp_alimentation_2022") }} as ecsp_alimentation_2022
+    where ecsp_alimentation_2022.poste = 'alimentation'
+        and ecsp_alimentation_2022.territoire_compare = 'D972'
+        and ecsp_alimentation_2022.territoire_reference = 'FM'
+
+    union all
+
+    select
+        ecsp_niveaux.poste,
+        ecsp_niveaux.ecart_fisher_pct,
+        ecsp_niveaux.source_url as source_ecsp,
+        date '2022-04-01' as periode_ancrage
+    from {{ ref("ecsp_niveaux") }} as ecsp_niveaux
+    where ecsp_niveaux.annee_enquete = 2022
+        and ecsp_niveaux.poste = 'ensemble'
 )
 
 select
@@ -84,30 +110,26 @@ select
     apparie.evolution_france_metropolitaine_pct,
     apparie.differentiel_evolution_points,
     apparie.coefficient_ecart,
-    ecsp_alimentation_2022.ecart_fisher_pct is not null as ancre_ecsp_disponible,
-    ecsp_alimentation_2022.ecart_fisher_pct as ecart_ecsp_2022_pct,
+    ancres.ecart_fisher_pct is not null as ancre_ecsp_disponible,
+    ancres.ecart_fisher_pct as ecart_ecsp_2022_pct,
     case
-        when ecsp_alimentation_2022.ecart_fisher_pct is null then null
+        when ancres.ecart_fisher_pct is null then null
         else (
             (
-                1 + ecsp_alimentation_2022.ecart_fisher_pct / 100
+                1 + ancres.ecart_fisher_pct / 100
             ) * apparie.coefficient_ecart
             - 1
         ) * 100
     end as ecart_prix_estime_pct,
-    ecsp_alimentation_2022.source_ecsp,
+    ancres.source_ecsp,
     case
-        when ecsp_alimentation_2022.ecart_fisher_pct is null then null
-        when apparie.periode = ecsp_alimentation_2022.periode_ancrage
+        when ancres.ecart_fisher_pct is null then null
+        when apparie.periode = ancres.periode_ancrage
             then 'mesure_ecsp_2022'
-        when apparie.periode > ecsp_alimentation_2022.periode_ancrage
+        when apparie.periode > ancres.periode_ancrage
             then 'estimation_a_partir_ecsp_2022'
     end as nature_ecart
 from apparie
-left join {{ ref("ecsp_alimentation_2022") }} as ecsp_alimentation_2022
-    on apparie.poste = 'alimentation'
-    and ecsp_alimentation_2022.poste = 'alimentation'
-    and ecsp_alimentation_2022.territoire_compare = 'D972'
-    and ecsp_alimentation_2022.territoire_reference = 'FM'
-    and ecsp_alimentation_2022.periode_ancrage = date '2022-04-01'
+left join ancres
+    on apparie.poste = ancres.poste
 order by apparie.poste, apparie.periode

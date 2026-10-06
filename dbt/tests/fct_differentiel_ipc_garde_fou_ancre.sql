@@ -1,6 +1,6 @@
 -- Garde-fou d'ancre : ancre_ecsp_disponible vrai exactement pour
--- l'alimentation ; les quatre colonnes ECSP toutes non nulles quand vrai,
--- toutes nulles quand faux. Aucun état mixte.
+-- l'alimentation et l'ensemble ; les quatre colonnes ECSP toutes non nulles
+-- quand vrai, toutes nulles quand faux. Aucun état mixte.
 with facture as (
     select
         poste,
@@ -12,16 +12,16 @@ with facture as (
     from {{ ref("fct_differentiel_ipc") }}
 )
 
-select 'ancre_hors_alimentation' as motif
+select 'ancre_hors_postes_suivis' as motif
 from facture
-where facture.poste != 'alimentation'
+where facture.poste not in ('alimentation', 'ensemble')
   and facture.ancre_ecsp_disponible
 
 union all
 
-select 'alimentation_sans_ancre' as motif
+select 'poste_suivi_sans_ancre' as motif
 from facture
-where facture.poste = 'alimentation'
+where facture.poste in ('alimentation', 'ensemble')
   and not facture.ancre_ecsp_disponible
 
 union all

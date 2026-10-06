@@ -6,12 +6,12 @@ import "./polices.css";
 import "./style.css";
 import { creerEntete } from "./entete.ts";
 
-const PARAGRAPHES: Array<{ titre: string; textes: string[] }> = [
+export const PARAGRAPHES_TECHOS: Array<{ titre: string; textes: string[] }> = [
   {
     titre: "La question",
     textes: [
       "Panye répond à une seule question : l'écart de prix mesuré en 2022 entre la Martinique et l'Hexagone s'est-il creusé ou resserré depuis ?",
-      "L'Hexagone, ici, c'est la France métropolitaine.",
+      "L'Hexagone, ici, c'est la France hexagonale : le continent et la Corse.",
     ],
   },
   {
@@ -67,7 +67,7 @@ function afficher(): void {
   const titre = document.createElement("h1");
   titre.textContent = "Pour les techos";
   page.append(titre);
-  for (const bloc of PARAGRAPHES) {
+  for (const bloc of PARAGRAPHES_TECHOS) {
     const inter = document.createElement("h2");
     inter.textContent = bloc.titre;
     page.append(inter);

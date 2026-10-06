@@ -1,10 +1,11 @@
 -- Grain : une ligne par (poste, idbank, periode) pour le dernier lot
--- quatre_postes_france_metropolitaine, de l'ancre 2022-04-01 au dernier mois
+-- cinq_postes_france_metropolitaine, de l'ancre 2022-04-01 au dernier mois
 -- commun inclus. Chaque ratio d'indice est calculé dans un seul territoire et
 -- un seul poste. Les niveaux bruts restent ici pour la traçabilité et ne sont
--- jamais appariés entre territoires.
+-- jamais appariés entre territoires. Le dernier mois commun est le plus ancien
+-- des derniers mois des dix séries.
 
-with lot_quatre_postes as (
+with lot_cinq_postes as (
     select
         stg_ipc.fichier_source,
         stg_ipc.collecte_utc,
@@ -17,21 +18,21 @@ with lot_quatre_postes as (
         stg_ipc.valeur_indice,
         stg_ipc.statut_observation
     from {{ ref("stg_ipc") }} as stg_ipc
-    where stg_ipc.lot_collecte = 'quatre_postes_france_metropolitaine'
+    where stg_ipc.lot_collecte = 'cinq_postes_france_metropolitaine'
 ),
 
 fichier_actif as (
-    select lot_quatre_postes.fichier_source
-    from lot_quatre_postes
-    order by lot_quatre_postes.collecte_utc desc, lot_quatre_postes.fichier_source desc
+    select lot_cinq_postes.fichier_source
+    from lot_cinq_postes
+    order by lot_cinq_postes.collecte_utc desc, lot_cinq_postes.fichier_source desc
     limit 1
 ),
 
 lot_actif as (
-    select lot_quatre_postes.*
-    from lot_quatre_postes
+    select lot_cinq_postes.*
+    from lot_cinq_postes
     inner join fichier_actif
-        on lot_quatre_postes.fichier_source = fichier_actif.fichier_source
+        on lot_cinq_postes.fichier_source = fichier_actif.fichier_source
 ),
 
 identite_lot as (
@@ -58,7 +59,9 @@ series_attendues as (
             ('produits_manufactures', '011813789', 'D972'),
             ('produits_manufactures', '011813783', 'FM'),
             ('services', '011813915', 'D972'),
-            ('services', '011813909', 'FM')
+            ('services', '011813909', 'FM'),
+            ('ensemble', '011814618', 'D972'),
+            ('ensemble', '011814612', 'FM')
     ) as attendu(poste, idbank, code_territoire)
 ),
 
@@ -79,7 +82,7 @@ derniers_par_serie as (
 bornes as (
     select min(derniers_par_serie.dernier_mois_serie) as dernier_mois_commun
     from derniers_par_serie
-    where (select count(*) from derniers_par_serie) = 8
+    where (select count(*) from derniers_par_serie) = 10
 ),
 
 calendrier as (

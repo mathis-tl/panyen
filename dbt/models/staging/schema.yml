@@ -28,8 +28,8 @@ models:
 
   - name: stg_ipc
     description: >
-      Observations mensuelles des indices IPC Insee (quatre postes actifs,
-      plus les lots alimentaires historiques), issues des XML SDMX bruts.
+      Observations mensuelles des indices IPC Insee (cinq postes actifs,
+      l'ancien lot à quatre postes, plus les lots alimentaires historiques), issues des XML SDMX bruts.
       Grain : une observation par (fichier_source, idbank, periode). Cette
       table ne compare pas les niveaux d'indice entre territoires.
     columns:
@@ -57,6 +57,8 @@ models:
                   - "011813783"
                   - "011813915"
                   - "011813909"
+                  - "011814618"
+                  - "011814612"
       - name: poste
         description: Poste de dépense snake_case déduit de l'idbank.
         data_tests:
@@ -68,6 +70,7 @@ models:
                   - energie
                   - produits_manufactures
                   - services
+                  - ensemble
       - name: code_territoire
         description: >
           Code SDMX REF_AREA de la série. Correspondances exactes du
@@ -88,6 +91,7 @@ models:
                   - alimentation_france_entiere
                   - alimentation_france_metropolitaine
                   - quatre_postes_france_metropolitaine
+                  - cinq_postes_france_metropolitaine
       - name: perimetre_reference
         description: >
           Périmètre géographique de référence du lot.
