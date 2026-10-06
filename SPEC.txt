@@ -1,271 +1,179 @@
-SPEC ACTIVE — INCRÉMENT 5b : une page qui se comprend sans prérequis
+SPEC ACTIVE — INCRÉMENT 5c : estimer aussi l'écart « ensemble », honnêtement
 
-La spec de l'incrément 5 (interface finale, phases A à D) est implémentée mais non
-commitée ; sa version est archivée dans `.agent-work/SPEC-5-archive.txt`. Cette spec
-la remplace : elle ne refait ni les données, ni les graphes, elle corrige la
-compréhension, la typographie et le thème.
+L'incrément 5b est commité (`893c510`), sa spec est archivée dans
+`.agent-work/SPEC-5b-archive.txt`. Cette spec ajoute une série de données et six
+retouches de la page. Elle ne touche ni au carburants, ni au thème, ni à la
+typographie.
+
+Décision de Mathis (2026-10-06) : on va chercher les données pour estimer l'écart
+de niveau de l'« ensemble » après 2022, à condition de dire sur le site tout ce qui
+empêche d'être précis. Claude a vérifié sur l'API Insee que la donnée existe ; il
+n'est pas opposé, sous les garde-fous ci-dessous.
 
 État de départ
 
-- Arbre de travail de l'incrément 5 (non commité) : `make verify` à 0, 83 tests web.
-  Page unique `web/src/page.ts`, `recit.ts`, `calculs-ecran.ts`, `graphe*.ts`,
-  `style.css`, polices Schibsted Grotesk / Atkinson / IBM Plex Mono, thèmes clair et
-  sombre, bascule « Thème ».
-- Constat (audit du 2026-10-05) : un lecteur qui découvre ne sait pas de quoi parle
-  « l'écart » (sujet absent du titre), les pourcentages ne sont pas définis, le
-  vocabulaire (poste, indice, ECSP, médiane, quantiles, arrêté préfectoral,
-  Hexagone, registres) n'est jamais expliqué, aucune section n'a d'introduction ni
-  de « à retenir », les puces « Mesuré / Contexte / Lecture » ne sont pas légendées,
-  le hachuré n'a pas de légende dans le bloc année par année, l'écart 2022 vaut
-  40,0 % à l'accueil et 40,2 % ailleurs, « chaque courbe part de 100 » contredit
-  l'axe (−10 à 20), la navigation mobile se réduit à « Méthode », il n'y a pas de
-  pied de page. Le design est jugé « générique » : grotesque + police mono +
-  étiquettes en majuscules espacées.
-- Décisions de Mathis (2026-10-05) : thème clair seul ; « Lecture » devient
-  « Analyse » ; typographie « étiquette de prix » ; écart 2022 alimentaire = 40,2 %
-  partout ; seuil de ±2 points, échelle commune des courbes et mois de fin
-  (dernier mois commun) validés. Détail visuel : `docs/prompts/panyen-brief-da.md`,
-  avenant 5b en tête (il l'emporte).
+- Données : `differentiel_ipc.parquet` porte quatre postes ; seule l'alimentation a
+  `ecart_prix_estime_pct` (ancre ECSP 2022 jointe seulement pour
+  `poste = 'alimentation'`, `fct_differentiel_ipc.sql`). Le brut IPC collecté
+  (`data/raw/insee/ipc_postes_2026-09-06T143628Z.xml`) contient huit séries.
+  `transformation/sdmx.py` (référentiel d'idbanks et lots) et l'ingestion
+  `ingest/insee_ipc.py` n'autorisent que ces huit séries plus l'historique FE.
+- Séries à ajouter, vérifiées le 2026-10-06 (base 2025, ensemble des ménages,
+  Coicop 00 « Ensemble », indice) : `011814618` Martinique (`D972`) et
+  `011814612` France métropolitaine (`FM`). Six rangs d'écart (règle des rangs
+  respectée). Lecture de contrôle : D972 2022-04 = 92,71, 2026-08 = 102,03 ;
+  FM 2022-04 = 91,73, 2026-08 = 103,38. L'ancre à estimer est `ecsp_niveaux.csv`,
+  ligne 2022 / ensemble : 13,8 % (Insee Première n° 1958).
+- Ordre de grandeur attendu (calcul à la main, à confirmer par le pipeline) :
+  (1,138 × 102,03/92,71 ÷ 103,38/91,73) − 1 ≈ +11 %, soit un écart « ensemble »
+  estimé plus bas que la mesure de 2022 : le titre de la page (alimentation) ne change
+  pas, mais le message « ensemble » est différent. À dire tel quel, sans l'habiller.
 
 Objectif utilisateur
 
-Une personne qui n'a jamais entendu parler d'indice des prix lit la page de haut en
-bas sans jamais rencontrer un mot ou un pourcentage non défini, et retient : de quoi
-on parle (le prix d'un même panier de courses en Martinique et dans l'Hexagone),
-ce qu'a mesuré l'Insee en 2022, ce qui est estimé depuis, et la réponse.
+Voir, pour l'alimentation et pour l'ensemble des produits, la dernière mesure de
+l'Insee et l'estimation d'aujourd'hui côte à côte, en comprenant pourquoi
+l'estimation n'est pas une mesure.
 
-Périmètre — quatre phases, porte de vérification entre chacune
+Périmètre — cinq phases, porte de vérification entre chacune
 
-PHASE A — Donnée : l'ancre 2022 passe de 40,0 à 40,2
+PHASE 0 — Vérifications avant de construire (si une échoue : STOP, rapport à Mathis)
 
-A1. `dbt/seeds/ecsp_alimentation_2022.csv` : `ecart_fisher_pct` = 40,2 (Insee
-    Première n° 1958, figure 3) ; `source_ecsp` pointe vers cette page
-    (https://www.insee.fr/fr/statistiques/7648939), pas vers Analyses Martinique
-    n° 63 qui arrondit à 40 ; remarque mise à jour. Adapter
-    `dbt/tests/ecsp_alimentation_2022_mesure.sql`, le schéma du seed et la remarque
-    de `ecsp_niveaux.csv` (la ligne 2022 / alimentation ne parle plus de 40,0 comme
-    d'une valeur différente). Test dbt rouge d'abord (valeur 40,2 attendue, 40,0
-    présent), puis vert.
-A2. Régénérer `differentiel_ipc.parquet` par la publication IPC existante
-    (`make publier`). Ne PAS lancer
-    `make publier-carburants`. Consigner avant / après : pic estimé et mois du pic,
-    écart au dernier mois commun, variation depuis l'ancre, SHA-256 des Parquet.
-    Vérifier que l'état du titre reste « à peu près le même » ; sinon STOP.
-PORTE A : `make verify` vert ; `carburants.parquet` et les trois Parquet de
-contexte identiques ; plus aucune occurrence de « 40,0 » ni de « 140,0 » dans le
-rendu.
+0.1 Relire sur Insee Première n° 1958 (page `7648939`) le champ de l'écart « ensemble »
+    2022 (13,8 %) : quelles dépenses sont incluses (loyers, services, santé…). Le
+    comparer au champ de l'IPC Coicop 00. Consigner dans
+    `docs/analyse/serie-ensemble.md` (création autorisée) : une phrase par
+    différence de champ, avec la source. Si les champs sont très différents, STOP.
+0.2 Relire les observations de `011814618` et `011814612` sur l'API
+    (`startPeriod=2022-03`), confirmer qu'aucun mois de 2022-04 à 2026-08 n'est
+    manquant ou `ND`.
+0.3 Faisabilité d'un contrôle rétrospectif (pas de code de production) : l'IPC base
+    2015 (flux `IPC-2015`) permet-il de prolonger, de 2015 à 2022, la mesure ECSP 2015
+    (ensemble 12,3 %, alimentation 38,2 %) avec la même méthode, puis de comparer au
+    2022 mesuré (13,8 % ; 40,2 %) ? Noter les idbanks, la couverture et les réserves
+    de comparabilité (`validation.md` : 2015→2022, source de collecte différente).
+    Résultat dans `docs/analyse/serie-ensemble.md` : l'écart d'estimation observé ou
+    « non faisable » avec la raison. Aucun chiffre de ce contrôle n'est affiché sur le
+    site dans cet incrément.
+PORTE 0 : `docs/analyse/serie-ensemble.md` écrit ; décision de continuer prise sur
+pièces (si 0.1 ou 0.2 échoue, arrêt).
 
-PHASE B — Thème clair seul et typographie
+PHASE A — Donnée : un cinquième poste, « ensemble »
 
-B1. Supprimer tout le thème sombre : blocs `:root[data-theme="dark"]` et
-    `@media (prefers-color-scheme: dark)`, ombres et bordures sombres de
-    l'infobulle, bouton « Thème », `themeCourant`, rafraîchissement du bouton.
-    `web/index.html` : `<meta name="color-scheme" content="light">`, et
-    `color-scheme: light` en CSS (aucun assombrissement forcé par le navigateur).
-B2. Remplacer les polices : paquets `@fontsource-variable/archivo` et
-    `@fontsource-variable/literata` (5.3.0, OFL-1.1) ; désinstaller
-    `@fontsource/schibsted-grotesk`, `@fontsource/atkinson-hyperlegible-next` et
-    `@fontsource/ibm-plex-mono`. Vérifier d'abord quels axes et quels fichiers sont
-    réellement livrés (`wdth`, `wght`, `opsz`) ; si l'axe de largeur manque, le dire
-    et utiliser le fichier de l'axe de largeur si le paquet l'expose séparément.
-    Aucune autre dépendance sans justification écrite.
-B3. Appliquer `docs/prompts/panyen-brief-da.md` § 3 (version avenant) : titres
-    Archivo large 800 serré, texte Literata 18 px / 1,6, chiffres tabulaires,
-    aucune police à chasse fixe, aucune étiquette en majuscules espacées
-    (navigation, badges, légendes de barres, mentions) ; les graphes Plot
-    (`graphe.ts`, `graphe-carburants.ts`) utilisent la même famille (plus de
-    « IBM Plex Mono » en dur).
-B4. Signature « ligne de ticket » (brief § 4) : composant CSS réutilisé par les
-    barres du panier, des postes 2022, des années et des revenus : étiquette à
-    gauche, points de conduite, valeur à droite, total en ligne forte. Les barres-cotes
-    (repères de bout) restent. Appliquer le skill `frontend-design` ; le brief
-    l'emporte.
-PORTE B : tests et build verts ; `grep` : plus de `data-theme`, de
-`prefers-color-scheme: dark`, de « Plex », « Schibsted », « Atkinson » dans
-`web/src` et `web/package.json` ; captures 1440 et 375 px (clair seul) relues.
+A1. Collecte : étendre `ingest/insee_ipc.py` pour demander en un seul appel les dix
+    séries (huit actives + les deux ci-dessus) depuis 2022-04, écrit sous
+    `ipc_postes_<horodatage>.xml`, sans écraser. `ingest/` ne parse rien. C'est une
+    collecte manuelle réseau : la lancer une fois, noter l'horodatage ; si l'API ne
+    répond pas, STOP.
+A2. `transformation/sdmx.py` : ajouter les deux idbanks au référentiel
+    (`("ensemble", "D972")`, `("ensemble", "FM")`), un nouveau lot de dix séries,
+    en gardant la lecture des anciens lots. Aucune série inconnue n'est tolérée
+    (échec bruyant déjà en place).
+A3. `stg_ipc.py`, `int_ipc_rebase.sql`, `fct_differentiel_ipc.sql` : le poste
+    « ensemble » est rebasé à avril 2022 comme les autres (facteur, évolution,
+    coefficient). L'ancre ECSP « ensemble » 13,8 % est jointe depuis `ecsp_niveaux`
+    (grain annee_enquete=2022, poste='ensemble') ; **pas** depuis un nouveau seed
+    qui répèterait la valeur. Même formule, même étiquette
+    (`estimation_a_partir_ecsp_2022`, `mesure_ecsp_2022` à l'ancre). Mettre à jour le
+    commentaire d'en-tête du modèle : ancre ECSP pour l'alimentation et l'ensemble,
+    aucune ancre inventée pour les autres postes. Le grain reste (poste, periode).
+A4. « Dernier mois commun » : un seul pour tout le lot (le plus ancien des derniers
+    mois des dix séries). Un test dbt échoue si le poste « ensemble » finit après ou
+    avant ce mois dans le Parquet publié. Garde-fou « indice entre 50 et 200 » étendu
+    aux deux nouvelles séries.
+A5. Tests dbt (rouge d'abord) : cinq postes attendus au lieu de quatre, ancre
+    « ensemble » = valeur de `ecsp_niveaux`, mois commun, pas de mois manquant,
+    pas de niveau d'indice exposé. Ajuster `schema.yml` (grain, descriptions).
+A6. Publication : `make publier` (pas `make publier-carburants`). Consigner avant /
+    après : lignes, colonnes, SHA-256, écart « ensemble » estimé au dernier mois commun.
+PORTE A : `make verify` vert ; `carburants.parquet` et les Parquet de contexte
+identiques ; le Parquet IPC contient cinq postes.
 
-PHASE C — Gabarit de section et textes
+PHASE B — Front : accepter le cinquième poste sans changer les courbes
 
-C1. Gabarit unique (une fonction `section(...)` dans `page.ts`) : titre = question
-    en langage simple ; « À retenir » (une phrase, chiffres calculés) ; « Comment
-    lire » (une à deux lignes) ; figure ; ligne « D'où viennent les chiffres »
-    (source en lien, date de consultation ou de collecte, nature mesuré / estimé) ;
-    « Limite » si elle existe. Chaque chiffre des textes passe par
-    `resoudreEmplacements` (un emplacement non résolu fait échouer l'écran).
-C2. Textes : tous ceux de la section « Textes » ci-dessous, mot pour mot. Un texte
-    d'interface n'est pas modifié sans le dire dans le rapport.
-C3. `registre` « lecture » devient « analyse » partout (type `BlocRecit`, `recit.ts`,
-    `libelleRegistre`, CSS `.registre-lecture`, tests). Libellé affiché : « Analyse ».
-C4. Évolutions : la phrase de constat devient « à peu près autant » quand la valeur
-    absolue du différentiel est < 1 point (constante nommée, testée) ; la mention
-    « part de 100 » disparaît (les courbes partent de 0 %) ; légende des points
-    d'événement sous les courbes ; l'avertissement d'échelle reste conditionnel.
-C5. Navigation : libellés explicites, menu replié accessible sur mobile (aucune
-    section injoignable à 375 px) ; pied de page (sources, dernier mois commun,
-    dernière collecte lue dans `collecte_utc`, licence ouverte des sources).
-C6. Écart 2022 : ajouter un repère « 100 € = prix hexagonal » sur les barres.
-C7. Gazole : axe nommé en toutes lettres ; phrase « À retenir » calculée depuis le
-    dernier mois (prix maximal martiniquais et médiane hexagonale, en €/L).
-PORTE C : tests (voir Vérification), build, captures de chaque section relues une à
-une ; revue « lecteur novice » : pour chaque terme du glossaire, sa définition
-apparaît avant ou à sa première occurrence (cocher dans le rapport).
+B1. `web/src/types.ts`, `validation.ts`, `chargement.ts` : « ensemble » est un poste
+    reconnu mais **n'a pas de graphique de courbe** (les quatre graphiques restent) ;
+    les quatre postes des courbes restent `POSTES_ATTENDUS`. Aucune vue ne casse.
+PORTE B : tests et build verts ; la page s'affiche comme avant.
 
-PHASE D — Qualité
+PHASE C — Page (les six points de Mathis, corrigés)
 
-D1. Contrastes AA recalculés sur les valeurs finales (clair seul) ; simulation
-    daltonisme ; niveaux de gris.
-D2. Clavier (Tab complet, focus visible, menu mobile), `prefers-reduced-motion`,
-    titres hiérarchisés (un seul h1), alternatives textuelles des graphes.
-D3. Réseau : aucun hôte tiers ; poids du bundle avant / après (polices comprises).
-PORTE D : rapport chiffré ; aucun commit sans décision de Mathis.
+C1. « Ce qui coïncide » (barres de l'écart de niveau, section 5) : pour
+    **l'alimentation et l'ensemble**, une barre « {mois_commun}, estimé » après 2022 /
+    mesuré, lue dans le Parquet (`ecart_prix_estime_pct`, nature estimation), hachurée
+    comme l'estimation partout ailleurs, échelle incluant cette barre. Aucun
+    autre poste n'est prolongé : une phrase le dit (« Seuls l'alimentation et
+    l'ensemble sont prolongés après 2022 : ce sont les deux séries de prix que
+    panyen suit chaque mois. Les autres postes restent la photo de 2022. »). Échec
+    bruyant si une ligne attendue est absente ou n'est pas de nature estimation.
+C2. Mentions d'honnêteté, visibles près de ces barres (pas seulement en Méthode) :
+    « Estimation : on prolonge la mesure de 2022 avec les hausses de prix de chaque
+    territoire. Ce n'est pas une nouvelle enquête. Elle est moins sûre à mesure
+    qu'on s'éloigne de 2022 : les habitudes d'achat changent, et l'Insee ne donne pas
+    de marge d'erreur pour l'enquête de 2022. » Pour l'ensemble, ajouter la phrase
+    du champ établie en 0.1 (« L'indice des prix et l'enquête ne couvrent pas
+    exactement les mêmes dépenses : … »). Si la phase 0.3 a donné un écart observé,
+    le noter dans Méthode **seulement s'il est lu dans un seed ou un Parquet** ;
+    sinon ne rien afficher de ce contrôle.
+C3. Section Méthode : sous-titre « Pourquoi une estimation n'est pas une mesure »,
+    liste courte : pas de marge d'erreur ; paniers de 2022 qui vieillissent ; champs
+    différents (ensemble) ; ancre arrondie à 0,1 point ; seulement deux postes
+    prolongés ; le seuil de ±2 points du titre ne vaut que pour l'alimentation.
+C4. Revenus : « {indicateur} en Martinique, {année} », sous-titre « par rapport à la
+    moyenne de la France », chiffre inchangé ; mention « Île-de-France incluse » gardée
+    (`LIBELLES_REVENU`, `ligneBarreSignee`). Test sur les quatre libellés.
+C5. Récit : phrase énergie « … des règles différentes : la fiscalité et les prix
+    administrés. » sans tiret cadratin ; test (rouge d'abord) qui échoue si « — »
+    figure dans un texte de `blocsRecit`. Les séparateurs date — titre des événements
+    restent.
+C6. Glossaire : retirer « Hexagone » et son infobulle ; garder les autres mots ;
+    adapter les tests.
+C7. Conclusion après « Méthode et sources » et avant « Pour les techos » : fond noir
+    pleine largeur, texte Archivo `#FFDE21`. Texte :
+    « Depuis 2022, l'écart alimentaire estimé est revenu vers son niveau de départ,
+    pas en dessous. Des prix plus élevés qu'en Hexagone, et des salaires du privé plus
+    bas que la moyenne française, coïncident avec le sentiment d'une vie plus chère.
+    Ce n'est pas une preuve. Seule une nouvelle enquête de l'Insee pourra dire où en
+    est vraiment le niveau. »
+    La première phrase n'est vraie que si le dernier écart alimentaire estimé est
+    ≥ l'ancre ; la conclusion choisit la phrase (≥ ancre : « revenu vers son niveau
+    de départ, pas en dessous » ; sinon : « passé sous son niveau de départ ») ou
+    échoue. Test sur les deux cas. « Des salaires du privé plus bas » est lu dans
+    `revenus_ecart_national` (négatif), sinon la phrase est retirée. Les nombres ne
+    sont pas recopiés à la main.
+PORTE C : tests, `tsc`, build, captures 1440 et 375 px (barre estimée, mentions,
+revenus, conclusion), lues une à une.
 
-Textes (français, à reproduire tels quels ; {x} = valeur lue dans un Parquet)
+PHASE D — Vérification finale
 
-Glossaire (une seule source dans le code, réutilisée dans la section Méthode et en
-infobulle `<abbr>` / définition à la première occurrence) :
-- Hexagone : la France métropolitaine.
-- Poste : une grande catégorie de dépense (alimentation, énergie, produits
-  manufacturés, services…).
-- Indice des prix : un nombre qui suit l'évolution des prix d'un territoire à partir
-  d'un point de départ fixé à 100. Chaque territoire a son propre point de départ :
-  on compare des hausses, jamais deux niveaux d'indice.
-- Enquête de comparaison spatiale des prix (ECSP) : enquête de l'Insee qui relève,
-  au même moment, les prix des mêmes produits dans deux territoires. Celle de
-  mars-avril 2022 est la seule qui donne l'écart de niveau actuel.
-- Médiane : le prix qui sépare les stations en deux moitiés, une moitié moins chère,
-  une moitié plus chère.
-- Arrêté préfectoral : décision du préfet qui fixe un prix maximal, valable dans
-  tout le département.
-- Dernier mois commun : le dernier mois pour lequel les deux territoires ont publié.
-
-Introduction de page (sous l'en-tête, avant le h1) :
-« panyen compare les prix des courses en Martinique et dans l'Hexagone (la France
-métropolitaine). En 2022, l'Insee a mesuré l'écart. Depuis, a-t-il changé ? »
-
-Titre (h1), trois états choisis par le calcul (seuil ±2 points inchangé) :
-- creusé : « Depuis 2022, l'écart s'est creusé : les courses alimentaires coûtent
-  environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone. »
-- resserré : « Depuis 2022, l'écart s'est resserré : les courses alimentaires coûtent
-  environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone. »
-- stable : « Depuis 2022, l'écart n'a presque pas bougé : les courses alimentaires
-  coûtent environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone. »
-{ecart_fin_entier} = écart estimé au dernier mois commun, arrondi à l'unité, calculé.
-Ligne d'état : « Estimation à fin {mois_fin}, dernier mois publié pour les deux
-territoires. » À retenir (état stable) : « Selon l'estimation, l'écart a atteint environ
-{pic} en {mois_pic} avant de revenir vers {ecart_fin} en {mois_fin}. » (reprendre
-`phrasePicEstime`.) Limite courte : « Seul l'écart de 2022 est mesuré. Les mois
-suivants sont estimés à partir des hausses de prix de chaque territoire. »
-
-Encart « Lire les chiffres » (sous le h1, visible) :
-- « +{ecart_2022} veut dire : un panier de courses qui coûte 100 € dans l'Hexagone
-  coûte {euros_2022} en Martinique. »
-- « Mesuré : relevé par l'Insee en mars-avril 2022. »
-- « Estimé (hachuré) : prolongé par calcul à partir de cette mesure. Ce n'est pas un
-  nouveau relevé. »
-
-Panier (titre) : « Un même panier de courses : 100 € dans l'Hexagone » ; lignes :
-« Hexagone, à la même date », « Martinique en 2022, mesuré », « Martinique en
-{mois_fin}, estimé, {delta} depuis 2022 ». Source : « Mesure : Insee, enquête de
-comparaison spatiale des prix, mars-avril 2022. Prolongement : indices des prix à la
-consommation, Insee. »
-
-Section 2 — « En 2022, combien coûtait le même panier, par type de dépense ? »
-À retenir : « L'alimentation était le poste le plus cher par rapport à l'Hexagone
-({alim_2022}) ; les transports étaient moins chers ({transports_2022}). » Comment
-lire : « Chaque barre dit combien coûtait en Martinique ce qui coûtait 100 € dans
-l'Hexagone. Plus court que le repère de 100 € : moins cher ; plus long : plus cher.
-“Ensemble” regroupe tous les produits. Tout est mesuré. »
-
-Section 3 — « Depuis avril 2022, les prix ont-ils monté plus vite en Martinique ? »
-Comment lire : « Chaque courbe montre de combien les prix ont augmenté depuis avril
-2022 (0 % = les prix d'avril 2022), séparément pour chaque territoire. On compare
-des hausses, pas des niveaux de prix. Les points gris signalent des événements :
-ils coïncident avec les courbes, ils ne les expliquent pas forcément. »
-Énergie : « Pour l'énergie, les règles de prix diffèrent entre les territoires
-(fiscalité, prix administrés). Une hausse plus faible ne veut pas dire que l'énergie
-y coûte moins cher. »
-Bloc année par année — titre « L'écart alimentaire, année après année » ; Comment
-lire : « Chaque barre dit de combien le même panier alimentaire coûte plus cher en
-Martinique que dans l'Hexagone : 40 % veut dire 140 € contre 100 €. Plein : mesuré
-par l'Insee (2022). Hachuré : estimé par calcul. » Légende plein / hachuré dans le
-bloc. À retenir : « Les estimations annuelles vont de {min_estime} à
-{max_estime}. » Limite : « L'estimation suppose que l'écart de 2022 évolue comme
-l'écart entre les hausses de prix des deux territoires. Seule une nouvelle enquête
-pourrait la confirmer. » Liste d'événements : introduite par « Quelques événements
-de la période, avec leur source. Ils situent les courbes, ils ne les expliquent
-pas. »
-
-Section 4 — « Le gazole : qui fixe le prix ? » Introduction : « Dans l'Hexagone,
-chaque station fixe son prix. En Martinique, le préfet fixe un prix maximal par
-arrêté, valable dans tout le département. Le gazole est le carburant que l'on peut
-comparer proprement. » Comment lire : « La ligne ambre est le prix médian des
-stations de l'Hexagone ; la bande contient huit stations sur dix. La ligne bleue est
-le prix maximal fixé en Martinique. Les deux sont observés : rien n'est hachuré. »
-À retenir : « En {mois_carburant}, le prix maximal fixé en Martinique est de
-{plafond} €/L ; la médiane des stations de l'Hexagone est de {mediane} €/L. »
-Non comparé : « SP95, SP98 et E10 sont des qualités d'essence. » (glose avant la
-liste).
-
-Section 5 — « Ce qui coïncide avec le sentiment d'une vie plus chère » (inchangé),
-introduction : « Ces chiffres sont mesurés et ne démontrent pas de cause. » Bloc (a)
-« Combien plus cher qu'en Hexagone, enquête après enquête » ; Comment lire : « Même
-lecture que plus haut : +40 % veut dire 140 € contre 100 €. » Bloc (b) « Les
-revenus, comparés à la moyenne de la France » ; Comment lire : « Salaire net moyen :
-ce qu'un salarié touche en moyenne après cotisations. Revenu d'activité des
-non-salariés : indépendants, artisans, agriculteurs. Les barres vont à gauche si le
-revenu est plus bas que la moyenne nationale, à droite s'il est plus haut. » À
-retenir : « Les salaires de la fonction publique sont {rev_public} au-dessus de la
-moyenne nationale, ceux du privé {rev_prive} en dessous. »
-
-Section 6 — « Ce qu'on peut en dire » ; légende en tête : « Mesuré : un chiffre
-publié par une source, ou calculé à partir de sources citées. Contexte : un fait
-extérieur aux chiffres, avec sa source. Analyse : notre interprétation. Elle peut
-être discutée et ne prouve rien. »
-
-Section 7 — « Méthode et sources » : sous-titres « Ce que mesure ce site », « Ce
-qu'il ne dit pas » (« Il ne dit pas pourquoi les prix sont plus élevés ; il ne dit
-pas qui paie quoi ; il ne compare jamais deux indices entre eux »), « Mesuré et
-estimé », « Les sources », « Mots utilisés » (le glossaire). Reprendre les
-paragraphes actuels de Méthode, les raccourcir, garder le seuil de ±2 points écrit
-comme choix éditorial sans intervalle de confiance.
-
-Navigation : « La réponse », « L'écart en 2022 », « Les prix depuis 2022 », « Le
-gazole », « Ce qui coïncide », « Ce qu'on peut en dire », « Méthode et sources ».
+`make verify` à 0 ; `npm --prefix web test` ; `tsc` dans `web/` ; navigateur à 375 et
+1440 px ; 0 erreur console ; aucun hôte réseau tiers ; empreintes avant / après
+(`differentiel_ipc.parquet` change, les autres non) ; `grep` : plus de « — » dans le
+récit, plus de « Hexagone : la France » dans le glossaire.
 
 Contraintes
 
-- Règle des niveaux (CLAUDE.md) : évolutions comparables entre territoires, écart
-  de niveau seulement via l'ECSP, tout prolongement étiqueté « estimation ». Les
-  prix des carburants sont des prix en euros, pas des indices : les citer ensemble
-  est permis ; ne jamais écrire que l'un « explique » l'autre.
-- Aucune valeur écrite à la main dans le code du site : tout chiffre vient d'un
-  Parquet. Les arrondis (entier) sont calculés. Échec bruyant sinon.
-- Pas de CDN, de police tierce, de requête vers un domaine tiers, de framework.
+- Règle des niveaux (CLAUDE.md) : on compare des évolutions entre territoires ; l'écart
+  de niveau vient de l'ECSP ; tout prolongement est une **estimation** étiquetée
+  partout. Jamais de pondération inventée. Jamais deux niveaux d'indice côte à côte.
+- Aucune valeur écrite à la main dans le site ; provenance (idbank, fichier brut,
+  horodatage) conservée jusqu'au Parquet.
+- Échec bruyant : un mois manquant fait échouer, il ne se comble pas.
+- Si un test dbt échoue, le Parquet n'est pas régénéré.
 - Machine 8 Go : une commande lourde à la fois ; pas de `make publier-carburants`.
-- `docs/` (sauf mises à jour déjà faites : brief, recit.md), `ROADMAP.md`,
-  `CLAUDE.md`, `ingest/`, modèles carburants : non modifiés.
+- Ne pas modifier : `ROADMAP.md`, `CLAUDE.md`, les modèles et le seed carburants, les
+  bruts existants (les nouveaux s'ajoutent), la CI.
 
 Non-objectifs
 
-Fraîcheur et automatisation (incrément 6), déploiement (7), nouveaux jeux de
-données, nouvelle série, mode sombre, traduction en créole ou en anglais, mémorisation
-de préférences.
-
-Vérification
-
-- Tests nouveaux (rouge puis vert) : ancre 40,2 (dbt et vitest), choix des trois
-  états, « à peu près autant » sous 1 point (frontières exactes), arrondi de
-  {ecart_fin_entier}, résolution des emplacements (un emplacement non résolu lève une
-  erreur), « analyse » à la place de « lecture ».
-- `make verify` à 0 ; `npm --prefix web run test` ; `npm --prefix web run build`.
-- Captures 1440 et 375 px, clair seul, chaque section, relues ; 0 erreur console ;
-  clavier ; `prefers-reduced-motion` ; hôtes réseau.
-- `grep` finaux : « Lecture » (badge), « 40,0 », `data-theme`, majuscules
-  espacées, polices retirées : zéro occurrence.
+Estimer d'autres postes ECSP (communications, santé, logement, transports…) ; afficher
+un chiffre de contrôle rétrospectif ; intervalle de confiance ; nouveau graphique de
+courbe ; fraîcheur et planification (incrément 6) ; refonte visuelle.
 
 Fini
 
-Un lecteur sans prérequis comprend la page ; chaque terme est défini avant d'être
-utilisé ; l'écart 2022 vaut 40,2 % partout ; le site est clair seul avec la
-typographie « étiquette de prix » ; `make verify` à 0 ; Mathis a relu les captures.
-Aucun commit ni coche dans `ROADMAP.md` sans sa décision.
+Le Parquet IPC porte cinq postes, dont « ensemble » avec une estimation étiquetée ; la
+page montre pour l'alimentation et l'ensemble la mesure 2022 et l'estimation
+d'aujourd'hui, avec des mentions d'honnêteté lisibles près des barres ; les six
+retouches sont faites ; `make verify` à 0 ; Mathis a relu les captures. Aucun commit
+sans sa décision.
