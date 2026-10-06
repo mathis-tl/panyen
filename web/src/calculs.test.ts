@@ -204,7 +204,7 @@ describe("calculerResume — trajectoire", () => {
     expect(r.phrase).toContain(
       formaterPctAttendue(r.actuelle.ecart_prix_estime_pct as number),
     );
-    expect(r.phrase).toContain("40,0");
+    expect(r.phrase).toContain(formaterPctAttendue(40));
     expect(r.phrase).toMatch(/\+|−/);
     expect(r.phrase).toContain("estimation");
     expect(r.phrase).toContain("mesure");

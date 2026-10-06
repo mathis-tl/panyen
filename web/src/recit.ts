@@ -21,9 +21,15 @@ import type { LigneDifferentiel } from "./types.ts";
 import { formaterMoisUtc } from "./validation.ts";
 
 export interface BlocRecit {
-  registre: "mesure" | "contexte" | "lecture";
+  registre: "mesure" | "contexte" | "analyse";
   texte: string;
   sources: { href: string; libelle: string }[];
+}
+
+export function libelleRegistre(registreRecit: BlocRecit["registre"]): string {
+  if (registreRecit === "mesure") return "Mesuré";
+  if (registreRecit === "contexte") return "Contexte";
+  return "Analyse";
 }
 
 function pct(n: number): string {
@@ -36,7 +42,7 @@ function exigerNiveau(niveaux: LigneNiveau[], annee: number, poste: string): Lig
   return ligne;
 }
 
-function formaterPublie(ligne: LigneNiveau): string {
+export function formaterPublie(ligne: LigneNiveau): string {
   const decimales = ligne.precision_pct < 1 ? 1 : 0;
   const corps = Math.abs(ligne.ecart_fisher_pct).toFixed(decimales).replace(".", ",");
   const signe = ligne.ecart_fisher_pct < 0 ? "−" : "";
@@ -222,7 +228,7 @@ export function blocsRecit(
       ],
     },
     {
-      registre: "lecture",
+      registre: "analyse",
       texte: resoudreEmplacements(
         "Le ralentissement de l'alimentation coïncide avec le protocole contre la vie chère. Le protocole ne couvre qu'une part du panier, et aucune étude indépendante n'a mesuré son effet sur l'indice global. On peut constater la coïncidence ; on ne peut pas encore parler de cause.",
         valeurs,
@@ -230,7 +236,7 @@ export function blocsRecit(
       sources: [],
     },
     {
-      registre: "lecture",
+      registre: "analyse",
       texte: resoudreEmplacements(
         "L'écart sur l'énergie tient d'abord à des règles différentes — fiscalité, prix administrés. Il ne dit pas que l'énergie coûte moins cher en Martinique : il dit seulement que son prix y a moins augmenté.",
         valeurs,
@@ -238,7 +244,7 @@ export function blocsRecit(
       sources: [],
     },
     {
-      registre: "lecture",
+      registre: "analyse",
       texte: resoudreEmplacements(
         "Quatre ans après la mesure de 2022, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous. Ces éléments coïncident avec le sentiment d'une vie plus chère : un niveau alimentaire supérieur de {ecart_alimentaire_2022}, qui ne s'est pas refermé, et des revenus du privé inférieurs à la moyenne nationale. Cette coïncidence n'est pas une démonstration. Seule une nouvelle enquête de comparaison spatiale pourra dire où en est le niveau.",
         valeurs,

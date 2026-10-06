@@ -151,7 +151,7 @@ Titre (h1), trois états choisis par le calcul (seuil ±2 points inchangé) :
   coûtent environ {ecart_fin_entier} de plus en Martinique que dans l'Hexagone. »
 {ecart_fin_entier} = écart estimé au dernier mois commun, arrondi à l'unité, calculé.
 Ligne d'état : « Estimation à fin {mois_fin}, dernier mois publié pour les deux
-territoires. » À retenir (état stable) : « Selon l'estimation, il a atteint environ
+territoires. » À retenir (état stable) : « Selon l'estimation, l'écart a atteint environ
 {pic} en {mois_pic} avant de revenir vers {ecart_fin} en {mois_fin}. » (reprendre
 `phrasePicEstime`.) Limite courte : « Seul l'écart de 2022 est mesuré. Les mois
 suivants sont estimés à partir des hausses de prix de chaque territoire. »
@@ -188,7 +188,7 @@ Bloc année par année — titre « L'écart alimentaire, année après année �
 lire : « Chaque barre dit de combien le même panier alimentaire coûte plus cher en
 Martinique que dans l'Hexagone : 40 % veut dire 140 € contre 100 €. Plein : mesuré
 par l'Insee (2022). Hachuré : estimé par calcul. » Légende plein / hachuré dans le
-bloc. À retenir : « Depuis 2022, l'estimation reste entre {min_estime} et
+bloc. À retenir : « Les estimations annuelles vont de {min_estime} à
 {max_estime}. » Limite : « L'estimation suppose que l'écart de 2022 évolue comme
 l'écart entre les hausses de prix des deux territoires. Seule une nouvelle enquête
 pourrait la confirmer. » Liste d'événements : introduite par « Quelques événements
