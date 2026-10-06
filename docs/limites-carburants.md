@@ -1,7 +1,8 @@
 # Limites connues — distribution carburants (correctif 4b)
 
-Constats de la revue indépendante du 2026-10-02, commit `af5ee75`. Rien n'est
-corrigé ici : ce sont des choix de méthode ou des durcissements à décider.
+Constats de la revue indépendante du 2026-10-02, commit `af5ee75`. Les choix
+de méthode ci-dessous ne sont pas tranchés : les changer demanderait de
+republier les carburants. Les contrôles du 2026-10-06 ne changent pas les prix.
 
 ## Choix de méthode à trancher
 
@@ -16,21 +17,31 @@ corrigé ici : ce sont des choix de méthode ou des durcissements à décider.
    les changements de prix, les stations à prix stable sont écartées et la
    médiane penche vers celles qui bougent. Aucun compteur d'exclusions publié.
 
-## Durcissements (LOW)
+## Contrôles ajoutés (2026-10-06, sans republication)
 
-- `coherence_carburants_insee` (warn) passe sans alerte si aucun mois n'est
-  comparé : ajouter un contrôle du nombre de mois comparés.
-- `ingest/insee_ipc.py` : `--carburants --depuis 2022-04` est remplacé
-  silencieusement par `2022-01` (valeur par défaut utilisée comme sentinelle).
-- Tests manquants : période ouverte, prolongement aval, relevé exactement à
-  `debut_utc` (04:00 UTC).
+- `coherence_carburants_insee_mois` (error) échoue si aucun mois plein n'est
+  comparé à l'Insee. `coherence_carburants_insee` reste un warn sur l'écart
+  de 0,05 €/L : un écart connu ne bloque pas le build.
+- `ingest/insee_ipc.py` : `--depuis` absent vaut `2022-04` pour l'IPC et
+  `2022-01` pour `--carburants`. Une date passée explicitement est utilisée
+  telle quelle, y compris `--carburants --depuis 2022-04`.
+- Tests unitaires synthétiques, modèle inchangé :
+  `periode_ouverte_finit_au_dernier_releve` (la fin ouverte est le dernier
+  relevé global ; un relevé exactement à cette fin n'entre pas),
+  `periode_prolongement_aval_sans_limite` (une station dont le seul relevé est
+  au début d'une période de deux mois reste, à ce prix — le test verrouille la
+  présence, pas la durée du segment),
+  `periode_releve_exactement_a_debut_utc` (04:00 UTC inclus).
+
+## Encore ouverts
+
 - `test_iterer_membre_xml_egal_parser` n'a plus d'oracle externe (fichier
   `/private/tmp` disparu) : il vérifie l'égalité des deux parseurs seulement.
 - Front : la colonne `mois` vaut `debut_effet` (le 2022-11-16 s'affiche
-  « novembre 2022 », octobre 2022 couvre 46 jours) ; renommage prévu à
-  l'incrément 5.
-- Infobulle du graphe carburants : fond blanc et texte pâle, illisible en thème
-  sombre (constat navigateur, à traiter à l'incrément 5).
+  « novembre 2022 », octobre 2022 couvre 46 jours). Le renommage changerait
+  le Parquet publié : il attend une republication.
+- L'infobulle illisible en thème sombre est sans objet : le site n'a plus
+  qu'un thème clair (décision du 2026-10-06).
 
 ## Mesure de mémoire
 

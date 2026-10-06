@@ -168,8 +168,12 @@ def principal(argv: list[str] | None = None) -> None:
     )
     parseur.add_argument(
         "--depuis",
-        default=DEPUIS_DEFAUT,
-        help=f"startPeriod SDMX (défaut : {DEPUIS_DEFAUT})",
+        default=None,
+        help=(
+            "startPeriod SDMX "
+            f"(défaut IPC : {DEPUIS_DEFAUT}, "
+            f"défaut carburants : {DEPUIS_CARBURANTS_DEFAUT})"
+        ),
     )
     parseur.add_argument(
         "--dry-run",
@@ -183,10 +187,11 @@ def principal(argv: list[str] | None = None) -> None:
     )
     args = parseur.parse_args(argv)
     if args.carburants:
-        depuis = args.depuis if args.depuis != DEPUIS_DEFAUT else DEPUIS_CARBURANTS_DEFAUT
+        depuis = DEPUIS_CARBURANTS_DEFAUT if args.depuis is None else args.depuis
         collecter_carburants(depuis=depuis, dry_run=args.dry_run)
     else:
-        collecter(depuis=args.depuis, dry_run=args.dry_run)
+        depuis = DEPUIS_DEFAUT if args.depuis is None else args.depuis
+        collecter(depuis=depuis, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
