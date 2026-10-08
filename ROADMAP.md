@@ -130,20 +130,24 @@ causalité n'est affirmée sans étude qui la démontre ; Mathis a relu le texte
 **But utilisateur** : comprendre le résultat, sa période et ses limites sans
 connaître les indices de prix.
 
-- [ ] Rechercher et choisir des bibliothèques maintenues avant tout composant maison.
-- [ ] Produire trois variantes de l'écran principal, puis en choisir une.
-- [ ] Finaliser les écrans ECSP 2022, IPC et carburants, en y intégrant le récit
-      et les annotations de l'incrément 4.
-- [ ] Valider palette daltonisme, thèmes clair/sombre, légendes, labels directs,
-      chiffres tabulaires et absence de double axe.
-- [ ] Garder les interactions fréquentes sobres ; animations sous 300 ms,
-      `transform`/`opacity`, survols adaptés et `prefers-reduced-motion`.
-- [ ] Reprendre les constats d'inspection du 2026-09-09 laissés hors incrément 2 :
-      séparer un `h1` court du paragraphe de conclusion, alléger un premier
-      viewport très textuel, et remplacer le « Chargement… » nu par un squelette.
+- [x] Rechercher et choisir des bibliothèques maintenues avant tout composant maison
+      (hyparquet, Observable Plot).
+- [x] Brief de direction artistique du 2026-10-05, une direction retenue.
+      Les trois variantes d'écran prévues au départ n'ont pas été produites.
+- [x] **5b** — récit sur la page, registres Mesuré / Contexte / Analyse.
+- [x] **5c** — estimation de l'écart « ensemble », avec ses limites de champ.
+- [ ] Page unique relue : ECSP 2022, évolutions, carburants, revenus, conclusion.
+      La relecture visuelle (captures, contrastes, arbre d'accessibilité) est
+      le reste de la clôture.
+- [x] Thème clair seul (décision du 2026-10-06). Le thème sombre n'est plus
+      au programme.
+- [ ] Contrastes et simulation daltonisme rouge-bleu sur la palette réelle,
+      légendes, labels directs, chiffres tabulaires, un seul axe.
+- [x] Squelette de chargement à la place du « Chargement… » nu. Un seul `h1`.
 
 **Fini quand** : la page s'ouvre sans serveur applicatif, les filtres sont locaux,
-la palette est validée dans les deux thèmes et la revue d'animations est sans réserve.
+le thème clair est relu (contrastes, daltonisme, captures) et la conclusion a
+été lue dans le navigateur.
 
 ---
 
