@@ -25,29 +25,41 @@
 
 ---
 
-## 2. Couleurs
+## 2. Couleurs — palette livrée (remplace le bleu et l'ambre)
 
-| Rôle | Nom | Valeur (thème clair seul) |
-|---|---|---|
-| Fond | Ardoise pâle | `#F4F6F8` |
-| Texte | Encre | `#14202B` (15,3:1) |
-| Texte secondaire, axes | Gris schiste | `#4A5866` (6,7:1) |
-| **Martinique** | Bleu profond | `#1D5FA6` (6,0:1) |
-| **Hexagone** | Ambre | `#A35F00` (4,6:1) |
-| Grille, filets | Brume | `#C9D2DB` |
+Le drapeau martiniquais fait foi. Recalcul WCAG du 2026-10-08, texte sur le fond
+`#F4F6F8`, sauf la conclusion et l'en-tête qui sont jaunes ou blancs sur noir.
 
-Contrastes calculés selon la méthode WCAG. Les deux couleurs de territoire passent le niveau AA pour du texte normal, donc elles servent aussi aux libellés directs.
+| Rôle | Nom | Valeur | Contraste |
+|---|---|---|---|
+| Fond | Ardoise pâle | `#F4F6F8` | — |
+| Texte | Encre | `#14202B` | 15,3:1 |
+| Texte secondaire, axes | Gris schiste | `#4A5866` | 6,7:1 |
+| **Martinique** | Rouge du drapeau | `#9D1520` | 7,6:1 |
+| **Hexagone** | Bleu | `#1D5FA6` | 6,0:1 |
+| Registre Contexte | Vert du drapeau | `#0B6A36` | 6,2:1 |
+| Registre Mesuré | Noir du drapeau | `#231F1E` | 15,1:1 |
+| Grille, filets | Brume | `#C9D2DB` | — |
+| Conclusion | Jaune sur noir | `#FFDE21` sur `#000` | 15,7:1 |
+| En-tête, navigation | Blanc sur noir | `#FFF` sur `#000` | 21:1 |
 
-**Daltonisme.** Écart perceptuel (ΔE) entre bleu et ambre, par simulation. Au-delà d'environ 20, les couleurs sont nettement distinctes. Il n'y a ni rouge ni vert.
+Le rouge, le bleu et le vert du drapeau ne sont pas posés sur le noir : sur
+`#000` ils tombent sous 3,3:1. L'en-tête les remplace par du blanc.
+
+**Daltonisme.** Écart perceptuel (ΔE, CIE76, simulation Machado 2009) entre le
+rouge `#9D1520` et le bleu `#1D5FA6`. Au-delà d'environ 20, les couleurs restent
+distinctes.
 
 | Vision | Écart perceptuel |
 |---|---|
-| Normale | 101 |
-| Deutéranopie | 103 |
-| Protanopie | 91 |
-| Tritanopie | 72 |
+| Normale | 76 |
+| Deutéranopie | 69 |
+| Protanopie | 48 |
+| Tritanopie | 113 |
 
-**Redondance.** La couleur n'est jamais seule. Chaque série porte son nom, et la Martinique a un trait de 2,5 px contre 1,5 px pour l'Hexagone. Les deux couleurs ont une luminosité proche : sans ces libellés et ces épaisseurs, on les confondrait en niveaux de gris.
+**Redondance.** La couleur n'est jamais seule. Chaque série porte son nom.
+Martinique est en rouge, l'Hexagone en bleu. Une barre pleine est mesurée, une
+barre hachurée est estimée, et le mot est écrit à côté.
 
 **Estimations.** Même couleur que le territoire, en hachures à 45° (trait de 1,5 px, pas de 6 px). La forme a un contour plein de 1,5 px de la même couleur, pour que le bord reste lisible, et elle porte toujours le mot « estimé ». Le hachuré ne sert à rien d'autre sur le site.
 
@@ -70,18 +82,18 @@ Objectif : sortir du look « site généré » (grotesque + police mono + petite
 ```
 MOBILE 375 px
 ┌─────────────────────────────┐
-│ panyen                 ◐    │  ← nom + bascule thème
+│ panyen                      │  ← nom, pas de bascule de thème
 │                             │
 │ Depuis 2022, l'écart        │  ← titre-réponse
 │ [état : voir § 8].          │    Archivo 30/34
 │ Estimation, fin [mois] 2026 │  ← ligne gris schiste
 │                             │
 │ Pour 100 € dans l'Hexagone… │
-│ Hexagone     ██████████ 100 │  ← ambre, plein
+│ Hexagone     ██████████ 100 │  ← bleu, plein
 │ Martinique   ██████████████ │
-│  2022 mesuré           1XX  │  ← bleu, plein
+│  2022 mesuré           1XX  │  ← rouge, plein
 │ Martinique   ██████████████▒│
-│  2026 estimé           1XX  │  ← bleu, hachuré au-delà
+│  2026 estimé           1XX  │  ← rouge, hachuré au-delà
 │                             │
 │ ¹ Insee, mars-avril 2022    │  ← renvois en exposant
 │ ² prolongé par les indices  │
@@ -90,7 +102,7 @@ MOBILE 375 px
 
 ORDINATEUR 1440 px (contenu 1120 px)
 ┌─────────────────────────────────────────────────────────────────┐
-│ panyen                                          Méthode   ◐     │
+│ panyen                                          Méthode         │
 │                                                                 │
 │  Depuis 2022, l'écart           Pour 100 € dans l'Hexagone…     │
 │  s'est [creusé/resserré].       Hexagone    ███████████████ 100 │
@@ -124,9 +136,9 @@ Elle traduit le nom *panyen* (« panier ») en une image que tout le monde lit s
 
 | Écran | Type | Détails |
 |---|---|---|
-| **1. Écart 2022** | Barres horizontales « pour 100 € dans l'Hexagone » | Le total en haut, puis les quatre postes. Tout est plein, car tout est mesuré. La valeur est au bout de chaque barre (chiffres tabulaires). |
+| **1. Écart 2022** | Barres horizontales « pour 100 € dans l'Hexagone » | L'ensemble, puis les fonctions publiées par l'enquête. Tout est plein, car tout est mesuré. La valeur est au bout de chaque barre (chiffres tabulaires). |
 | **2. Évolutions IPC** | 4 petits graphiques (alimentation, énergie, manufacturés, services), deux courbes chacun | Chaque indice est ramené à 100 en mars-avril 2022, sur son propre territoire. Même échelle pour les quatre, libellés « Martinique » et « Hexagone » en bout de courbe. Toutes les courbes sont pleines (mesures). Chaque graphique a un intertitre-constat, par paires, à la Reuters. En dessous : l'écart estimé année par année, 2022 en barre pleine, années suivantes hachurées. |
-| **3. Carburants** | Série mensuelle du gazole : ruban q10–q90 des stations métropolitaines, médiane, et plafond martiniquais en escalier | Même construction que l'écran livré après le correctif 4b (périodes d'effet du plafond). Ruban et médiane en ambre (Hexagone), plafond en **bleu** (Martinique) : plus aucun rouge. Libellés directs en bout de courbe, plafond nommé « prix maximal fixé par arrêté préfectoral ». Pas de hachure : les deux sont des données observées, mais de nature différente, et une phrase le dit. Dernière période incomplète signalée en toutes lettres. |
+| **3. Carburants** | Série mensuelle du gazole : ruban q10–q90 des stations de l'Hexagone, médiane, et plafond martiniquais en escalier | Même construction que l'écran livré après le correctif 4b (périodes d'effet du plafond). Ruban et médiane en bleu (Hexagone), plafond en rouge (Martinique). Libellés directs en bout de courbe, plafond nommé « prix maximal fixé par arrêté préfectoral ». Pas de hachure : les deux sont des données observées, mais de nature différente, et une phrase le dit. Dernière période incomplète signalée en toutes lettres. |
 | **4. Pourquoi c'est ressenti plus cher** (sous la réponse) | Deux blocs : (a) série longue des écarts de niveau mesurés par l'Insee, 2010 / 2015 / 2022 (ensemble 9,7 / 12,3 / 13,8 % ; alimentation 29,5 / 38,2 / 40,2 %), barres pleines ; (b) revenus 2024 : salaire net moyen privé −10,7 %, fonction publique +19,7 %, non-salariés −13,6 %, par rapport à la moyenne nationale | Tout est mesuré, donc plein. Mention « 2010-2015 : comparaison délicate » (Insee) sous (a), « moyenne nationale, Île-de-France incluse » sous (b). Aucune barre ne dit que la vie est chère à cause de ces chiffres : l'intertitre dit « coïncide avec ». Cette section vient après la réponse principale, jamais avant. |
 
 Règles communes :
@@ -180,6 +192,19 @@ Le seuil de 2 points est un choix provisoire : l'enquête de 2022 ne fournit pas
 
 ---
 
+## VoiceOver — à lancer par Mathis
+
+L'arbre d'accessibilité Chrome a été lu le 2026-10-08 (un seul `h1`, en-tête,
+navigation « Sections », contenu principal, pied). VoiceOver, lui, n'a pas été
+lancé. Six gestes, dans l'ordre, sur la page d'accueil :
+
+1. Rotor des titres : un seul titre de niveau 1, puis les questions de section.
+2. Rotor des landmarks : en-tête, navigation « Sections », contenu principal, pied.
+3. Flèche dans la conclusion noire : le lien « septembre 2024 » se nomme et s'active.
+4. Barres estimées : le mot « estimé » est lu, pas seulement la couleur ou la hachure.
+5. Graphique du gazole : le libellé du plafond et celui de la médiane sont lus.
+6. Page « Pour les techos » : son titre de niveau 1, puis retour par « Retour aux prix ».
+
 ## Annexe A — Sources d'inspiration
 
 | Page | Ce qu'on en retient |
@@ -197,4 +222,4 @@ Le seuil de 2 points est un choix provisoire : l'enquête de 2022 ne fournit pas
 
 - **Base des indices :** depuis janvier 2026, les IPC Insee sont publiés en base 2025 avec la nomenclature eCoicop. Vérifier le raccord avec les séries antérieures et la correspondance exacte des quatre postes.
 - **Polices :** Archivo et Literata, OFL-1.1 (paquets variables Fontsource 5.3.0). À vérifier à l'intégration : axes réellement livrés (`wdth`, `wght`), poids du bundle, rendu à 375 px, chiffres tabulaires.
-- **Choix tranchés sans information :** mois de fin de l'estimation ; échelle commune aux quatre petits graphiques (à revoir si l'énergie écrase les autres postes) ; libellé « prix maximal » pour les carburants (le prix payé en Martinique n'est pas forcément égal au plafond) ; attribution bleu = Martinique, ambre = Hexagone (arbitraire).
+- **Choix tranchés :** Martinique en rouge `#9D1520`, Hexagone en bleu `#1D5FA6`, conclusion jaune `#FFDE21` sur noir. Le couple bleu / ambre de la première version du brief n'est pas celui de la page.

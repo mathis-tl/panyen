@@ -335,7 +335,12 @@ describe("page affichée", () => {
     expect(pourquoi).not.toBeNull();
     expect(compterClasse(pourquoi!, "segment-hachure")).toBe(2);
 
-    const classes = racine.enfants.map((enfant) => enfant.id || enfant.className);
+    const principal = racine.enfants.find((enfant) => parId(enfant, "methode"));
+    expect(principal).toBeTruthy();
+    const ordre = racine.enfants.map((enfant) => enfant.className);
+    expect(ordre.indexOf("entete")).toBeLessThan(racine.enfants.indexOf(principal!));
+    expect(racine.enfants.indexOf(principal!)).toBeLessThan(ordre.indexOf("pied"));
+    const classes = principal!.enfants.map((enfant) => enfant.id || enfant.className);
     expect(classes.indexOf("methode")).toBeLessThan(classes.indexOf("conclusion"));
     expect(classes.indexOf("conclusion")).toBeLessThan(classes.indexOf("techos-renvoi"));
   });

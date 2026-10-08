@@ -136,18 +136,19 @@ connaître les indices de prix.
       Les trois variantes d'écran prévues au départ n'ont pas été produites.
 - [x] **5b** — récit sur la page, registres Mesuré / Contexte / Analyse.
 - [x] **5c** — estimation de l'écart « ensemble », avec ses limites de champ.
-- [ ] Page unique relue : ECSP 2022, évolutions, carburants, revenus, conclusion.
-      La relecture visuelle (captures, contrastes, arbre d'accessibilité) est
-      le reste de la clôture.
+- [x] Page unique relue le 2026-10-08, à 375 et 1 440 px : ECSP 2022, évolutions,
+      carburants, revenus, conclusion. En-tête et pied sortis du contenu principal
+      pour exposer les landmarks.
 - [x] Thème clair seul (décision du 2026-10-06). Le thème sombre n'est plus
       au programme.
-- [ ] Contrastes et simulation daltonisme rouge-bleu sur la palette réelle,
-      légendes, labels directs, chiffres tabulaires, un seul axe.
+- [x] Contrastes recalculés le 2026-10-08 (rouge 7,6:1, bleu 6,0:1, jaune sur
+      noir 15,7:1) et simulation daltonisme rouge-bleu (ΔE 48 en protanopie).
+      Légendes, libellés directs, chiffres tabulaires, un seul axe.
 - [x] Squelette de chargement à la place du « Chargement… » nu. Un seul `h1`.
 
 **Fini quand** : la page s'ouvre sans serveur applicatif, les filtres sont locaux,
-le thème clair est relu (contrastes, daltonisme, captures) et la conclusion a
-été lue dans le navigateur.
+le thème clair a été relu (contrastes, daltonisme, captures, conclusion dans le
+navigateur). VoiceOver reste à lancer par Mathis, liste dans le brief.
 
 ---
 

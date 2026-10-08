@@ -62,7 +62,7 @@ function afficher(): void {
   const racine = document.querySelector<HTMLElement>("#app");
   if (!racine) throw new Error("Conteneur #app absent.");
   racine.replaceChildren();
-  const page = document.createElement("article");
+  const page = document.createElement("main");
   page.className = "page-techos";
   const titre = document.createElement("h1");
   titre.textContent = "Pour les techos";
