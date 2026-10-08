@@ -61,7 +61,7 @@ lisible au lieu de trancher arbitrairement.
 Pour un seul poste, on a le prix réel et non un indice : le carburant. Et les deux
 territoires n'obéissent pas au même régime.
 
-- **Métropole** : toute station vendant plus de 500 m³ par an doit déclarer ses
+- **Hexagone** : toute station vendant plus de 500 m³ par an doit déclarer ses
   prix, qui sont libres. Le fichier national contient des milliers de points,
   rafraîchis toutes les dix minutes.
 - **Martinique** : personne ne déclare rien, parce qu'il n'y a rien à déclarer. Le
