@@ -66,13 +66,14 @@ bloquant, pas un détail de présentation.
   - `011813783` France métropolitaine · Produits manufacturés · indice
   - `011813915` Martinique · Services · indice
   - `011813909` France métropolitaine · Services · indice
-  - `011814618` Martinique · Ensemble (Coicop 00) · indice — vérifié sur l'API le 2026-10-06, pas encore collecté (incrément 5c)
+  - `011814618` Martinique · Ensemble (Coicop 00) · indice — collecté avec le lot à dix séries (incrément 5c, 2026-10-06)
   - `011814612` France métropolitaine · Ensemble (Coicop 00) · indice — idem ; six rangs d'écart avec la Martinique, règle des rangs respectée
   - `011813717` France entière (`FE`) · Alimentation · indice — lot historique, plus collecté
   - `011813728` Martinique · Alimentation · glissement annuel
   - `011813719` France · Alimentation · glissement annuel
-- Collecte IPC active : un seul appel des huit séries des quatre postes depuis
-  `2022-04`, écrit sous `ipc_postes_<horodatage>.xml`. Le XML historique
+- Collecte IPC active : un seul appel des dix séries des cinq postes (les quatre
+  postes plus l'ensemble) depuis `2022-04`, écrit sous `ipc_postes_<horodatage>.xml`.
+  Le XML historique
   `{011813726, 011813717}` reste au brut, étiqueté
   `france_entiere_historique`.
 - **Règle des rangs** : dans un poste donné, les territoires se suivent
@@ -80,7 +81,7 @@ bloquant, pas un détail de présentation.
   La Réunion) avec trois séries chacun (indice, variation mensuelle, glissement
   annuel). L'indice martiniquais tombe **neuf rangs après** l'indice France
   entière (`FE`), donc **six rangs après** l'indice France métropolitaine
-  (`FM`). Vérifié sur les quatre postes.
+  (`FM`). Vérifié sur les cinq postes, ensemble compris.
 - Prix des carburants : `https://donnees.roulez-eco.fr/opendata/{instantane,jour,jour/AAAAMMJJ,annee/AAAA}`,
   archives annuelles depuis 2007, XML compressé, licence ouverte.
 - **Les DOM sont absents du fichier national** : mesuré le 29/08/2026, 9 915 stations,
@@ -104,6 +105,11 @@ bloquant, pas un détail de présentation.
 ## Conventions
 
 - Français partout : noms de fichiers, de colonnes, de modèles, commentaires.
+- Le texte visible (page, README, `docs/CONTEXTE.md`, `docs/SOURCES.md`) dit
+  « Hexagone » ou « France hexagonale ». Les titres d'idbank, les codes `FM`
+  et les noms de colonnes gardent le libellé Insee.
+- Les specs se rédigent en entier. On ne découpe pas une spec en sous-incréments
+  pour la faire tenir dans un prompt.
 - `ingest/` ne parse rien : télécharge et écrit le brut horodaté dans `data/raw/`.
   Jamais d'écrasement, jamais de correction à l'ingestion.
 - dbt : `stg_` (nettoyage, une table par source) → `int_` (jointures) → `fct_`/`dim_`
