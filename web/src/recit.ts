@@ -64,18 +64,54 @@ export function pctPublie(ligne: LigneFormule): string {
  * l'ancre, revenus du privé sous la moyenne) suivent les données : elles changent
  * ou disparaissent si l'écart estimé passe sous l'ancre ou si le salaire devient positif.
  */
+const ANNEES = [
+  "zéro",
+  "un",
+  "deux",
+  "trois",
+  "quatre",
+  "cinq",
+  "six",
+  "sept",
+  "huit",
+  "neuf",
+  "dix",
+] as const;
+
+/** Mois écoulés d'avril 2022 au mois de fin, en années entières. */
+export function dureeDepuisMesure(moisFin: Date): string {
+  if (!(moisFin instanceof Date) || Number.isNaN(moisFin.getTime())) {
+    throw new Error("Analyse impossible : mois de fin absent.");
+  }
+  const mois = (moisFin.getUTCFullYear() - 2022) * 12 + (moisFin.getUTCMonth() - 3);
+  if (mois < 0) throw new Error("Analyse impossible : mois de fin avant avril 2022.");
+  const annees = Math.floor(mois / 12);
+  if (annees >= ANNEES.length) {
+    throw new Error("Analyse impossible : durée au-delà de dix ans.");
+  }
+  if (annees === 0) return "Moins d'un an après la mesure de 2022";
+  const mot = ANNEES[annees];
+  const pile = mois % 12 === 0;
+  if (pile && annees === 1) return "Un an après la mesure de 2022";
+  if (pile) return `${mot.charAt(0).toUpperCase()}${mot.slice(1)} ans après la mesure de 2022`;
+  if (annees === 1) return "Plus d'un an après la mesure de 2022";
+  return `Plus de ${mot} ans après la mesure de 2022`;
+}
+
 export function phraseAnalyseNiveau(
   ecartFin: number,
   ancre: number,
   salairePrivePct: number,
+  moisFin: Date,
 ): string {
   if (!Number.isFinite(ecartFin) || !Number.isFinite(ancre) || !Number.isFinite(salairePrivePct)) {
     throw new Error("Analyse impossible : écart ou salaire absent.");
   }
+  const duree = dureeDepuisMesure(moisFin);
   const debut =
     ecartFin >= ancre
-      ? "Quatre ans après la mesure de 2022, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous."
-      : "Quatre ans après la mesure de 2022, l'écart alimentaire estimé est passé sous son niveau de départ.";
+      ? `${duree}, l'écart alimentaire estimé est revenu vers son niveau de départ, pas en dessous.`
+      : `${duree}, l'écart alimentaire estimé est passé sous son niveau de départ.`;
   const niveau =
     ecartFin >= ancre
       ? "un niveau alimentaire supérieur de {ecart_alimentaire_2022}, qui ne s'est pas refermé"
@@ -275,6 +311,7 @@ export function blocsRecit(
           fin.ecart_prix_estime_pct,
           jalons.ancre.ecart_ecsp_2022_pct,
           prive.ecart_moyenne_nationale_pct,
+          fin.periode,
         ),
         valeurs,
       ),

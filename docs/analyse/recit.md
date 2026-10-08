@@ -1,28 +1,30 @@
 # Le panier martiniquais depuis 2022 — projet de récit
 
-*Brouillon rédigé par IA le 2026-09-29, à relire et réécrire par Mathis. Chaque
-paragraphe porte un seul registre : **[Mesuré]** = calculé par le pipeline (colonne
-citée), **[Contexte]** = fait sourcé (lien vérifié dans `validation.md`),
-**[Analyse]** = interprétation assumée. Chiffres IPC au dernier mois commun,
-juillet 2026. Aucune citation de presse tant qu'elle n'a pas été recopiée depuis
-la page.*
+*Brouillon rédigé par IA le 2026-09-29, relu le 2026-10-08 contre le Parquet
+publié. Chaque paragraphe porte un seul registre : **[Mesuré]** = calculé par le
+pipeline (colonne citée), **[Contexte]** = fait sourcé (lien vérifié dans
+`validation.md`), **[Analyse]** = interprétation assumée. Chiffres IPC au dernier
+mois commun, août 2026. `validation.md` a été établi sur juillet 2026 : l'Insee a
+révisé certaines valeurs depuis, et le mois d'août est arrivé. Les phrases
+[Mesuré] ci-dessous suivent le Parquet du 2026-10-08.*
 
 ---
 
 **[Mesuré]** En mars-avril 2022, l'Insee a mesuré que les produits alimentaires
-coûtaient 40 % de plus en Martinique que dans l'Hexagone. C'est la seule mesure
-de l'écart de niveau dont on dispose.
+coûtaient 40,2 % de plus en Martinique que dans l'Hexagone. C'est la seule mesure
+de l'écart de niveau dont on dispose pour ce poste.
 *`differentiel_ipc.parquet` · `ecart_ecsp_2022_pct` (seed `ecsp_alimentation_2022.csv`).*
 
 **[Contexte]** Ce chiffre dépend du panier retenu : 31 % avec les habitudes de
 consommation martiniquaises, 50 % avec celles de l'Hexagone. Tous produits
-confondus, l'écart est de 14 %.
+confondus, l'écart est de 13,8 % (Analyses Martinique n° 63 arrondit le même
+chiffre à 14 %).
 *[Insee Analyses Martinique n° 63](https://www.insee.fr/fr/statistiques/7649202).*
 
-**[Mesuré]** D'avril 2022 à juillet 2026, les prix alimentaires ont augmenté de
-19,6 % en Martinique et de 19,4 % dans l'Hexagone. Presque autant, mais en deux
+**[Mesuré]** D'avril 2022 à août 2026, les prix alimentaires ont augmenté de
+20,0 % en Martinique et de 19,9 % dans l'Hexagone. Presque autant, mais en deux
 temps : d'avril 2022 à octobre 2024, +18,4 % contre +16,6 % ; d'octobre 2024 à
-juillet 2026, +1,0 % contre +2,4 %.
+août 2026, +1,3 % contre +2,8 %.
 *`evolution_martinique_pct`, `evolution_france_metropolitaine_pct`, poste
 `alimentation`.*
 
@@ -75,12 +77,11 @@ insuffisantes. Le Sénat relève que quatre groupes tiennent 80 % du marché et
 [Autorité de la concurrence, avis 26-A-01](https://www.autoritedelaconcurrence.fr/fr/avis/relatif-aux-marges-des-grossistes-importateurs-et-des-distributeurs-de-produits-alimentaires) ·
 [La 1ère, rapport du Sénat](https://la1ere.franceinfo.fr/martinique/fort-france/vie-chere-on-vous-resume-le-rapport-du-senat-sur-les-marges-de-la-grande-distribution-en-outre-mer-1703482.html).*
 
-**[Mesuré]** Hors alimentation, les trajectoires divergent. D'avril 2022 à juillet
-2026, l'énergie a augmenté de 6,8 % en Martinique contre 15,3 % dans l'Hexagone,
-et les services de 8,5 % contre 13,2 %. Les produits manufacturés vont en sens
-inverse : +4,8 % contre +1,2 %, un écart apparu surtout après octobre 2024
-(+0,1 % contre −3,1 %). Pour l'énergie, l'essentiel de l'écart date du choc
-pétrolier de 2026 : +5,7 % contre +13,8 % de décembre 2025 à juillet 2026.
+**[Mesuré]** Hors alimentation, les trajectoires divergent. D'avril 2022 à août
+2026, l'énergie a augmenté de 7,5 % en Martinique contre 19,4 % dans l'Hexagone,
+et les services de 10,1 % contre 13,0 %. Les produits manufacturés vont en sens
+inverse : +5,5 % contre +2,9 %. Après octobre 2024 : +0,8 % contre −1,5 %. Pour
+l'énergie, de décembre 2025 à août 2026 : +6,4 % contre +17,8 %.
 *`differentiel_evolution_points` et évolutions par poste.*
 
 **[Contexte]** En Martinique, les carburants ne supportent ni TVA ni taxe
@@ -91,14 +92,13 @@ hausse des produits pétroliers : +17,8 % contre +29 %.
 *[Préfecture, 1er juillet 2026](https://www.martinique.gouv.fr/Actualites/Revision-des-prix-maximum-des-produits-petroliers-au-1er-juillet-2026-a-zero-heure) ·
 [Insee, bilan 2022](https://www.insee.fr/fr/statistiques/7621705?sommaire=7343444).*
 
-**[Analyse]** L'écart sur l'énergie tient d'abord à des règles différentes —
-fiscalité, prix administrés — plus qu'à un rattrapage. Il ne dit pas que
-l'énergie coûte moins cher en Martinique : il dit seulement que son prix y a
-moins augmenté.
+**[Analyse]** L'écart sur l'énergie tient d'abord à des règles différentes : la
+fiscalité et les prix administrés. Il ne dit pas que l'énergie coûte moins cher
+en Martinique : il dit seulement que son prix y a moins augmenté.
 
 **[Mesuré]** Si l'on prolonge la mesure de 2022 avec les évolutions de l'indice,
-l'écart alimentaire aurait culminé à environ 42,5 % en décembre 2024, avant de
-revenir vers 40,3 % en juillet 2026. C'est une estimation, pas une mesure.
+l'écart alimentaire a culminé à 42,7 % en décembre 2024, avant de revenir à
+40,4 % en août 2026. C'est une estimation, pas une mesure.
 *`ecart_prix_estime_pct`, `nature_ecart = estimation_a_partir_ecsp_2022`.*
 
 **[Contexte]** Cet écart pèse sur une population plus exposée : en 2021, 30 % des
@@ -106,12 +106,12 @@ ménages martiniquais vivaient sous le seuil de pauvreté, contre 15 % dans
 l'Hexagone.
 *[Insee Analyses Martinique n° 80](https://www.insee.fr/fr/statistiques/8674292).*
 
-**[Analyse]** Quatre ans après la mesure de 2022, rien n'indique que l'écart
-alimentaire se soit refermé. Il s'est creusé jusqu'à la crise, puis la hausse
-s'est ralentie : l'écart estimé est revenu à peu près à son niveau de 2022, pas
-en dessous. Seule une nouvelle enquête de
-comparaison spatiale de l'Insee pourra dire où en est vraiment le panier
-martiniquais.
+**[Analyse]** Plus de quatre ans après la mesure de 2022 (août 2026 est à quatre
+ans et quatre mois d'avril 2022), rien n'indique que l'écart alimentaire se soit
+refermé. Il s'est creusé jusqu'à la crise, puis la hausse s'est ralentie :
+l'écart estimé est revenu à peu près à son niveau de 2022, pas en dessous. Seule
+une nouvelle enquête de comparaison spatiale de l'Insee pourra dire où en est
+vraiment le panier martiniquais.
 
 ---
 
@@ -137,12 +137,13 @@ marges nettes anormales ; elle note des marges plus élevées chez les grossiste
 importateurs et une opacité des facturations intra-groupe.
 *Avis 26-A-01, Analyses Martinique n° 9 et 63.*
 
-**[Mesuré]** Depuis 2022, l'alimentation a augmenté presque autant en Martinique qu'en
-Hexagone (+19,6 % contre +19,4 %). Appliqués à un niveau de départ supérieur de 40 %,
-des pourcentages identiques creusent l'écart en euros : un panier à 100 € en Hexagone
-et 140 € en Martinique en 2022 serait autour de 119 € et 168 €, soit environ 48 € d'écart
-au lieu de 40 € (illustration arithmétique, pas une mesure). Mesuré en pourcentage,
-l'écart estimé reste stable, à 40,3 % en juillet 2026.
+**[Mesuré]** Depuis 2022, l'alimentation a augmenté de 20,0 % en Martinique et de
+19,9 % dans l'Hexagone. Appliqués à un niveau de départ supérieur de 40,2 %,
+des pourcentages proches creusent l'écart en euros : un panier à 100 € dans
+l'Hexagone et 140 € en Martinique en 2022 vaudrait 120 € et 168 €, soit 48 €
+d'écart au lieu de 40 € (illustration arithmétique, pas une mesure, euros
+arrondis à l'unité comme sur la page). Mesuré en pourcentage, l'écart estimé est
+de 40,4 % en août 2026.
 *`differentiel_ipc.parquet` ; Insee Première n° 1958.*
 
 **[Contexte]** Le poids de ces prix dépend des revenus. En 2021, le niveau de vie
