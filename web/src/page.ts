@@ -128,9 +128,8 @@ export function afficherPage(conteneur: HTMLElement, donnees: DonneesPage): void
   registre.nettoyer();
   conteneur.innerHTML = "";
   const alimentation = exigerResumeAlimentaire(donnees.ipc);
-  conteneur.append(
-    defsHachure(),
-    entete(),
+  const principal = document.createElement("main");
+  principal.append(
     bandeau(),
     sectionReponse(alimentation),
     sectionNiveaux(donnees.niveaux),
@@ -141,8 +140,8 @@ export function afficherPage(conteneur: HTMLElement, donnees: DonneesPage): void
     sectionMethode(alimentation),
     sectionConclusion(donnees.ipc, donnees.revenus, donnees.evenements),
     renvoiTechos(),
-    pied(donnees.ipc, alimentation),
   );
+  conteneur.append(defsHachure(), entete(), principal, pied(donnees.ipc, alimentation));
   document.title = `Panye — ${alimentation.titre}`;
 }
 
