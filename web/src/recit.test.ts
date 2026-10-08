@@ -158,25 +158,40 @@ function formulesRecit(): LigneFormule[] {
 }
 
 describe("phraseAnalyseNiveau", () => {
+  const juillet2026 = new Date(Date.UTC(2026, 6, 1));
+
   it("dit « revenu vers son niveau de départ » quand l'écart estimé est au moins égal à l'ancre", () => {
-    const t = phraseAnalyseNiveau(40.4, 40.2, -10.7);
+    const t = phraseAnalyseNiveau(40.4, 40.2, -10.7, juillet2026);
+    expect(t).toContain("Plus de quatre ans après la mesure de 2022");
     expect(t).toContain("revenu vers son niveau de départ, pas en dessous");
     expect(t).toContain("qui ne s'est pas refermé");
     expect(t).toContain("revenus du privé inférieurs");
   });
 
   it("ne dit plus « pas en dessous » quand l'écart estimé passe sous l'ancre", () => {
-    const t = phraseAnalyseNiveau(39.0, 40.2, -10.7);
+    const t = phraseAnalyseNiveau(39.0, 40.2, -10.7, juillet2026);
+    expect(t).toContain("Plus de quatre ans après la mesure de 2022");
     expect(t).toContain("passé sous son niveau de départ");
     expect(t).not.toContain("pas en dessous");
     expect(t).not.toContain("ne s'est pas refermé");
   });
 
-  it("retire les revenus du privé quand le salaire n'est pas négatif", () => {
-    expect(phraseAnalyseNiveau(40.4, 40.2, 2.0)).not.toContain("revenus du privé");
+  it("compte quatre ans pile en avril 2026, et trois ans avant", () => {
+    const pile = phraseAnalyseNiveau(40.4, 40.2, -10.7, new Date(Date.UTC(2026, 3, 1)));
+    expect(pile.startsWith("Quatre ans après la mesure de 2022")).toBe(true);
+    expect(pile).not.toContain("Plus de");
+    const avant = phraseAnalyseNiveau(40.4, 40.2, -10.7, new Date(Date.UTC(2026, 2, 1)));
+    expect(avant).toContain("Plus de trois ans après la mesure de 2022");
   });
 
-  it("échoue si une valeur manque", () => {
-    expect(() => phraseAnalyseNiveau(Number.NaN, 40.2, -1)).toThrow(/Analyse impossible/);
+  it("retire les revenus du privé quand le salaire n'est pas négatif", () => {
+    expect(phraseAnalyseNiveau(40.4, 40.2, 2.0, juillet2026)).not.toContain("revenus du privé");
+  });
+
+  it("échoue si une valeur ou le mois de fin manque", () => {
+    expect(() => phraseAnalyseNiveau(Number.NaN, 40.2, -1, juillet2026)).toThrow(/Analyse impossible/);
+    expect(() => phraseAnalyseNiveau(40.4, 40.2, -1, new Date(Date.UTC(2022, 2, 1)))).toThrow(
+      /mois de fin/,
+    );
   });
 });
