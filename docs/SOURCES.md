@@ -25,17 +25,19 @@ Accept: application/vnd.sdmx.structurespecificdata+xml;version=2.1
 
 ### idbanks actifs (base 2025, ensemble des ménages) — vérifiés le 2026-09-06
 
-Collecte active : un seul appel des huit séries ci-dessous depuis `2022-04`.
-Mesuré le 2026-09-06 : **52 observations par série**, 2022-04 → 2026-07, aucun
-statut autre que `A`, indices entre 84 et 112. Le brut s'appelle
-`ipc_postes_<horodatage>.xml`.
+Collecte active : un seul appel des dix séries ci-dessous depuis `2022-04`.
+Le relevé du 2026-09-06 s'arrêtait avant l'ajout de l'ensemble
+(52 observations, jusqu'à juillet 2026). Le lot actif en ajoute deux séries.
+Le Parquet publié le 2026-10-08 compte 53 mois, d'avril 2022 à août 2026. Le
+brut s'appelle `ipc_postes_<horodatage>.xml`.
 
-| poste | `poste` | France métropolitaine (`FM`) | Martinique (`D972`) |
+| poste | `poste` | France hexagonale (`FM`) | Martinique (`D972`) |
 |---|---|---|---|
 | Alimentation | `alimentation` | `011813720` | `011813726` |
 | Énergie | `energie` | `011813867` | `011813873` |
 | Produits manufacturés | `produits_manufactures` | `011813783` | `011813789` |
 | Services | `services` | `011813909` | `011813915` |
+| Ensemble | `ensemble` | `011814612` | `011814618` |
 
 Lot historique conservé au brut (plus collecté) :
 
@@ -55,12 +57,12 @@ la réponse reste minuscule, et lire les titres.
 GET …/SERIES_BDM/011813725+011813726+011813727+011813728?lastNObservations=1
 ```
 
-**Règle des rangs** (vérifiée sur les quatre postes) : dans un poste donné, les
-territoires se suivent — France entière (`FE`), France métropolitaine (`FM`),
-Guadeloupe, Martinique, Guyane, La Réunion — avec trois séries chacun, dans
-l'ordre indice, variation mensuelle, glissement annuel. L'indice martiniquais
-tombe donc **neuf rangs après** l'indice France entière (`FE`), et **six rangs
-après** l'indice France métropolitaine (`FM`).
+**Règle des rangs** (vérifiée sur les cinq postes, ensemble compris) : dans un
+poste donné, les territoires se suivent — France entière (`FE`), France
+hexagonale (`FM`), Guadeloupe, Martinique, Guyane, La Réunion — avec trois
+séries chacun, dans l'ordre indice, variation mensuelle, glissement annuel.
+L'indice martiniquais tombe donc **neuf rangs après** l'indice France entière
+(`FE`), et **six rangs après** l'indice de la France hexagonale (`FM`).
 
 ### Ce que cette source ne donne pas
 
@@ -74,34 +76,42 @@ Aucun niveau de prix. Aucune comparaison entre territoires. Voir `CONTEXTE.md`.
 en `seed` dbt avec leur source.
 
 Enquête de mars-avril 2022, indice de Fisher, ~5 000 relevés en Martinique et
-~55 000 en métropole, environ 500 familles de biens et services.
+~55 000 dans l'Hexagone, environ 500 familles de biens et services.
 
-| mesure | Fisher | panier métropolitain | panier martiniquais |
+| mesure | Fisher | panier hexagonal | panier martiniquais |
 |---|---|---|---|
-| Ensemble | +14 % | +17 % | +11 % |
-| Alimentaire | +40 % | +50 % | +31 % |
+| Ensemble | +13,8 % | +17 % | +11 % |
+| Alimentaire | +40,2 % | +50 % | +31 % |
+
+Analyses Martinique n° 63 arrondit ces Fisher à 14 % et 40 %. Le seed
+`ecsp_niveaux.csv` retient 13,8 % et 40,2 %, lus dans l'Insee Première n° 1958.
 
 Source : Insee Analyses Martinique n° 63 — <https://www.insee.fr/fr/statistiques/7649202>
 
-Cette mesure alimentaire (+40 %, Fisher, mars-avril 2022) est versionnée dans
-`dbt/seeds/ecsp_alimentation_2022.csv`. Ce n'est pas une constante SQL : toute
+La mesure alimentaire (40,2 %, Fisher, mars-avril 2022) est versionnée dans
+`dbt/seeds/ecsp_alimentation_2022.csv`. L'ensemble (13,8 %) est dans
+`dbt/seeds/ecsp_niveaux.csv`. Ce ne sont pas des constantes SQL : toute
 extrapolation après avril 2022 est une estimation, calculée avec le coefficient
 d'évolution `facteur_martinique / facteur_france_metropolitaine`.
 
-### ECSP et postes IPC : aucune ancre hors alimentation
+### ECSP et postes IPC
 
 L'ECSP 2022 publie ses écarts de niveau **par grandes fonctions COICOP** :
 produits alimentaires +40 %, communications +37 %, loisirs et culture +14 %,
 santé +13 %, hôtellerie et restauration +8 %, boissons alcoolisées et tabac
-+23 %. Ce n'est **pas** la nomenclature des quatre postes de l'IPC.
++23 %. Ce n'est **pas** la nomenclature des cinq postes de l'IPC.
+
+L'alimentation a une ancre directe (40,2 %). L'ensemble a une ancre de 13,8 %
+(Insee Première n° 1958), appliquée à l'indice Coicop 00 : c'est une estimation
+après 2022, et les champs ne coïncident pas exactement. L'enquête laisse de
+côté le fioul, le gaz de ville et les transports ferroviaires, et ne compare
+que les biens consommés de manière significative des deux côtés. Le détail est
+dans `docs/analyse/serie-ensemble.md`.
 
 Les postes « produits manufacturés » et « services » de l'IPC traversent
-plusieurs fonctions COICOP (habillement et biens de santé d'un côté ;
-communications et services de santé de l'autre). Aucune correspondance n'est
-publiée par l'Insee. **Seul le poste `alimentation` possède une ancre ECSP
-sourcée.** Pour l'énergie, les produits manufacturés et les services, l'écart
-de niveau 2022 est inconnu : aucune valeur n'est inventée, interpolée ni
-empruntée.
+plusieurs fonctions COICOP. Aucune correspondance n'est publiée par l'Insee.
+Pour l'énergie, les produits manufacturés et les services, l'écart de niveau
+2022 est inconnu : aucune valeur n'est inventée, interpolée ni empruntée.
 
 Périodicité : environ quinquennale. Pas de date publique pour la prochaine.
 
@@ -144,13 +154,13 @@ inventer une URL d'archive `/annee/2026` avant sa publication officielle. Les
 ZIP nationaux restent donc dans le cache local ignoré `data/raw/carburants/`,
 avec URL, taille et SHA-256 dans un sidecar de collecte.
 
-### Couverture : métropole seulement — mesuré
+### Couverture : Hexagone seulement — mesuré
 
 Comptage du 29 août 2026 sur le flux quotidien : **9 915 stations, dont 0 en code
 postal 97**.
 
 Ce n'est pas un défaut du jeu de données. L'obligation de déclarer vise les
-stations vendant au moins 500 m³ par an, un dispositif métropolitain. Outre-mer,
+stations vendant au moins 500 m³ par an, un dispositif de l'Hexagone. Outre-mer,
 il n'y a rien à déclarer : le prix est plafonné par arrêté préfectoral, révisé
 mensuellement, identique dans tout le département.
 

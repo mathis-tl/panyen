@@ -5,10 +5,11 @@ seulement dans la tête de celui qui l'a écrit.
 
 ## La question
 
-En Martinique, les produits alimentaires coûtent **40 % plus cher** qu'en France
+En Martinique, les produits alimentaires coûtent **40,2 % plus cher** qu'en France
 hexagonale. Ce n'est pas une impression : l'Insee l'a mesuré en envoyant des
 enquêteurs relever les mêmes produits des deux côtés, en mars-avril 2022. L'écart
-tous produits confondus est de **14 %**.
+tous produits confondus est de **13,8 %** (Analyses Martinique n° 63 arrondit
+ce même écart à 14 %).
 
 La question que personne ne traite publiquement : **et depuis ?**
 
@@ -31,13 +32,13 @@ d'aujourd'hui, lui, reste une estimation jusqu'à la prochaine enquête.
 
 Cette question a une réponse, mois par mois, et elle est vérifiable. Le site
 raconte la trajectoire complète : l'ancre ECSP de 2022, les deux évolutions
-cumulées (Martinique et France métropolitaine) depuis avril 2022, les épisodes
+cumulées (Martinique et France hexagonale) depuis avril 2022, les épisodes
 de resserrement et de creusement de l'écart estimé, puis la position au dernier
 mois commun. Il compare d'abord les deux évolutions avant d'en tirer une
 estimation d'écart ; cette estimation n'est jamais présentée comme une nouvelle
 mesure.
 
-L'exemple « 100 € en métropole / montant martiniquais dérivé » est une
+L'exemple « 100 € dans l'Hexagone / montant martiniquais dérivé » est une
 **illustration mécanique** à partir des indices et de l'ECSP, jamais le prix
 d'un panier réellement relevé en magasin. Un resserrement relatif peut coexister
 avec une différence illustrative en euros plus grande qu'en 2022, parce que les

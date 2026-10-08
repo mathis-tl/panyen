@@ -1,196 +1,23 @@
-SPEC ACTIVE — INCRÉMENT 5c : estimer aussi l'écart « ensemble », honnêtement
+SPEC ACTIVE — CLÔTURE DE L'INCRÉMENT 5
 
-L'incrément 5b est commité (`893c510`), sa spec est archivée dans
-`.agent-work/SPEC-5b-archive.txt`. Cette spec ajoute une série de données et six
-retouches de la page. Elle ne touche ni au carburants, ni au thème, ni à la
-typographie.
+L'incrément 5 est livré (5, 5b, 5c, finitions). Cette spec ne lance rien.
+L'incrément 6 n'est pas ouvert.
 
-Décision de Mathis (2026-10-06) : on va chercher les données pour estimer l'écart
-de niveau de l'« ensemble » après 2022, à condition de dire sur le site tout ce qui
-empêche d'être précis. Claude a vérifié sur l'API Insee que la donnée existe ; il
-n'est pas opposé, sous les garde-fous ci-dessous.
+Livré
 
-État de départ
+- Page : cinq postes, estimation alimentaire et estimation « ensemble »,
+  conclusion, récit dont la durée se calcule depuis avril 2022.
+- Carburants : contrôles ajoutés sans republication (`docs/limites-carburants.md`).
+- Vocabulaire visible : « Hexagone » ou « France hexagonale ». Les codes `FM`,
+  les colonnes et les titres d'idbank gardent le libellé Insee.
 
-- Données : `differentiel_ipc.parquet` porte quatre postes ; seule l'alimentation a
-  `ecart_prix_estime_pct` (ancre ECSP 2022 jointe seulement pour
-  `poste = 'alimentation'`, `fct_differentiel_ipc.sql`). Le brut IPC collecté
-  (`data/raw/insee/ipc_postes_2026-09-06T143628Z.xml`) contient huit séries.
-  `transformation/sdmx.py` (référentiel d'idbanks et lots) et l'ingestion
-  `ingest/insee_ipc.py` n'autorisent que ces huit séries plus l'historique FE.
-- Séries à ajouter, vérifiées le 2026-10-06 (base 2025, ensemble des ménages,
-  Coicop 00 « Ensemble », indice) : `011814618` Martinique (`D972`) et
-  `011814612` France métropolitaine (`FM`). Six rangs d'écart (règle des rangs
-  respectée). Lecture de contrôle : D972 2022-04 = 92,71, 2026-08 = 102,03 ;
-  FM 2022-04 = 91,73, 2026-08 = 103,38. L'ancre à estimer est `ecsp_niveaux.csv`,
-  ligne 2022 / ensemble : 13,8 % (Insee Première n° 1958).
-- Ordre de grandeur attendu (calcul à la main, à confirmer par le pipeline) :
-  (1,138 × 102,03/92,71 ÷ 103,38/91,73) − 1 ≈ +11 %, soit un écart « ensemble »
-  estimé plus bas que la mesure de 2022 : le titre de la page (alimentation) ne change
-  pas, mais le message « ensemble » est différent. À dire tel quel, sans l'habiller.
+Règles qui restent
 
-Objectif utilisateur
+- Une seule spec active. On la rédige en entier ; on ne la découpe pas.
+- Aucune comparaison de niveaux d'indice entre territoires.
+- Toute extrapolation de l'ECSP 2022 est une estimation étiquetée.
+- L'estimation « ensemble » dit ses limites de champ (`docs/analyse/serie-ensemble.md`).
 
-Voir, pour l'alimentation et pour l'ensemble des produits, la dernière mesure de
-l'Insee et l'estimation d'aujourd'hui côte à côte, en comprenant pourquoi
-l'estimation n'est pas une mesure.
+Prochaine spec
 
-Périmètre — cinq phases, porte de vérification entre chacune
-
-PHASE 0 — Vérifications avant de construire (si une échoue : STOP, rapport à Mathis)
-
-0.1 Relire sur Insee Première n° 1958 (page `7648939`) le champ de l'écart « ensemble »
-    2022 (13,8 %) : quelles dépenses sont incluses (loyers, services, santé…). Le
-    comparer au champ de l'IPC Coicop 00. Consigner dans
-    `docs/analyse/serie-ensemble.md` (création autorisée) : une phrase par
-    différence de champ, avec la source. Si les champs sont très différents, STOP.
-0.2 Relire les observations de `011814618` et `011814612` sur l'API
-    (`startPeriod=2022-03`), confirmer qu'aucun mois de 2022-04 à 2026-08 n'est
-    manquant ou `ND`.
-0.3 Faisabilité d'un contrôle rétrospectif (pas de code de production) : l'IPC base
-    2015 (flux `IPC-2015`) permet-il de prolonger, de 2015 à 2022, la mesure ECSP 2015
-    (ensemble 12,3 %, alimentation 38,2 %) avec la même méthode, puis de comparer au
-    2022 mesuré (13,8 % ; 40,2 %) ? Noter les idbanks, la couverture et les réserves
-    de comparabilité (`validation.md` : 2015→2022, source de collecte différente).
-    Résultat dans `docs/analyse/serie-ensemble.md` : l'écart d'estimation observé ou
-    « non faisable » avec la raison. Aucun chiffre de ce contrôle n'est affiché sur le
-    site dans cet incrément.
-PORTE 0 : `docs/analyse/serie-ensemble.md` écrit ; décision de continuer prise sur
-pièces (si 0.1 ou 0.2 échoue, arrêt).
-
-PHASE A — Donnée : un cinquième poste, « ensemble »
-
-A1. Collecte : étendre `ingest/insee_ipc.py` pour demander en un seul appel les dix
-    séries (huit actives + les deux ci-dessus) depuis 2022-04, écrit sous
-    `ipc_postes_<horodatage>.xml`, sans écraser. `ingest/` ne parse rien. C'est une
-    collecte manuelle réseau : la lancer une fois, noter l'horodatage ; si l'API ne
-    répond pas, STOP.
-A2. `transformation/sdmx.py` : ajouter les deux idbanks au référentiel
-    (`("ensemble", "D972")`, `("ensemble", "FM")`), un nouveau lot de dix séries,
-    en gardant la lecture des anciens lots. Aucune série inconnue n'est tolérée
-    (échec bruyant déjà en place).
-A3. `stg_ipc.py`, `int_ipc_rebase.sql`, `fct_differentiel_ipc.sql` : le poste
-    « ensemble » est rebasé à avril 2022 comme les autres (facteur, évolution,
-    coefficient). L'ancre ECSP « ensemble » 13,8 % est jointe depuis `ecsp_niveaux`
-    (grain annee_enquete=2022, poste='ensemble') ; **pas** depuis un nouveau seed
-    qui répèterait la valeur. Même formule, même étiquette
-    (`estimation_a_partir_ecsp_2022`, `mesure_ecsp_2022` à l'ancre). Mettre à jour le
-    commentaire d'en-tête du modèle : ancre ECSP pour l'alimentation et l'ensemble,
-    aucune ancre inventée pour les autres postes. Le grain reste (poste, periode).
-A4. « Dernier mois commun » : un seul pour tout le lot (le plus ancien des derniers
-    mois des dix séries). Un test dbt échoue si le poste « ensemble » finit après ou
-    avant ce mois dans le Parquet publié. Garde-fou « indice entre 50 et 200 » étendu
-    aux deux nouvelles séries.
-A5. Tests dbt (rouge d'abord) : cinq postes attendus au lieu de quatre, ancre
-    « ensemble » = valeur de `ecsp_niveaux`, mois commun, pas de mois manquant,
-    pas de niveau d'indice exposé. Ajuster `schema.yml` (grain, descriptions).
-A6. Publication : `make publier` (pas `make publier-carburants`). Consigner avant /
-    après : lignes, colonnes, SHA-256, écart « ensemble » estimé au dernier mois commun.
-A7. Republier les seeds de contexte (`make publier-contexte`) : la remarque de la ligne
-    2022 / alimentation de `ecsp_niveaux.parquet` contient encore l'ancienne mention
-    « 40,0 ». Seul ce Parquet de contexte change (remarque), consigner son SHA-256.
-PORTE A : `make verify` vert ; `carburants.parquet` et les autres Parquet de contexte
-identiques ; le Parquet IPC contient cinq postes.
-
-PHASE B — Front : accepter le cinquième poste sans changer les courbes
-
-B1. `web/src/types.ts`, `validation.ts`, `chargement.ts` : « ensemble » est un poste
-    reconnu mais **n'a pas de graphique de courbe** (les quatre graphiques restent) ;
-    les quatre postes des courbes restent `POSTES_ATTENDUS`. Aucune vue ne casse.
-PORTE B : tests et build verts ; la page s'affiche comme avant.
-
-PHASE C — Page (les six points de Mathis, corrigés)
-
-C1. « Ce qui coïncide » (barres de l'écart de niveau, section 5) : pour
-    **l'alimentation et l'ensemble**, une barre « {mois_commun}, estimé » après 2022 /
-    mesuré, lue dans le Parquet (`ecart_prix_estime_pct`, nature estimation), hachurée
-    comme l'estimation partout ailleurs, échelle incluant cette barre. Aucun
-    autre poste n'est prolongé : une phrase le dit (« Seuls l'alimentation et
-    l'ensemble sont prolongés après 2022 : ce sont les deux séries de prix que
-    panyen suit chaque mois. Les autres postes restent la photo de 2022. »). Échec
-    bruyant si une ligne attendue est absente ou n'est pas de nature estimation.
-C2. Mentions d'honnêteté, visibles près de ces barres (pas seulement en Méthode) :
-    « Estimation : on prolonge la mesure de 2022 avec les hausses de prix de chaque
-    territoire. Ce n'est pas une nouvelle enquête. Elle est moins sûre à mesure
-    qu'on s'éloigne de 2022 : les habitudes d'achat changent, et l'Insee ne donne pas
-    de marge d'erreur pour l'enquête de 2022. » Pour l'ensemble, ajouter la phrase
-    du champ établie en 0.1 (« L'indice des prix et l'enquête ne couvrent pas
-    exactement les mêmes dépenses : … »). Si la phase 0.3 a donné un écart observé,
-    le noter dans Méthode **seulement s'il est lu dans un seed ou un Parquet** ;
-    sinon ne rien afficher de ce contrôle.
-C3. Section Méthode : sous-titre « Pourquoi une estimation n'est pas une mesure »,
-    liste courte : pas de marge d'erreur ; paniers de 2022 qui vieillissent ; champs
-    différents (ensemble) ; ancre arrondie à 0,1 point ; seulement deux postes
-    prolongés ; le seuil de ±2 points du titre ne vaut que pour l'alimentation.
-C4. Revenus : « {indicateur} en Martinique, {année} », sous-titre « par rapport à la
-    moyenne de la France », chiffre inchangé ; mention « Île-de-France incluse » gardée
-    (`LIBELLES_REVENU`, `ligneBarreSignee`). Test sur les quatre libellés.
-C5. Récit : phrase énergie « … des règles différentes : la fiscalité et les prix
-    administrés. » sans tiret cadratin ; test (rouge d'abord) qui échoue si « — »
-    figure dans un texte de `blocsRecit`. Les séparateurs date — titre des événements
-    restent.
-C6. Glossaire : retirer « Hexagone » et son infobulle ; garder les autres mots ;
-    adapter les tests.
-C7. Conclusion après « Méthode et sources » et avant « Pour les techos » : fond noir
-    pleine largeur, texte Archivo `#FFDE21`. Texte :
-    « Depuis 2022, l'écart alimentaire estimé est revenu vers son niveau de départ,
-    pas en dessous. Des prix plus élevés qu'en Hexagone, et des salaires du privé plus
-    bas que la moyenne française, coïncident avec le sentiment d'une vie plus chère.
-    Ce n'est pas une preuve. Seule une nouvelle enquête de l'Insee pourra dire où en
-    est vraiment le niveau. »
-    La première phrase n'est vraie que si le dernier écart alimentaire estimé est
-    ≥ l'ancre ; la conclusion choisit la phrase (≥ ancre : « revenu vers son niveau
-    de départ, pas en dessous » ; sinon : « passé sous son niveau de départ ») ou
-    échoue. Test sur les deux cas. « Des salaires du privé plus bas » est lu dans
-    `revenus_ecart_national` (négatif), sinon la phrase est retirée. Les nombres ne
-    sont pas recopiés à la main.
-C8. Vocabulaire (décision de Mathis, 2026-10-06) : « France métropolitaine » est
-    jugé péjoratif. Aucun texte visible ne l'emploie : ni la page, ni `<title>` et
-    `<meta description>` de `web/index.html` et de `web/techos.html`, ni les
-    `aria-label`, textes `sr-only`, libellés de graphes, infobulles, légendes, notes de
-    sources, récit, glossaire, Méthode, pied de page. On écrit « Hexagone » ou
-    « France hexagonale » ; l'adjectif « métropolitain / métropolitaine / métropole »
-    est remplacé de même (« les stations de l'Hexagone »). Titres de sources cités :
-    reformuler (« Insee, indice des prix à la consommation ») au lieu de recopier un
-    titre qui contient le mot. Exception : identifiants de code, noms de colonnes et de
-    fichiers Parquet, codes `FM`, `france_metropolitaine`, commentaires et `docs/`
-    (invisibles pour le visiteur). Test automatisé : un test vitest échoue si
-    l'un des textes affichés par `afficherPage` ou par `techos.ts` (jeu de données de
-    test) contient « métropol » (insensible à la casse), plus un `grep` final sur les
-    chaînes de `web/src` et sur les deux fichiers HTML.
-PORTE C : tests, `tsc`, build, captures 1440 et 375 px (barre estimée, mentions,
-revenus, conclusion), lues une à une.
-
-PHASE D — Vérification finale
-
-`make verify` à 0 ; `npm --prefix web test` ; `tsc` dans `web/` ; navigateur à 375 et
-1440 px ; 0 erreur console ; aucun hôte réseau tiers ; empreintes avant / après
-(`differentiel_ipc.parquet` change, les autres non) ; `grep` : plus de « métropol » dans les textes visibles, plus de « — » dans le
-récit, plus de « Hexagone : la France » dans le glossaire.
-
-Contraintes
-
-- Règle des niveaux (CLAUDE.md) : on compare des évolutions entre territoires ; l'écart
-  de niveau vient de l'ECSP ; tout prolongement est une **estimation** étiquetée
-  partout. Jamais de pondération inventée. Jamais deux niveaux d'indice côte à côte.
-- Aucune valeur écrite à la main dans le site ; provenance (idbank, fichier brut,
-  horodatage) conservée jusqu'au Parquet.
-- Échec bruyant : un mois manquant fait échouer, il ne se comble pas.
-- Si un test dbt échoue, le Parquet n'est pas régénéré.
-- Machine 8 Go : une commande lourde à la fois ; pas de `make publier-carburants`.
-- Ne pas modifier : `ROADMAP.md`, `CLAUDE.md`, les modèles et le seed carburants, les
-  bruts existants (les nouveaux s'ajoutent), la CI.
-
-Non-objectifs
-
-Estimer d'autres postes ECSP (communications, santé, logement, transports…) ; afficher
-un chiffre de contrôle rétrospectif ; intervalle de confiance ; nouveau graphique de
-courbe ; fraîcheur et planification (incrément 6) ; refonte visuelle.
-
-Fini
-
-Le Parquet IPC porte cinq postes, dont « ensemble » avec une estimation étiquetée ; la
-page montre pour l'alimentation et l'ensemble la mesure 2022 et l'estimation
-d'aujourd'hui, avec des mentions d'honnêteté lisibles près des barres ; les six
-retouches sont faites ; `make verify` à 0 ; Mathis a relu les captures. Aucun commit
-sans sa décision.
+À écrire quand Mathis ouvrira l'incrément 6. Pas avant.

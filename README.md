@@ -2,14 +2,16 @@
 
 > *panyen* — « panier », en créole martiniquais.
 
-En 2022, l'Insee a mesuré que les produits alimentaires coûtaient **40 % plus
-cher** en Martinique qu'en France métropolitaine. Ce site répond à la question
-qui vient juste après, poste par poste — alimentation, énergie, produits
-manufacturés, services : **depuis, le différentiel d'évolution des prix se
-creuse-t-il ou se resserre-t-il ?**
+En 2022, l'Insee a mesuré que les produits alimentaires coûtaient **40,2 % plus
+cher** en Martinique que dans l'Hexagone, et l'ensemble des produits **13,8 %
+plus cher**. Ce site répond à la question qui vient juste après, poste par poste
+— alimentation, énergie, produits manufacturés, services, et l'ensemble :
+**depuis, le différentiel d'évolution des prix se creuse-t-il ou se resserre-t-il ?**
 
-L'écart de niveau n'est publié que pour l'alimentation (mesure ECSP 2022). Pour
-les autres postes, seule l'évolution est comparable.
+L'écart de niveau de 2022 est une mesure pour l'alimentation (40,2 %) et pour
+l'ensemble (13,8 %). Après cette date, ces deux écarts sont des estimations.
+Pour l'énergie, les produits manufacturés et les services, seule l'évolution
+est comparable.
 
 *(Capture à venir.)*
 
@@ -28,9 +30,13 @@ les autres postes, seule l'évolution est comparable.
 Il ne dit pas combien coûte un panier en Martinique aujourd'hui, et il ne peut pas
 le dire. Un indice des prix est en base 100 **sur son propre territoire** : deux
 indices ne se comparent pas en niveau, seulement en évolution. Le seul écart de
-niveau connu est celui de l'enquête de 2022 (alimentation) ; ce qui est tracé
-ici est un **différentiel d'évolution** depuis avril 2022, et toute estimation
-de l'écart alimentaire actuel est étiquetée comme telle.
+niveau connu vient de l'enquête de 2022 (alimentation 40,2 %, ensemble 13,8 %) ;
+ce qui est tracé ici est un **différentiel d'évolution** depuis avril 2022, et
+toute estimation de l'écart actuel est étiquetée comme telle. L'estimation
+« ensemble » applique l'ancre de 13,8 % à l'indice Coicop 00 : l'enquête et
+l'indice ne couvrent pas exactement le même panier (l'enquête laisse de côté le
+fioul, le gaz de ville et le ferroviaire, et ne compare que ce qui se consomme
+des deux côtés).
 
 ## Les chiffres
 
@@ -41,19 +47,21 @@ qui le reproduit.)*
   outre-mer — parce que l'obligation de déclarer ses prix n'existe pas dans les
   DOM, où le prix est fixé par arrêté préfectoral.
 
-## Différentiel IPC depuis 2022 (quatre postes)
+## Différentiel IPC depuis 2022 (cinq postes)
 
-Reconstruction, hors réseau, à partir du brut déjà collecté :
+Reconstruction, hors réseau, à partir du brut déjà collecté. Le sélecteur est
+celui de `make verify` :
 
 ```bash
-uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
+uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+ ecsp_niveaux+ ecsp_alimentation_formules+ revenus_ecart_national+ evenements_contexte+
 ```
 
-La commande retient le fichier `quatre_postes_france_metropolitaine` le plus
-récent en entier, rebase chaque série sur avril 2022 **dans son propre
-territoire et son propre poste**, puis apparie les facteurs d'évolution. Le
-dernier mois commun est unique pour les quatre postes : la France publie souvent
-un mois de plus, ce mois-là n'entre pas dans le calcul.
+La commande retient le fichier `cinq_postes_france_metropolitaine` le plus
+récent en entier (le lot `quatre_postes_france_metropolitaine` reste lisible,
+il n'est plus le lot actif), rebase chaque série sur avril 2022 **dans son
+propre territoire et son propre poste**, puis apparie les facteurs d'évolution.
+Le dernier mois commun est unique pour les cinq postes : la France hexagonale
+publie souvent un mois de plus, ce mois-là n'entre pas dans le calcul.
 
 En mots simples :
 
@@ -61,13 +69,15 @@ En mots simples :
   divisé par l'indice d'avril 2022 **du même territoire et du même poste** ».
 - L'évolution en % est ce facteur, moins 1, fois 100.
 - Le différentiel compare ces deux évolutions, jamais les niveaux d'indice.
-- Pour l'alimentation seulement, l'estimation de l'écart de prix part du +40 %
-  mesuré en 2022, multiplié par le rapport exact des deux facteurs.
+- Pour l'alimentation et pour l'ensemble, l'estimation de l'écart de prix part
+  de la mesure de 2022 (40,2 % et 13,8 %), multipliée par le rapport exact des
+  deux facteurs.
 
-À avril 2022, le +40 % alimentaire est une **mesure** ECSP
-(`mesure_ecsp_2022`). Chaque mois suivant, `ecart_prix_estime_pct` est une
-**estimation** (`estimation_a_partir_ecsp_2022`). Hors alimentation, ces
-colonnes restent NULL : l'ECSP publie par fonction COICOP, pas par poste IPC.
+À avril 2022, ces deux ancrages sont une **mesure** ECSP (`mesure_ecsp_2022`).
+Chaque mois suivant, `ecart_prix_estime_pct` est une **estimation**
+(`estimation_a_partir_ecsp_2022`). Pour l'énergie, les produits manufacturés et
+les services, ces colonnes restent NULL : aucune ancre de niveau n'existe pour
+ces postes.
 
 ## Essayer
 
@@ -76,7 +86,7 @@ git clone <url> && cd panyen
 make install
 uv run python ingest/insee_ipc.py --depuis 2022-04 --dry-run
 uv run python ingest/insee_ipc.py --depuis 2022-04
-uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+
+uv run dbt build --project-dir dbt --profiles-dir dbt --select stg_ipc+ ecsp_alimentation_2022+ ecsp_niveaux+ ecsp_alimentation_formules+ revenus_ecart_national+ evenements_contexte+
 make verify
 make publier
 ```
@@ -123,19 +133,23 @@ uv run python -c "import duckdb; print(duckdb.sql(\"select poste, count(*), min(
 
 ## Limites connues
 
-- La France publie ses indices avant les DOM : le dernier mois affiché est le
-  dernier mois commun aux huit séries des quatre postes.
-- L'enquête de comparaison spatiale est quinquennale ; entre deux enquêtes,
-  l'écart de niveau alimentaire ne peut être qu'estimé. Hors alimentation,
-  aucun écart de niveau n'est publiable.
-- Les prix des carburants ne sont disponibles au niveau de la station qu'en
-  métropole.
+- La France hexagonale publie ses indices avant les DOM : le dernier mois
+  affiché est le dernier mois commun aux dix séries des cinq postes.
+- L'enquête de comparaison spatiale est quinquennale. Entre deux enquêtes,
+  l'écart alimentaire et l'écart d'ensemble ne peuvent être qu'estimés.
+  L'estimation « ensemble » a des limites de champ (voir plus haut). Pour
+  l'énergie, les produits manufacturés et les services, aucun écart de niveau
+  n'est publiable.
+- Les prix des carburants ne sont disponibles au niveau de la station que dans
+  l'Hexagone.
 
 ## Décisions
 
-- **La référence géographique active est la France métropolitaine**, alignée sur
-  l'ECSP 2022. Un lot historique France entière (`011813717`) reste au brut,
-  étiqueté comme tel, et n'est plus collecté.
+- **La référence géographique active est la France hexagonale**, alignée sur
+  l'ECSP 2022. Dans le brut et dans les colonnes, le code Insee reste `FM`
+  (`france_metropolitaine`). Un lot historique France entière (`011813717`)
+  reste au brut, étiqueté comme tel, et n'est plus collecté. Le texte visible
+  du site dit « Hexagone » ou « France hexagonale ».
 - **DuckDB + dbt + Parquet + hyparquet**, pas de serveur : le site lit le
   Parquet dans le navigateur via `hyparquet` (lecteur Parquet pur JavaScript,
   0,3 Mo) et affiche les graphiques avec Observable Plot. Zéro coût d'hébergement,
