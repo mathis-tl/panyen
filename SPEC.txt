@@ -1,7 +1,12 @@
-SPEC ACTIVE — CLÔTURE DE L'INCRÉMENT 5
+SPEC ACTIVE — ÉTUDE FIGÉE, README
 
-L'incrément 5 est livré (5, 5b, 5c, finitions). Cette spec ne lance rien.
-L'incrément 6 n'est pas ouvert.
+Décision de Mathis (2026-10-08) : la collecte reste manuelle. L'étude est celle
+du Parquet publié, dernier mois commun août 2026. Pas de collecte automatique.
+L'hébergement cloud est un projet séparé. L'incrément 6 n'est pas ouvert.
+
+L'incrément 5 est livré (5, 5b, 5c, finitions). Cette spec couvre le README
+(date de l'étude, chiffres, captures). Pas de push, pas de nettoyage GitHub,
+pas de déploiement dans cette boucle : Mathis relit d'abord.
 
 Livré
 
@@ -18,6 +23,7 @@ Règles qui restent
 - Toute extrapolation de l'ECSP 2022 est une estimation étiquetée.
 - L'estimation « ensemble » dit ses limites de champ (`docs/analyse/serie-ensemble.md`).
 
-Prochaine spec
+Prochaine étape
 
-À écrire quand Mathis ouvrira l'incrément 6. Pas avant.
+Mathis relit le README et les captures. Ensuite, s'il confirme : push, nettoyage
+du dépôt, déploiement. L'incrément 6 reste fermé.

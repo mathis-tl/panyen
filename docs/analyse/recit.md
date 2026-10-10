@@ -19,7 +19,7 @@ de l'écart de niveau dont on dispose pour ce poste.
 consommation martiniquaises, 50 % avec celles de l'Hexagone. Tous produits
 confondus, l'écart est de 13,8 % (Analyses Martinique n° 63 arrondit le même
 chiffre à 14 %).
-*[Insee Analyses Martinique n° 63](https://www.insee.fr/fr/statistiques/7649202).*
+*[Insee Analyses Martinique n° 63](https://www.insee.fr/fr/statistiques/7649202) (31 % et 50 %) · [Insee Première n° 1958](https://www.insee.fr/fr/statistiques/7648939) (13,8 %, tous produits).*
 
 **[Mesuré]** D'avril 2022 à août 2026, les prix alimentaires ont augmenté de
 20,0 % en Martinique et de 19,9 % dans l'Hexagone. Presque autant, mais en deux

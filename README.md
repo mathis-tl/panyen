@@ -13,15 +13,20 @@ l'ensemble (13,8 %). Après cette date, ces deux écarts sont des estimations.
 Pour l'énergie, les produits manufacturés et les services, seule l'évolution
 est comparable.
 
-*(Capture à venir.)*
+L'étude est figée au **8 octobre 2026**. Le dernier mois commun aux deux
+territoires est **août 2026**. La collecte reste manuelle : ces pages ne se
+remettront pas à jour toutes seules.
+
+![La réponse : l'écart alimentaire estimé est revenu vers 40 %](docs/captures/reponse.png)
+
+![La conclusion, août 2026](docs/captures/conclusion.png)
 
 ## Ce que ce projet garantit
 
 - Toute valeur affichée vient d'une source publique identifiée, avec sa date de
   collecte et son identifiant d'origine.
-- La collecte et la publication sont encore lancées manuellement. Leur
-  automatisation quotidienne pour les carburants et mensuelle pour les indices
-  est prévue à l'incrément 6.
+- La collecte et la publication sont manuelles. Il n'y a pas de collecte
+  automatique. Une remise à jour attendra un projet d'hébergement cloud.
 - Si un test de qualité échoue, **rien n'est republié** : le site conserve sa
   dernière version saine plutôt que d'afficher un chiffre faux.
 
@@ -40,8 +45,24 @@ des deux côtés).
 
 ## Les chiffres
 
-*(À remplir au fil de la construction — chaque chiffre accompagné de la commande
-qui le reproduit.)*
+Dernier mois commun, août 2026, lu dans `web/public/data/differentiel_ipc.parquet`
+le 8 octobre 2026. Les pourcentages sont arrondis au dixième, comme sur la page.
+Évolution depuis avril 2022, à l'intérieur de chaque territoire.
+
+| Poste | Martinique | Hexagone | Écart estimé | Mesure 2022 |
+|---|---:|---:|---:|---:|
+| Alimentation | +20,0 % | +19,9 % | 40,4 % | 40,2 % |
+| Ensemble | +10,1 % | +12,7 % | 11,1 % | 13,8 % |
+| Énergie | +7,5 % | +19,4 % | aucun | aucun |
+| Produits manufacturés | +5,5 % | +2,9 % | aucun | aucun |
+| Services | +10,1 % | +13,0 % | aucun | aucun |
+
+L'écart estimé n'existe que pour l'alimentation et l'ensemble. Pour les trois
+autres postes, la colonne reste vide : il n'y a pas de mesure de niveau en 2022.
+
+```bash
+uv run python -c "import duckdb; print(duckdb.sql(\"select poste, periode, round(evolution_martinique_pct, 1) as martinique, round(evolution_france_metropolitaine_pct, 1) as hexagone, round(ecart_prix_estime_pct, 1) as ecart_estime, ecart_ecsp_2022_pct as mesure_2022 from 'web/public/data/differentiel_ipc.parquet' where periode = (select max(dernier_mois_commun) from 'web/public/data/differentiel_ipc.parquet') order by poste\").fetchall())"
+```
 
 - 9 915 stations dans le fichier national des carburants au 29/08/2026, dont 0
   outre-mer — parce que l'obligation de déclarer ses prix n'existe pas dans les
@@ -82,7 +103,7 @@ ces postes.
 ## Essayer
 
 ```bash
-git clone <url> && cd panyen
+git clone https://github.com/mathis-tl/panyen.git && cd panyen
 make install
 uv run python ingest/insee_ipc.py --depuis 2022-04 --dry-run
 uv run python ingest/insee_ipc.py --depuis 2022-04
@@ -111,9 +132,9 @@ réponse synthétique. Il ne publie ni Parquet ni site.
 ## La page
 
 La page statique lit `web/public/data/differentiel_ipc.parquet` dans le
-navigateur via `hyparquet`, sans serveur applicatif. Le changement de poste
-redessine depuis les lignes déjà en mémoire, sans aucune requête. Elle exige que
-`make publier` ait tourné au moins une fois pour produire le fichier Parquet.
+navigateur via `hyparquet`, sans serveur applicatif. C'est une page unique :
+les Parquet sont chargés une fois, puis tout est dessiné depuis la mémoire, sans
+autre requête. Elle exige que `make publier` ait tourné au moins une fois pour produire le fichier Parquet.
 
 ```bash
 make dev
