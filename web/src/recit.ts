@@ -263,7 +263,11 @@ export function blocsRecit(
       sources: [
         {
           href: "https://www.insee.fr/fr/statistiques/7649202",
-          libelle: "Insee Analyses Martinique n° 63",
+          libelle: "Insee Analyses Martinique n° 63 (31 % et 50 %)",
+        },
+        {
+          href: exigerNiveau(niveaux, 2022, "ensemble").source_url,
+          libelle: "Insee Première n° 1958 (13,8 %, tous produits)",
         },
       ],
     },

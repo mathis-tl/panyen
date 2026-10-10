@@ -39,14 +39,14 @@ export const PARAGRAPHES_TECHOS: Array<{ titre: string; textes: string[] }> = [
   {
     titre: "Le gazole",
     textes: [
-      "Dans l'Hexagone, chaque station déclare son prix. La ligne bleue est la médiane ; la bande claire couvre huit stations sur dix ; les petites barres, la moitié centrale.",
+      "Dans l'Hexagone, chaque station déclare son prix. La ligne verte est la médiane ; la bande claire couvre huit stations sur dix ; les petites barres, la moitié centrale.",
       "En Martinique, le préfet fixe un prix maximal par arrêté, le même dans tout le département. C'est la ligne rouge. Ce n'est pas le prix payé pompe par pompe.",
     ],
   },
   {
     titre: "La page",
     textes: [
-      "Le rouge est la Martinique, le bleu est l'Hexagone. Une barre pleine est mesurée. Une barre hachurée est estimée.",
+      "Le rouge est la Martinique, le vert est l'Hexagone. Une barre pleine est mesurée. Une barre hachurée est estimée.",
       "Panye veut dire panier, en créole martiniquais. Le bandeau est une vidéo muette, en boucle, passée en noir et blanc.",
     ],
   },

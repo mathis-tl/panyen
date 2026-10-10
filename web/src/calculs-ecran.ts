@@ -138,8 +138,8 @@ export function barresMemeDate(
   }
   const mesure = eurosPourCentHexagone(ancre.ecart_ecsp_2022_pct);
   const estime = eurosPourCentHexagone(actuelle.ecart_prix_estime_pct);
-  const hachures = estime > mesure ? estime - mesure : estime;
-  const pleins = estime > mesure ? mesure : 0;
+  // Le niveau d'aujourd'hui est tout entier une estimation : la barre est
+  // entièrement hachurée, y compris quand elle dépasse peu la mesure de 2022.
   return [
     {
       cle: "hexagone",
@@ -159,8 +159,8 @@ export function barresMemeDate(
       cle: "martinique_aujourdhui",
       euros: estime,
       nature: "estimation",
-      eurosPleins: pleins,
-      eurosHachures: hachures,
+      eurosPleins: 0,
+      eurosHachures: estime,
     },
   ];
 }
@@ -462,4 +462,21 @@ export function paragraphesConclusion(chiffres: ChiffresConclusion): TexteConclu
     libelleLien: chiffres.moisMobilisation,
     analyseApresLien,
   };
+}
+
+/**
+ * Phrase « À retenir » des revenus. Le sens (au-dessus / en dessous) suit le
+ * signe lu dans le seed ; la valeur est donnée sans signe après « en dessous ».
+ */
+export function phraseRevenus(publicPct: number, priveePct: number): string {
+  if (!Number.isFinite(publicPct) || !Number.isFinite(priveePct)) {
+    throw new Error("Phrase des revenus impossible : valeur absente.");
+  }
+  const part = (valeur: number): string =>
+    valeur < 0
+      ? `${formaterPct(Math.abs(valeur))} % en dessous de la moyenne nationale`
+      : valeur > 0
+        ? `${formaterPct(valeur)} % au-dessus de la moyenne nationale`
+        : "au niveau de la moyenne nationale";
+  return `Les salaires de la fonction publique sont ${part(publicPct)}, ceux du privé ${part(priveePct)}.`;
 }
