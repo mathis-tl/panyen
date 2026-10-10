@@ -152,17 +152,17 @@ navigateur). VoiceOver reste à lancer par Mathis, liste dans le brief.
 
 ---
 
-## Incrément 6 — Automatisation et fraîcheur
+## Incrément 6 — reporté
 
-**But utilisateur** : savoir si les données sont actuelles et fiables.
+**Décision de Mathis (2026-10-08).** La collecte reste manuelle. Il n'y a pas de
+collecte automatique pour remettre les séries à jour. L'étude est figée sur le
+Parquet publié ce jour-là : dernier mois commun, août 2026. Une remise à jour
+et l'hébergement cloud attendent un projet séparé. On n'ouvre pas cet incrément
+avant.
 
-- [ ] Planifier la collecte quotidienne des carburants et mensuelle des IPC.
-- [ ] Conditionner la publication du Parquet au succès de tous les tests.
-- [ ] Afficher source, dernière ingestion, âge, volumétrie et état des tests.
-- [ ] Déployer la version statique.
-
-**Fini quand** : une exécution planifiée met le site à jour sans intervention et
-une exécution cassée conserve la dernière version saine.
+Les tâches d'origine (collecte planifiée, page de fraîcheur, déploiement
+automatique) ne sont pas au programme. Le déploiement du site statique, lui,
+vient après la relecture du README, le push et le nettoyage du dépôt.
 
 ---
 
@@ -170,10 +170,13 @@ une exécution cassée conserve la dernière version saine.
 
 **But utilisateur** : permettre à un tiers de comprendre et reproduire le projet.
 
-- [ ] Finaliser le README : question, capture, garanties, limites et décisions.
-- [ ] Associer chaque chiffre public à sa source et à sa commande de reproduction.
-- [ ] Documenter installation, build, tests et lancement en quelques commandes.
-- [ ] Exécuter une reconstruction propre et la vérification finale.
+- [x] Finaliser le README : question, captures, garanties, limites et décisions.
+      L'étude y est datée du 8 octobre 2026.
+- [x] Associer les chiffres du dernier mois commun à la commande qui les relit
+      dans le Parquet publié.
+- [x] Documenter installation, build, tests et lancement.
+- [ ] Exécuter une reconstruction propre depuis un clone vide, puis la
+      vérification finale. Pas fait : le Parquet relu est celui déjà publié.
 
 **Fini quand** : une personne extérieure comprend le projet en une minute et peut
 reproduire les résultats avec les commandes documentées.
