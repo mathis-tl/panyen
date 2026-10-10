@@ -8,9 +8,8 @@
   --encre: #14202b;
   --schiste: #4a5866;
   --martinique: #9d1520;
-  --hexagone: #1d5fa6;
+  --hexagone: #0b6a36;
   --drapeau-rouge: #9d1520;
-  --drapeau-vert: #0b6a36;
   --drapeau-noir: #231f1e;
   --brume: #c9d2db;
   --plot-background: var(--fond);
@@ -773,7 +772,7 @@ abbr {
 }
 
 .titre-contexte {
-  color: var(--drapeau-vert);
+  color: var(--drapeau-noir);
 }
 
 .titre-analyse {

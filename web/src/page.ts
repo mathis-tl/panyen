@@ -18,6 +18,7 @@ import {
   phraseConstat,
   phraseEstimationsAnnuelles,
   phrasePicEstime,
+  phraseRevenus,
   POSTES_PROLONGES,
   resoudreEmplacements,
   titreReponse,
@@ -104,7 +105,7 @@ const LIBELLES_NIVEAU: Record<string, string> = {
 };
 
 const PHRASE_SEULS_PROLONGES =
-  "Seuls l'alimentation et l'ensemble sont prolongés après 2022 : ce sont les deux séries de prix que panyen suit chaque mois. Les autres postes restent la photo de 2022.";
+  "Seuls l'alimentation et l'ensemble sont prolongés après 2022 : ce sont les deux séries de prix que Panye suit chaque mois. Les autres postes restent la photo de 2022.";
 
 const PHRASE_ESTIMATION =
   "Estimation : on prolonge la mesure de 2022 avec les hausses de prix de chaque territoire. Ce n'est pas une nouvelle enquête. Elle est moins sûre à mesure qu'on s'éloigne de 2022 : les habitudes d'achat changent, et l'Insee ne donne pas de marge d'erreur pour l'enquête de 2022.";
@@ -514,7 +515,7 @@ function sectionCarburants(lignes: LigneCarburant[]): HTMLElement {
     ),
     blocNote(
       "Comment lire",
-      "On lit deux prix observés : la ligne bleue, les stations de l'Hexagone, et la ligne rouge, le prix maximal fixé en Martinique. Rien n'est hachuré. La légende sous le graphe nomme la bande claire et les petites barres.",
+      "On lit deux prix observés : la ligne verte, les stations de l'Hexagone, et la ligne rouge, le prix maximal fixé en Martinique. Rien n'est hachuré. La légende sous le graphe nomme la bande claire et les petites barres.",
     ),
   );
   const dernier = resume.distributions[resume.distributions.length - 1];
@@ -664,13 +665,7 @@ function sectionPourquoi(
     ),
     blocNote(
       "À retenir",
-      resoudreEmplacements(
-        "Les salaires de la fonction publique sont {rev_public} au-dessus de la moyenne nationale, ceux du privé {rev_prive} en dessous.",
-        {
-          rev_public: formaterPointsPct(public_.ecart_moyenne_nationale_pct),
-          rev_prive: formaterPointsPct(prive.ecart_moyenne_nationale_pct),
-        },
-      ),
+      phraseRevenus(public_.ecart_moyenne_nationale_pct, prive.ecart_moyenne_nationale_pct),
     ),
   );
   if (revenus.length === 0) throw new Error("Revenus absents.");
@@ -753,7 +748,7 @@ function sectionMethode(
   section.append(el("h3", "sous-intertitre", "Ce qu'il ne dit pas"));
   section.append(
     paragraphe(
-      "Il ne dit pas pourquoi les prix sont plus élevés ; il ne dit pas qui paie quoi ; il ne compare jamais deux indices entre eux.",
+      "Il ne dit pas pourquoi les prix sont plus élevés ; il ne dit pas qui paie quoi ; il ne compare jamais deux niveaux d'indice entre eux.",
     ),
   );
   section.append(el("h3", "sous-intertitre", "Mesuré et estimé"));
@@ -1018,7 +1013,7 @@ function legendeGazole(): HTMLElement {
   const lignes: Array<[string, string]> = [
     ["echantillon-bande", "Bande claire : huit stations de l'Hexagone sur dix"],
     ["echantillon-barre", "Petites barres plus foncées : la moitié centrale des stations"],
-    ["echantillon-mediane", "Ligne bleue : prix médian"],
+    ["echantillon-mediane", "Ligne verte : prix médian"],
     ["echantillon-plafond", "Ligne rouge, en escalier : prix maximal fixé en Martinique"],
   ];
   for (const [classe, texte] of lignes) {

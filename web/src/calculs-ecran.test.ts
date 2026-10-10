@@ -11,6 +11,7 @@ import {
   phraseConstat,
   phraseEstimationsAnnuelles,
   phrasePicEstime,
+  phraseRevenus,
   resoudreEmplacements,
   titreReponse,
 } from "./calculs-ecran.ts";
@@ -93,7 +94,8 @@ describe("barres à la même date", () => {
     expect(barres[1].euros).toBeCloseTo(140, 5);
     expect(barres[2].euros).toBeCloseTo(142.5, 5);
     expect(barres[1].eurosHachures).toBe(0);
-    expect(barres[2].eurosHachures).toBeCloseTo(2.5, 5);
+    expect(barres[2].eurosPleins).toBe(0);
+    expect(barres[2].eurosHachures).toBeCloseTo(142.5, 5);
     expect(barres[2].nature).toBe("estimation");
 
     const serialise = JSON.stringify(barres);
@@ -106,7 +108,7 @@ describe("barres à la même date", () => {
     }
   });
 
-  it("hachure toute la barre du jour quand l'estimation est sous la mesure", () => {
+  it("hachure toute la barre du jour, aussi quand l'estimation est sous la mesure", () => {
     const barres = barresMemeDate(
       ligne({ ecart_ecsp_2022_pct: 40, ecart_prix_estime_pct: 40 }),
       ligne({ ecart_prix_estime_pct: 38, nature_ecart: "estimation_a_partir_ecsp_2022" }),
@@ -275,5 +277,23 @@ describe("euros pour 100 €", () => {
     expect(eurosPourCentHexagone(40.2)).toBeCloseTo(140.2, 5);
     expect(eurosPourCentHexagone(-5)).toBeCloseTo(95, 5);
     expect(eurosPourCentHexagone(0)).toBe(100);
+  });
+});
+
+describe("phrase des revenus", () => {
+  it("dit « en dessous » sans signe moins et « au-dessus » pour une valeur positive", () => {
+    const t = phraseRevenus(19.7, -10.7);
+    expect(t).toBe(
+      "Les salaires de la fonction publique sont 19,7 % au-dessus de la moyenne nationale, ceux du privé 10,7 % en dessous de la moyenne nationale.",
+    );
+    expect(t).not.toContain("−");
+  });
+
+  it("suit le signe quand le salaire du privé n'est plus négatif", () => {
+    expect(phraseRevenus(19.7, 2.0)).toContain("ceux du privé 2,0 % au-dessus");
+  });
+
+  it("échoue si une valeur manque", () => {
+    expect(() => phraseRevenus(Number.NaN, -1)).toThrow(/Phrase des revenus/);
   });
 });
