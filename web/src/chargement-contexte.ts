@@ -3,7 +3,7 @@
  * Une colonne ou une valeur absente fait échouer, elle ne se comble pas.
  */
 import { asyncBufferFromUrl, parquetReadObjects } from "hyparquet";
-import { compressors } from "hyparquet-compressors";
+import { compresseurs } from "./compresseurs.ts";
 
 export interface LigneNiveau {
   annee_enquete: number;
@@ -59,7 +59,7 @@ async function lire(fichier: string): Promise<Record<string, unknown>[]> {
   } catch (cause) {
     throw new Error(`Impossible de charger ${url} : ${String(cause)}`, { cause });
   }
-  const objets = await parquetReadObjects({ file: buffer, compressors });
+  const objets = await parquetReadObjects({ file: buffer, compressors: compresseurs });
   if (objets.length === 0) throw new Error(`Parquet vide : ${fichier}.`);
   return objets as Record<string, unknown>[];
 }

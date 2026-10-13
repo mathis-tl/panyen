@@ -7,6 +7,7 @@ const racine = fileURLToPath(new URL(".", import.meta.url));
 export default defineConfig({
   appType: "mpa",
   build: {
+    sourcemap: true,
     rollupOptions: {
       input: {
         index: resolve(racine, "index.html"),

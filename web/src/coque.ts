@@ -29,7 +29,8 @@ export function creerBandeau(intro: HTMLElement): HTMLElement {
     video.autoplay = true;
     video.loop = true;
     const source = document.createElement("source");
-    source.src = "/media/martinique.mp4";
+    const petit = window.matchMedia("(max-width: 700px)").matches;
+    source.src = petit ? "/media/martinique-640.mp4" : "/media/martinique.mp4";
     source.type = "video/mp4";
     video.append(source);
   }

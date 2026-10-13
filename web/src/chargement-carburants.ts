@@ -2,7 +2,7 @@
  * Chargement du Parquet carburants via hyparquet.
  */
 import { asyncBufferFromUrl, parquetReadObjects } from "hyparquet";
-import { compressors } from "hyparquet-compressors";
+import { compresseurs } from "./compresseurs.ts";
 import {
   type LigneCarburant,
   type TypeLigneCarburant,
@@ -27,7 +27,7 @@ export async function chargerDonneesCarburants(): Promise<LigneCarburant[]> {
     throw new Error(`Impossible de charger ${url} : ${String(cause)}`, { cause });
   }
 
-  const objets = await parquetReadObjects({ file: buffer, compressors });
+  const objets = await parquetReadObjects({ file: buffer, compressors: compresseurs });
   if (objets.length === 0) {
     throw new Error("Le fichier Parquet carburants est vide.");
   }
