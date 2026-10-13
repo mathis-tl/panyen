@@ -144,7 +144,8 @@ make dev
 vers un candidat Parquet Zstandard voisin, le valide contre la fact, et remplace
 atomiquement `web/public/data/differentiel_ipc.parquet` avec `os.replace`. Si la
 vérification, l'export ou la validation échoue, la dernière version saine est
-conservée telle quelle. Le fichier généré n'est pas versionné.
+conservée telle quelle. Les Parquet publiés sont versionnés : le site se construit
+et se déploie sans rejouer le pipeline.
 
 Lire le Parquet publié :
 
