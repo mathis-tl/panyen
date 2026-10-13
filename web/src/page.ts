@@ -35,6 +35,10 @@ import {
 } from "./calculs-carburants.ts";
 import { creerPlanificateurRedessin } from "./planifier-redessin.ts";
 import { creerRegistreNettoyage } from "./cycle-ecran.ts";
+import { creerCurseurMois } from "./curseur-mois.ts";
+import { creerBandeau, TEXTE_INTRO } from "./coque.ts";
+import { creerBlocQualite } from "./qualite.ts";
+import { retirerEtiquettesDecoratives } from "./accessibilite-svg.ts";
 import { calculerDomaineEvolution, graphePetit } from "./graphe.ts";
 import {
   calculerDispositionGrapheCarburants,
@@ -127,11 +131,21 @@ export interface DonneesPage extends ContexteCharge {
 
 export function afficherPage(conteneur: HTMLElement, donnees: DonneesPage): void {
   registre.nettoyer();
-  conteneur.innerHTML = "";
+  const coqueMontee = conteneur.querySelector?.("main.coque") ?? null;
+  if (!coqueMontee) conteneur.innerHTML = "";
   const alimentation = exigerResumeAlimentaire(donnees.ipc);
-  const principal = document.createElement("main");
+  // Si la coque est déjà montée, on garde son en-tête et son bandeau (la vidéo
+  // continue de jouer) et on remplace seulement le squelette par les sections.
+  const coque = conteneur.querySelector<HTMLElement>("main.coque");
+  const principal = coque ?? document.createElement("main");
+  if (coque) {
+    coque.classList.remove("coque");
+    coque.querySelector(".squelette")?.parentElement?.remove();
+    coque.querySelector(".intro")?.replaceWith(intro());
+  } else {
+    principal.append(creerBandeau(intro()));
+  }
   principal.append(
-    bandeau(),
     sectionReponse(alimentation),
     sectionNiveaux(donnees.niveaux),
     sectionEvolutions(donnees.ipc, donnees.evenements),
@@ -142,7 +156,12 @@ export function afficherPage(conteneur: HTMLElement, donnees: DonneesPage): void
     sectionConclusion(donnees.ipc, donnees.revenus, donnees.evenements),
     renvoiTechos(),
   );
-  conteneur.append(defsHachure(), entete(), principal, pied(donnees.ipc, alimentation));
+  if (coque) {
+    conteneur.prepend(defsHachure());
+    conteneur.append(pied(donnees.ipc, alimentation));
+  } else {
+    conteneur.append(defsHachure(), entete(), principal, pied(donnees.ipc, alimentation));
+  }
   document.title = `Panye — ${alimentation.titre}`;
 }
 
@@ -185,37 +204,7 @@ function entete(): HTMLElement {
 }
 
 function intro(): HTMLElement {
-  return paragraphe(
-    "Panye compare les prix des courses en Martinique et dans l'Hexagone. En 2022, l'Insee a mesuré l'écart. Depuis, a-t-il changé ?",
-    "intro",
-  );
-}
-
-function bandeau(): HTMLElement {
-  const bande = el("div", "bandeau");
-  const video = document.createElement("video");
-  video.className = "bandeau-video";
-  video.muted = true;
-  video.defaultMuted = true;
-  video.playsInline = true;
-  video.poster = "/media/martinique-poster.jpg";
-  video.setAttribute("aria-hidden", "true");
-  video.tabIndex = -1;
-  const reduit = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (!reduit) {
-    video.autoplay = true;
-    video.loop = true;
-    const source = document.createElement("source");
-    source.src = "/media/martinique.mp4";
-    source.type = "video/mp4";
-    video.append(source);
-  }
-  const voile = el("div", "bandeau-voile");
-  voile.setAttribute("aria-hidden", "true");
-  const texte = el("div", "bandeau-texte");
-  texte.append(intro());
-  bande.append(video, voile, texte);
-  return bande;
+  return paragraphe(TEXTE_INTRO, "intro");
 }
 
 function sectionReponse(
@@ -546,23 +535,16 @@ function sectionCarburants(lignes: LigneCarburant[]): HTMLElement {
   monterGraphe(cadre, () =>
     grapheCarburants(resume, calculerDispositionGrapheCarburants(cadre.clientWidth)),
   );
-  const clavier = el("div", "mois-clavier");
-  clavier.setAttribute("role", "group");
-  clavier.setAttribute("aria-label", "Mois du graphique, au clavier");
-  for (const mois of resume.distributions) {
-    const bouton = document.createElement("button");
-    bouton.type = "button";
-    bouton.className = "mois-focus";
-    const texte = texteInfobulleMois({
-      date: mois.date,
-      mediane: mois.mediane,
-      q10: mois.q10,
-      q90: mois.q90,
-    });
-    bouton.setAttribute("aria-label", texte.replaceAll("\n", ", "));
-    bouton.append(el("span", "infobulle", texte));
-    clavier.append(bouton);
-  }
+  const clavier = creerCurseurMois(
+    resume.distributions.map((mois) =>
+      texteInfobulleMois({
+        date: mois.date,
+        mediane: mois.mediane,
+        q10: mois.q10,
+        q90: mois.q90,
+      }),
+    ),
+  );
   section.append(clavier, legendeGazole());
   if (resume.dernierMoisIncomplet) {
     section.append(
@@ -884,6 +866,7 @@ function pied(
         },
       ),
     ),
+    creerBlocQualite(),
   );
   return piedPage;
 }
@@ -1100,7 +1083,9 @@ function monterGraphe(
     if (largeur <= 0 || largeur === largeurPrecedente) return;
     largeurPrecedente = largeur;
     const resume = cadre.querySelector(".sr-only");
-    cadre.replaceChildren(dessiner());
+    const dessin = dessiner();
+    retirerEtiquettesDecoratives(dessin);
+    cadre.replaceChildren(dessin);
     if (resume) cadre.prepend(resume);
   };
   const plan = creerPlanificateurRedessin(

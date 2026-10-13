@@ -20,7 +20,7 @@
 
   --mesure: 1120px;
   --gouttiere: clamp(1.25rem, 5vw, 3rem);
-  --respiration: clamp(4rem, 9vw, 7rem);
+  --respiration: clamp(2.5rem, 6vw, 4.5rem);
 
   color-scheme: light;
   color: var(--encre);
@@ -161,13 +161,6 @@ a:hover {
   height: 0.85em;
   width: auto;
   box-shadow: 0 0 0 1px #fff;
-}
-
-.logo-panier {
-  display: block;
-  width: 1.05em;
-  height: 1.05em;
-  flex: 0 0 auto;
 }
 
 .nav-ecrans {
@@ -594,6 +587,35 @@ abbr {
   max-width: 42rem;
 }
 
+.qualite {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--brume);
+}
+
+.qualite-titre {
+  font-size: 1.05rem;
+  margin: 0 0 0.4rem;
+}
+
+.qualite-date {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.qualite-liste {
+  list-style: none;
+  margin: 0.6rem 0 0;
+  padding: 0;
+  max-width: 48rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.qualite-liste li {
+  margin: 0.3rem 0;
+}
+
 .legende-texture {
   display: flex;
   flex-wrap: wrap;
@@ -820,6 +842,56 @@ abbr {
   margin: 0.55rem 0 0;
 }
 
+.page-techos h3 {
+  margin: 0;
+}
+
+.page-techos .liste-techos,
+.page-techos .etapes {
+  max-width: 62ch;
+  margin: 0.8rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.page-techos .liste-techos li {
+  margin: 0.6rem 0;
+}
+
+.page-techos .etapes {
+  list-style: none;
+  padding: 0;
+  border-top: 1px solid var(--brume);
+}
+
+.page-techos .etape {
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--brume);
+}
+
+.page-techos .etape-titre {
+  font-size: 1.05rem;
+}
+
+.page-techos .etape-outil {
+  margin: 0.15rem 0 0;
+  color: var(--schiste);
+  font-size: 0.9rem;
+}
+
+.page-techos .formule {
+  max-width: 62ch;
+  margin: 0.9rem 0 0;
+  padding: 0.85rem 1rem;
+  background: color-mix(in srgb, var(--brume) 45%, transparent);
+  font: 400 0.82rem/1.55 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.page-techos .formule code {
+  font: inherit;
+}
+
 .page-techos .retour {
   display: inline-block;
   margin-top: 2rem;
@@ -894,24 +966,58 @@ abbr {
 
 .mois-clavier {
   position: relative;
-  display: flex;
   margin-top: 0.35rem;
 }
 
-.mois-focus {
-  position: static;
-  flex: 1 1 0;
-  min-width: 0;
+.mois-curseur {
+  display: block;
+  width: 100%;
   height: 1.75rem;
-  border: 0;
-  background: transparent;
+  margin: 0;
   padding: 0;
+  background: transparent;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
 }
 
-.mois-focus:hover,
-.mois-focus:focus-visible {
-  background: color-mix(in srgb, var(--brume) 65%, transparent);
+.mois-curseur::-webkit-slider-runnable-track {
+  height: 1.75rem;
+  background: transparent;
+}
+
+.mois-curseur::-moz-range-track {
+  height: 1.75rem;
+  background: transparent;
+}
+
+.mois-curseur::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 3px;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--encre);
+  opacity: 0;
+}
+
+.mois-curseur::-moz-range-thumb {
+  width: 3px;
+  height: 1.75rem;
+  border: 0;
+  border-radius: 0;
+  background: var(--encre);
+  opacity: 0;
+}
+
+.mois-clavier[data-actif] .mois-curseur::-webkit-slider-thumb,
+.mois-clavier[data-actif] .mois-curseur::-moz-range-thumb {
+  opacity: 1;
+}
+
+.mois-curseur:focus-visible {
+  outline: 2px solid var(--encre);
+  outline-offset: 2px;
 }
 
 .infobulle {
@@ -933,8 +1039,7 @@ abbr {
   pointer-events: none;
 }
 
-.mois-focus:hover .infobulle,
-.mois-focus:focus-visible .infobulle {
+.mois-clavier[data-actif] .infobulle {
   opacity: 1;
 }
 

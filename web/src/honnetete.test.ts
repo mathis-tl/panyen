@@ -90,6 +90,10 @@ class Noeud {
   querySelector(): Noeud | null {
     return null;
   }
+
+  dataset: Record<string, string> = {};
+
+  addEventListener(): void {}
 }
 
 let application: Noeud;
@@ -359,8 +363,8 @@ describe("page affichée", () => {
 describe("page techos", () => {
   it("n'affiche pas « métropol »", async () => {
     installerDom();
-    const { PARAGRAPHES_TECHOS } = await import("./techos.ts");
-    const visible = PARAGRAPHES_TECHOS.flatMap((bloc) => [bloc.titre, ...bloc.textes]).join("\n");
+    const { texteVisibleTechos } = await import("./techos.ts");
+    const visible = texteVisibleTechos();
     expect(visible).not.toMatch(/métropol/i);
     expect(visible).toContain("France hexagonale");
     expect(application.textContent).not.toMatch(/métropol/i);

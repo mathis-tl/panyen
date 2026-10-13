@@ -14,7 +14,8 @@ export function nettoyerEcranCourant(): void {
   registreEcran.nettoyer();
 }
 
-function squelette(annonce: string): string {
+/** Squelette de chargement, annoncé aux lecteurs d'écran. */
+export function squelette(annonce: string): string {
   return `
     <div class="squelette" role="status" aria-live="polite">
       <p class="sr-only">${annonce}</p>
@@ -43,12 +44,14 @@ function echapperTexte(texte: string): string {
 export function contenuErreur(erreur: unknown): string {
   const message = erreur instanceof Error ? erreur.message : String(erreur);
   return `
+    <main>
     <div class="erreur" role="alert">
       <h1>Données indisponibles</h1>
       <p>${echapperTexte(message)}</p>
       <p class="erreur-aide">La page n'affiche pas de données tant que la source
       n'est pas saine. Vérifiez que <code>make publier</code> a été exécuté.</p>
-    </div>`;
+    </div>
+    </main>`;
 }
 
 /** Affiche l'état d'erreur — aucun rendu partiel, aucune donnée de repli. */

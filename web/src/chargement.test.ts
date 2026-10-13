@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { demarrerApplication } from "./main.ts";
+import { demarrerApplication } from "./demarrage.ts";
 import { contenuErreur } from "./rendu.ts";
 
 describe("échec de chargement", () => {

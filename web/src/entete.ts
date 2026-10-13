@@ -1,5 +1,5 @@
 /**
- * En-tête commun : nom, drapeau, panier, sections toujours visibles.
+ * En-tête commun : nom, drapeau, sections toujours visibles.
  * Les ancres sont absolues pour fonctionner depuis /techos.html.
  */
 
@@ -35,15 +35,12 @@ export function creerEntete(): HTMLElement {
   drapeau.className = "drapeau";
   drapeau.src = "/drapeau-martinique.svg";
   drapeau.alt = "Drapeau de la Martinique";
-  const panier = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  panier.setAttribute("class", "logo-panier");
-  panier.setAttribute("viewBox", "0 0 24 24");
-  panier.setAttribute("aria-hidden", "true");
-  panier.innerHTML = `<path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M8.2 9.4V7.6a3.8 3.8 0 0 1 7.6 0v1.8"/><path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" d="M4.4 9.6h15.2l-1.5 9.4H5.9L4.4 9.6z"/><path fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" d="M8.6 9.8v8.2M12 9.8v8.2M15.4 9.8v8.2"/>`;
+  drapeau.width = 900;
+  drapeau.height = 600;
   const mot = document.createElement("span");
   mot.className = "nom-mot";
   mot.textContent = "Panye";
-  nom.append(drapeau, panier, mot);
+  nom.append(drapeau, mot);
   const nav = document.createElement("nav");
   nav.className = "nav-ecrans";
   nav.id = "nav-sections";

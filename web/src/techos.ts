@@ -1,85 +1,75 @@
 /**
- * Page « Pour les techos » : comment le site est fait.
- * Aucun chiffre qui ne soit déjà une règle du projet. Pas de Parquet.
+ * Page « Pour les techos » : comment le site est fait, de la collecte Insee au
+ * dessin, avec le calcul de l'écart estimé et les contrôles qui le gardent.
+ * Les valeurs de l'exemple chiffré sont lues dans le Parquet publié (août 2026).
  */
 import "./polices.css";
 import "./style.css";
 import { creerEntete } from "./entete.ts";
+import { creerBlocQualite } from "./qualite.ts";
+import { type BlocTechos, SECTIONS_TECHOS, texteVisibleTechos } from "./contenu-techos.ts";
 
-export const PARAGRAPHES_TECHOS: Array<{ titre: string; textes: string[] }> = [
-  {
-    titre: "La question",
-    textes: [
-      "Panye répond à une seule question : l'écart de prix mesuré en 2022 entre la Martinique et l'Hexagone s'est-il creusé ou resserré depuis ?",
-      "L'Hexagone, ici, c'est la France hexagonale : le continent et la Corse.",
-    ],
-  },
-  {
-    titre: "Les données",
-    textes: [
-      "La collecte écrit le brut horodaté, sans le modifier. Le nettoyage et les calculs viennent ensuite, avec dbt, jusqu'à des fichiers Parquet.",
-      "La page n'a pas de serveur. Le navigateur lit ces Parquet. Si un contrôle échoue, le fichier publié n'est pas remplacé.",
-    ],
-  },
-  {
-    titre: "Ce qu'on compare",
-    textes: [
-      "Un indice des prix est en base 100 sur son propre territoire. L'indice martiniquais et l'indice de l'Hexagone ne se comparent pas en niveau : chacun mesure une évolution depuis son propre point de départ.",
-      "Comparer deux évolutions est le cœur du site. Comparer deux niveaux d'indice serait faux.",
-      "Le seul écart de niveau connu vient de l'enquête de comparaison spatiale des prix de mars-avril 2022. Tout ce qui prolonge cet écart est une estimation, et la page le dit.",
-    ],
-  },
-  {
-    titre: "Mesuré, contexte, analyse",
-    textes: [
-      "Mesuré : un chiffre publié, ou calculé à partir de sources citées. Contexte : un fait extérieur aux chiffres, avec sa source. Analyse : une interprétation. Elle peut être discutée et ne prouve rien.",
-      "Le dernier mois affiché est le dernier mois commun aux deux territoires. Un mois publié d'un seul côté n'entre pas.",
-    ],
-  },
-  {
-    titre: "Le gazole",
-    textes: [
-      "Dans l'Hexagone, chaque station déclare son prix. La ligne verte est la médiane ; la bande claire couvre huit stations sur dix ; les petites barres, la moitié centrale.",
-      "En Martinique, le préfet fixe un prix maximal par arrêté, le même dans tout le département. C'est la ligne rouge. Ce n'est pas le prix payé pompe par pompe.",
-    ],
-  },
-  {
-    titre: "La page",
-    textes: [
-      "Le rouge est la Martinique, le vert est l'Hexagone. Une barre pleine est mesurée. Une barre hachurée est estimée.",
-      "Panye veut dire panier, en créole martiniquais. Le bandeau est une vidéo muette, en boucle, passée en noir et blanc.",
-    ],
-  },
-];
+export { SECTIONS_TECHOS, texteVisibleTechos };
 
-function paragraphe(texte: string): HTMLParagraphElement {
-  const p = document.createElement("p");
-  p.textContent = texte;
-  return p;
+function creer<K extends keyof HTMLElementTagNameMap>(
+  balise: K,
+  classe = "",
+  texte?: string,
+): HTMLElementTagNameMap[K] {
+  const noeud = document.createElement(balise);
+  if (classe) noeud.className = classe;
+  if (texte !== undefined) noeud.textContent = texte;
+  return noeud;
+}
+
+function afficherBloc(bloc: BlocTechos): HTMLElement {
+  if (bloc.type === "texte") return creer("p", "", bloc.texte);
+  if (bloc.type === "formule") {
+    const pre = creer("pre", "formule");
+    pre.append(creer("code", "", bloc.lignes.join("\n")));
+    return pre;
+  }
+  if (bloc.type === "liste") {
+    const liste = creer("ul", "liste-techos");
+    for (const item of bloc.items) liste.append(creer("li", "", item));
+    return liste;
+  }
+  const etapes = creer("ol", "etapes");
+  for (const etape of bloc.items) {
+    const li = creer("li", "etape");
+    li.append(
+      creer("h3", "etape-titre", etape.titre),
+      creer("p", "etape-outil", etape.outil),
+      creer("p", "", etape.texte),
+    );
+    etapes.append(li);
+  }
+  return etapes;
 }
 
 function afficher(): void {
   const racine = document.querySelector<HTMLElement>("#app");
   if (!racine) throw new Error("Conteneur #app absent.");
   racine.replaceChildren();
-  const page = document.createElement("main");
-  page.className = "page-techos";
-  const titre = document.createElement("h1");
-  titre.textContent = "Pour les techos";
-  page.append(titre);
-  for (const bloc of PARAGRAPHES_TECHOS) {
-    const inter = document.createElement("h2");
-    inter.textContent = bloc.titre;
+  const page = creer("main", "page-techos");
+  page.append(creer("h1", "", "Pour les techos"));
+  for (const section of SECTIONS_TECHOS) {
+    const inter = creer("h2", "", section.titre);
+    inter.id = section.id;
     page.append(inter);
-    for (const texte of bloc.textes) page.append(paragraphe(texte));
+    for (const bloc of section.blocs) page.append(afficherBloc(bloc));
   }
-  const retour = document.createElement("a");
-  retour.className = "retour";
+  const retour = creer("a", "retour", "Retour aux prix");
   retour.href = "/#reponse";
-  retour.textContent = "Retour aux prix";
   page.append(retour);
-  racine.append(creerEntete(), page);
+  racine.append(creerEntete(), page, creerPiedTechos());
   document.title = "Panye — Pour les techos";
+}
+
+function creerPiedTechos(): HTMLElement {
+  const pied = creer("footer", "pied");
+  pied.append(creerBlocQualite());
+  return pied;
 }
 
 try {
