@@ -22,6 +22,7 @@ export interface DonneesQualite {
   reseau: {
     accueilHorsVideoKo: number;
     videoMo: number;
+    videoMobileMo: number;
     requetesAccueil: number;
     hotesTiers: number;
     erreursConsole: number;
@@ -33,20 +34,21 @@ export interface DonneesQualite {
 export const QUALITE: DonneesQualite = {
   mesureLe: "13 octobre 2026",
   methode:
-    "Version de production construite puis servie en local avec compression brotli. Lighthouse 13, Chrome sans fenêtre, réseau mobile simulé et processeur ralenti pour « mobile », réglage bureau sinon.",
+    "Site en production, Lighthouse 13, Chrome sans fenêtre. En « mobile », réseau simulé et processeur ralenti ; le score mobile de l'accueil est la médiane de quatre passages (de 88 à 99).",
   lighthouse: [
     { page: "Accueil", mode: "mobile", performance: 97, accessibilite: 100, bonnesPratiques: 100, seo: 100 },
     { page: "Accueil", mode: "bureau", performance: 100, accessibilite: 100, bonnesPratiques: 100, seo: 100 },
-    { page: "Pour les techos", mode: "mobile", performance: 99, accessibilite: 100, bonnesPratiques: 100, seo: 100 },
+    { page: "Pour les techos", mode: "mobile", performance: 100, accessibilite: 100, bonnesPratiques: 100, seo: 100 },
     { page: "Pour les techos", mode: "bureau", performance: 100, accessibilite: 100, bonnesPratiques: 100, seo: 100 },
   ],
   reseau: {
-    accueilHorsVideoKo: 537,
+    accueilHorsVideoKo: 469,
     videoMo: 1.4,
-    requetesAccueil: 30,
+    videoMobileMo: 0.6,
+    requetesAccueil: 36,
     hotesTiers: 0,
     erreursConsole: 0,
-    techosKo: 209,
+    techosKo: 211,
   },
   controles: { dbt: 201, python: 101, vitest: 117 },
 };
@@ -73,7 +75,7 @@ export function lignesQualite(q: DonneesQualite): string[] {
       `${m.page}, ${m.mode} : performance ${m.performance}, accessibilité ${m.accessibilite}, bonnes pratiques ${m.bonnesPratiques}, SEO ${m.seo}.`,
   );
   lignes.push(
-    `Poids de l'accueil : ${nombre(q.reseau.accueilHorsVideoKo)} Ko hors vidéo, plus ${nombre(q.reseau.videoMo, 1)} Mo pour la vidéo du bandeau, en ${q.reseau.requetesAccueil} requêtes. Page « Pour les techos » : ${nombre(q.reseau.techosKo)} Ko.`,
+    `Poids de l'accueil : ${nombre(q.reseau.accueilHorsVideoKo)} Ko hors vidéo, plus la vidéo du bandeau (${nombre(q.reseau.videoMo, 1)} Mo, ${nombre(q.reseau.videoMobileMo, 1)} Mo sur petit écran), en ${q.reseau.requetesAccueil} requêtes. Page « Pour les techos » : ${nombre(q.reseau.techosKo)} Ko.`,
     `Hôtes tiers : ${q.reseau.hotesTiers}. Erreurs ou avertissements dans la console : ${q.reseau.erreursConsole}.`,
     `Contrôles automatiques : ${q.controles.dbt} tests de données, ${q.controles.python} tests Python, ${q.controles.vitest} tests de la page.`,
   );
