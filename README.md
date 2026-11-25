@@ -4,8 +4,8 @@
 
 En 2022, l'Insee a mesuré que les produits alimentaires coûtaient **40,2 % plus
 cher** en Martinique que dans l'Hexagone, et l'ensemble des produits **13,8 %
-plus cher**. Ce site répond à la question qui vient juste après, poste par poste: alimentation, énergie, produits manufacturés, services, et l'ensemble
-**depuis, le différentiel d'évolution des prix se creuse-t-il ou se resserre-t-il ?**
+plus cher**. Ce site répond à la question qui vient juste après, poste par poste: alimentation, énergie, produits manufacturés, services, et l'ensemble.
+**Depuis, le différentiel d'évolution des prix se creuse-t-il ou se resserre-t-il ?**
 
 L'écart de niveau de 2022 est une mesure pour l'alimentation (40,2 %) et pour
 l'ensemble (13,8 %). Après cette date, ces deux écarts sont des estimations.
